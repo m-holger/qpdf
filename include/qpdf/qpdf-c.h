@@ -120,6 +120,8 @@ extern "C" {
     QPDF_DLL
     qpdf_data qpdf_init();
 
+    QPDF_DLL
+    qpdf_data qpdf_safe_init();
     /* Pass a pointer to the qpdf_data pointer created by qpdf_init to
      * clean up resources.
      */
@@ -664,7 +666,8 @@ extern "C" {
     int qpdf_oh_get_array_n_items(qpdf_data data, qpdf_oh oh);
     QPDF_DLL
     qpdf_oh qpdf_oh_get_array_item(qpdf_data data, qpdf_oh oh, int n);
-
+    QPDF_DLL
+    qpdf_oh qpdf_oh_get_array_item2(qpdf_data data, qpdf_oh oh, int n);
     /* "C"-specific dictionary key iteration */
 
     /* Iteration is allowed on only one dictionary at a time. */

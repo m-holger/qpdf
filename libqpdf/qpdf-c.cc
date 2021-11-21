@@ -45,11 +45,16 @@ struct _qpdf_data
     std::set<std::string> cur_iter_dict_keys;
     std::set<std::string>::const_iterator dict_iter;
     std::string cur_dict_key;
+
+    bool safemode;
+    qpdf_oh guard;
 };
 
 _qpdf_data::_qpdf_data() :
     write_memory(false),
-    next_oh(0)
+    next_oh(0),
+    safemode(false),
+    guard(0)
 {
 }
 
@@ -160,6 +165,15 @@ qpdf_data qpdf_init()
 {
     QTC::TC("qpdf", "qpdf-c called qpdf_init");
     qpdf_data qpdf = new _qpdf_data();
+    qpdf->qpdf = new QPDF();
+    return qpdf;
+}
+
+qpdf_data qpdf_safe_init()
+{
+    //QTC::TC("qpdf", "qpdf-c called qpdf_init");
+    qpdf_data qpdf = new _qpdf_data();
+    qpdf->safemode = true;
     qpdf->qpdf = new QPDF();
     return qpdf;
 }
@@ -836,8 +850,44 @@ QPDF_ERROR_CODE qpdf_write(qpdf_data qpdf)
 static qpdf_oh
 new_object(qpdf_data qpdf, QPDFObjectHandle const& qoh)
 {
-    qpdf_oh oh = ++qpdf->next_oh; // never return 0
+    //qpdf_oh oh = 16*(++qpdf->next_oh); // never return 0
+    qpdf_oh oh = 16*(++qpdf->next_oh); // never return 0
+    //oh += qoh.getTypeCode();
+    // Error:  passing ‘const ’ as ‘this’ argument discards qualifiers
+    // workaround : new_array_object and new_other_object
     qpdf->oh_cache[oh] = new QPDFObjectHandle(qoh);
+    return oh;
+}
+
+static qpdf_oh
+new_array_object(qpdf_data qpdf, QPDFObjectHandle const& qoh)
+{
+    qpdf_oh oh = 16*(++qpdf->next_oh)+8; // never return 0
+    qpdf->oh_cache[oh] = new QPDFObjectHandle(qoh);
+    return oh;
+}
+
+static qpdf_oh
+new_other_object(qpdf_data qpdf, QPDFObjectHandle const& qoh)
+{
+    qpdf_oh oh = 16*(++qpdf->next_oh)+13; // never return 0
+    qpdf->oh_cache[oh] = new QPDFObjectHandle(qoh);
+    return oh;
+}
+
+static qpdf_oh
+new_error(qpdf_data qpdf, QPDFObjectHandle const& qoh)
+{
+    qpdf_oh oh = 16 * (++qpdf->next_oh) + 15; // never return 0
+    qpdf->oh_cache[oh] =  new QPDFObjectHandle(qoh);
+    return oh;
+}
+
+static qpdf_oh
+new_unhandled_error(qpdf_data qpdf, QPDFObjectHandle const& qoh)
+{
+    qpdf_oh oh = 16 * (++qpdf->next_oh) + 14; // never return 0
+    qpdf->oh_cache[oh] =  new QPDFObjectHandle(qoh);
     return oh;
 }
 
@@ -945,6 +995,9 @@ QPDF_BOOL qpdf_oh_is_inline_image(qpdf_data qpdf, qpdf_oh oh)
 QPDF_BOOL qpdf_oh_is_array(qpdf_data qpdf, qpdf_oh oh)
 {
     QTC::TC("qpdf", "qpdf-c called qpdf_oh_is_array");
+    // result = qpdf_oh_valid_internal(qpdf, oh) && oh % 16 == 8;
+    // if result {qpdf->guard = oh };
+    // return result;
     return (qpdf_oh_valid_internal(qpdf, oh) &&
             qpdf->oh_cache[oh]->isArray());
 }
@@ -987,7 +1040,7 @@ qpdf_oh qpdf_oh_wrap_in_array(qpdf_data qpdf, qpdf_oh oh)
     if (qoh->isArray())
     {
         QTC::TC("qpdf", "qpdf-c array to wrap_in_array");
-        return new_object(qpdf, *qoh);
+        return new_array_object(qpdf, *qoh);
     }
     else
     {
@@ -1121,10 +1174,13 @@ char const* qpdf_oh_get_utf8_value(qpdf_data qpdf, qpdf_oh oh)
 
 int qpdf_oh_get_array_n_items(qpdf_data qpdf, qpdf_oh oh)
 {
-    if (! qpdf_oh_valid_internal(qpdf, oh))
-    {
+    if (! qpdf_oh_valid_internal(qpdf, oh)) // or oh % 16 != 8
+    {   // this would indicate a serious programming error 
+        // if safemode, throw exception
         return 0;
     }
+    // else if qpdf->guard != oh
+    // caller failed to typecheck oh - in safemode, throw exception
     QTC::TC("qpdf", "qpdf-c called qpdf_oh_get_array_n_items");
     return qpdf->oh_cache[oh]->getArrayNItems();
 }
@@ -1137,6 +1193,25 @@ qpdf_oh qpdf_oh_get_array_item(qpdf_data qpdf, qpdf_oh oh, int n)
     }
     QTC::TC("qpdf", "qpdf-c called qpdf_oh_get_array_item");
     return new_object(qpdf, qpdf->oh_cache[oh]->getArrayItem(n));
+}
+
+qpdf_oh qpdf_oh_get_array_item2(qpdf_data qpdf, qpdf_oh oh, int n)
+{
+    if (! qpdf_oh_valid_internal(qpdf, oh))
+    {   // this would indicate a serious programming error
+        // if safemode, throw exception
+        return new_unhandled_error(qpdf, QPDFObjectHandle::newNull());
+    }
+    else if (oh % 16 == 15)
+    {   // previous error which was not detetected/handles by caller
+        // if safemode, throw exception
+        return new_unhandled_error(qpdf, QPDFObjectHandle::newNull());
+    }
+    else if (oh % 16 != 8)
+    {   // not an array
+        return new_error(qpdf, QPDFObjectHandle::newNull());
+    }
+    return new_other_object(qpdf, qpdf->oh_cache[oh]->getArrayItem(n));
 }
 
 void qpdf_oh_begin_dict_key_iter(qpdf_data qpdf, qpdf_oh oh)
