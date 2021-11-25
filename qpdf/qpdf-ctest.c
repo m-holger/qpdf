@@ -504,7 +504,7 @@ static void test24(char const* infile,
     qpdf_read(qpdf, infile, password);
     qpdf_oh trailer = qpdf_get_trailer(qpdf);
     /* The library never returns 0 */
-    assert(trailer == 16);
+    assert(trailer == 1);
     qpdf_oh root = qpdf_get_root(qpdf);
     assert(qpdf_oh_get_generation(qpdf, root) == 0);
     qpdf_oh root_from_trailer = qpdf_oh_get_key(qpdf, trailer, "/Root");
@@ -531,21 +531,6 @@ static void test24(char const* infile,
     assert(qpdf_oh_is_array(qpdf, mediabox));
     assert(qpdf_oh_get_array_n_items(qpdf, mediabox) == 4);
     qpdf_oh wrapped_mediabox = qpdf_oh_wrap_in_array(qpdf, mediabox);
-    //
-    // wrapped_media_box is properly labeled as array
-    assert(wrapped_mediabox%16 == 8);
-    qpdf_oh test =  qpdf_oh_get_array_item2(qpdf, wrapped_mediabox, 0);
-    // as a result, test is a valid other item
-    assert(test%16 == 13);
-    // and so qpdf_oh_get_array_item2 will return an error null when called with test
-    test =  qpdf_oh_get_array_item2(qpdf, test, 0);
-    assert(test%16 == 15);
-    // calling  qpdf_oh_get_array_item2 with an error null
-    // results in an unhandled error
-    test =  qpdf_oh_get_array_item2(qpdf, test, 0);
-    assert(test%16 == 14);
-
-
     assert(wrapped_mediabox != mediabox);
     assert(qpdf_oh_get_array_n_items(qpdf, wrapped_mediabox) == 4);
     for (int i = 0; i < 4; ++i)
