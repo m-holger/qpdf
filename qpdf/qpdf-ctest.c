@@ -502,10 +502,10 @@ static void test24(char const* infile,
 {
     /* This test case is designed for minimal.pdf. */
     qpdf_read(qpdf, infile, password);
-    qpdf_oh trailer = qpdf_get_trailer(qpdf);
-    /* The library never returns 0 */
-    assert(trailer == 1);
     qpdf_oh root = qpdf_get_root(qpdf);
+    /* The library never returns 0 */
+    assert(root == 1);
+    qpdf_oh trailer = qpdf_get_trailer(qpdf);
     assert(qpdf_oh_get_generation(qpdf, root) == 0);
     qpdf_oh root_from_trailer = qpdf_oh_get_key(qpdf, trailer, "/Root");
     assert(qpdf_oh_get_object_id(qpdf, root) ==
@@ -664,6 +664,23 @@ static void test24(char const* infile,
     qpdf_oh_release_all(qpdf);
     assert(! qpdf_oh_is_null(qpdf, mediabox));
     assert(! qpdf_oh_is_array(qpdf, mediabox));
+
+    /* Check calls to qpdf_get_root and qpdf_get_trailer before
+     * qpdf_data is fully initialised create warnings and return
+     * null objects.
+     */
+    qpdf_data qpdf0 = qpdf_init();
+    qpdf_oh null_oh = qpdf_get_trailer(qpdf0);
+    assert(qpdf_oh_is_null(qpdf0, null_oh));
+    null_oh = qpdf_get_root(qpdf0);
+    assert(qpdf_oh_is_null(qpdf0, null_oh));
+    qpdf_error e = 0;
+    while (qpdf_more_warnings(qpdf0))
+    {
+	    e = qpdf_next_warning(qpdf0);
+	    printf("warning: %s\n", qpdf_get_error_full_text(qpdf0, e));
+    }
+
     /* Make sure something is assigned when we exit so we check that
      * it gets properl freed.
      */

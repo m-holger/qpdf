@@ -855,14 +855,40 @@ void qpdf_oh_release_all(qpdf_data qpdf)
 
 qpdf_oh qpdf_get_trailer(qpdf_data qpdf)
 {
-    QTC::TC("qpdf", "qpdf-c called qpdf_get_trailer");
-    return new_object(qpdf, qpdf->qpdf->getTrailer());
+    qpdf_oh oh = qpdf_get_root(qpdf);
+    if (qpdf_oh_is_null(qpdf, oh))
+    {
+        QTC::TC("qpdf", "qpdf-c called qpdf_get_trailer uninit");
+        return oh;
+    }
+    else{
+        QTC::TC("qpdf", "qpdf-c called qpdf_get_trailer");
+        qpdf_oh_release(qpdf, oh);
+        return new_object(qpdf, qpdf->qpdf->getTrailer());
+    }
 }
 
 qpdf_oh qpdf_get_root(qpdf_data qpdf)
 {
+    qpdf_oh oh;
+    try
+    {
+        oh = new_object(qpdf, qpdf->qpdf->getRoot());
+    }
+    catch (std::logic_error& e)
+    {
+        QTC::TC("qpdf", "qpdf-c called qpdf_get_root uninit");
+	    qpdf->warnings.push_back(
+            QPDFExc(
+                qpdf_e_damaged_pdf,
+                "",
+                "C-API",
+                0,
+                "attempt to retrieve trailer or root before pdf has been read"));
+        return qpdf_oh_new_null(qpdf);
+    }
     QTC::TC("qpdf", "qpdf-c called qpdf_get_root");
-    return new_object(qpdf, qpdf->qpdf->getRoot());
+    return oh;
 }
 
 static bool
