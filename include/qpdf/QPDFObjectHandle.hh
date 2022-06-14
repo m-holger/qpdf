@@ -60,8 +60,12 @@ class QPDFExc;
 class Pl_QPDFTokenizer;
 class QPDFMatrix;
 
+class OH;
+
 class QPDFObjectHandle
 {
+    friend class OH;
+
   public:
     // This class is used by replaceStreamData.  It provides an
     // alternative way of associating stream data with a stream.  See
@@ -321,6 +325,22 @@ class QPDFObjectHandle
     QPDFObjectHandle(QPDFObjectHandle const&) = default;
     QPDF_DLL
     QPDFObjectHandle& operator=(QPDFObjectHandle const&) = default;
+
+    QPDF_DLL
+    virtual ~QPDFObjectHandle() = default;
+
+    // New functions to interface with OH
+
+    QPDF_DLL
+    // replaces : getKey, replaceKey
+    OH at(std::string const&);
+
+    QPDF_DLL
+    // replaces : getArrayItem, setArrayItem
+    OH at(std::size_t index);
+
+    // End new functions to interface with OH
+
     QPDF_DLL
     bool isInitialized() const;
 

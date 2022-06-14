@@ -1,0 +1,24 @@
+#!/usr/bin/env perl
+require 5.008;
+BEGIN { $^W = 1; }
+use strict;
+
+chdir("oh-basics");
+
+require TestDriver;
+
+my $td = new TestDriver('oh-basics');
+
+cleanup();
+
+$td->runtest("oh-basics",
+             {$td->COMMAND => "oh-basics"},
+             {$td->STRING => "", $td->EXIT_STATUS => 0});
+
+cleanup();
+
+$td->report(1);
+
+sub cleanup
+{
+}

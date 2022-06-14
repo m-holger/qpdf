@@ -28,6 +28,7 @@ set(libqpdf_SOURCES
   JSON.cc
   JSONHandler.cc
   MD5.cc
+  MyObjectHandle.cc
   NNTree.cc
   OffsetInputSource.cc
   PDFVersion.cc

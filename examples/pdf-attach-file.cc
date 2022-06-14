@@ -7,6 +7,8 @@
 #include <cstring>
 #include <iostream>
 
+#include <qpdf/MyObjectHandle.hh>
+
 //
 // This example attaches a file to an input file, adds a page to the
 // beginning of the file that includes a file attachment annotation,
@@ -106,10 +108,10 @@ process(
     // apdict.replaceKey("/Type", QPDFObjectHandle::newName("/XObject"));
     // apdict.replaceKey("/Subtype", QPDFObjectHandle::newName("/Form"));
     // apdict.replaceKey("/BBox", QPDFObjectHandle::parse("[ 0 0 20 20 ]"));
-    apdict.replaceKey("/Resources", "<< >>"_qpdf);
-    apdict.replaceKey("/Type", "/XObject"_qpdf);
-    apdict.replaceKey("/Subtype", "/Form"_qpdf);
-    apdict.replaceKey("/BBox", "[ 0 0 20 20 ]"_qpdf);
+    apdict.at("/Resources") = "<< >>"_qpdf;
+    apdict.at("/Type") = "/XObject"_qpdf;
+    apdict.at("/Subtype") = "/Form"_qpdf;
+    apdict.at("/BBox") = "[ 0 0 20 20 ]"_qpdf;
     auto annot = q.makeIndirectObject(QPDFObjectHandle::parse(
         &q,
         ("<<"

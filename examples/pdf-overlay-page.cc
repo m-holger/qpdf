@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <qpdf/MyObjectHandle.hh>
+
 // This program demonstrates use of form XObjects to overlay a page
 // from one file onto all pages of another file. The qpdf program's
 // --overlay and --underlay options provide a more general version of
@@ -56,7 +58,7 @@ stamp_page(char const* infile, char const* stampfile, char const* outfile)
             // original content with q...Q to the new content from the
             // page's original content.
             resources.mergeResources("<< /XObject << >> >>"_qpdf);
-            resources.getKey("/XObject").replaceKey(name, stamp_fo);
+            resources.at("/XObject").at(name) = stamp_fo;
             ph.addPageContents(
                 QPDFObjectHandle::newStream(&inpdf, "q\n"), true);
             ph.addPageContents(

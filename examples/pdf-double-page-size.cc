@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <qpdf/MyObjectHandle.hh>
+
 static char const* whoami = 0;
 
 void
@@ -41,8 +43,7 @@ doubleBoxSize(QPDFPageObjectHelper& page, char const* box_name)
         doubled.push_back(
             QPDFObjectHandle::newReal(item.getNumericValue() * 2.0, 2));
     }
-    page.getObjectHandle().replaceKey(
-        box_name, QPDFObjectHandle::newArray(doubled));
+    page.getObjectHandle().at(box_name) = QPDFObjectHandle::newArray(doubled);
 }
 
 int

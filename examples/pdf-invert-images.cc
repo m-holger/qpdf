@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <qpdf/MyObjectHandle.hh>
+
 static char const* whoami = 0;
 
 void
@@ -133,10 +135,8 @@ main(int argc, char* argv[])
             // Get all images on the page.
             for (auto& iter: page.getImages()) {
                 QPDFObjectHandle& image = iter.second;
-                QPDFObjectHandle image_dict = image.getDict();
-                QPDFObjectHandle color_space = image_dict.getKey("/ColorSpace");
-                QPDFObjectHandle bits_per_component =
-                    image_dict.getKey("/BitsPerComponent");
+                auto color_space = image.at("/ColorSpace");
+                auto bits_per_component = image.at("/BitsPerComponent");
 
                 // For our example, we can only work with images 8-bit
                 // grayscale images that we can fully decode.  Use

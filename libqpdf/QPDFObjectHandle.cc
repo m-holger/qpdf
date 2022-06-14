@@ -34,6 +34,8 @@
 #include <stdexcept>
 #include <stdlib.h>
 
+#include <qpdf/MyObjectHandle.hh>
+
 namespace
 {
     class TerminateParsing
@@ -378,6 +380,23 @@ QPDFObjectHandle::asString()
 {
     return dereference() ? obj->as<QPDF_String>() : nullptr;
 }
+
+// New functions to interface with OH
+
+OH
+QPDFObjectHandle::at(std::string const& key)
+{
+    auto parent = isStream() ? getDict() : *this;
+    return OH(parent.getKey(key), parent, key);
+}
+
+OH
+QPDFObjectHandle::at(size_t index)
+{
+    return OH(getArrayItem(QIntC::to_int(index)), *this, index);
+}
+
+// End new functions to interface with OH
 
 bool
 QPDFObjectHandle::isBool()

@@ -28,6 +28,7 @@
 #include <qpdf/QPDFValue.hh>
 #include <qpdf/Types.h>
 
+#include <limits>
 #include <string>
 
 class QPDF;
@@ -161,8 +162,9 @@ class QPDFObject
             }
         }
     };
-
     friend class ObjAccessor;
+
+    friend class OH;
 
   protected:
     virtual void
@@ -175,6 +177,11 @@ class QPDFObject
     QPDFObject(QPDFObject const&) = delete;
     QPDFObject& operator=(QPDFObject const&) = delete;
     std::shared_ptr<QPDFValue> value;
+
+    object_type_e parent_type;
+    std::shared_ptr<QPDFObjectHandle> parent;
+    std::string key{};
+    size_t index{std::numeric_limits<size_t>::max()};
 };
 
 #endif // QPDFOBJECT_HH

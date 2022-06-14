@@ -3,6 +3,8 @@
 #include <qpdf/QPDFWriter.hh>
 #include <qpdf/QUtil.hh>
 
+#include <qpdf/MyObjectHandle.hh>
+
 #include <cstring>
 #include <exception>
 #include <iostream>
@@ -125,7 +127,7 @@ SF_XORDecode::setDecodeParms(QPDFObjectHandle decode_parms)
         // false. For other examples of QPDFStreamFilter
         // implementations, look at the classes whose names start with
         // SF_ in the qpdf library implementation.
-        auto buf = decode_parms.getKey("/KeyStream").getStreamData();
+        auto buf = decode_parms.at("/KeyStream").getStreamData();
         if (buf->getSize() != 1) {
             return false;
         }
@@ -271,8 +273,7 @@ StreamReplacer::maybeReplace(
     // more sensible. For example, an image downsampler might choose
     // to replace a stream that represented an image with a high pixel
     // density.
-    auto dict = stream.getDict();
-    auto mark = dict.getKey("/DoXOR");
+    auto mark = stream.at("/DoXOR");
     if (!(mark.isBool() && mark.getBoolValue())) {
         return false;
     }
@@ -356,9 +357,8 @@ StreamReplacer::registerStream(
         // original one is modified.
         this->copied_streams[og] = stream.copyStream();
         // Update the stream dictionary with any changes.
-        auto dict = stream.getDict();
         for (auto const& k: dict_updates.getKeys()) {
-            dict.replaceKey(k, dict_updates.getKey(k));
+            stream.at(k) = dict_updates.at(k);
         }
         // Create the key stream that will be referenced from
         // /DecodeParms. We have to do this now since you can't modify
@@ -376,7 +376,7 @@ StreamReplacer::registerStream(
         // Further, if /ProtectXOR = true, we disable filtering on write
         // so that QPDFWriter will not decode the stream even though we
         // have registered a stream filter for /XORDecode.
-        auto protect = dict.getKey("/ProtectXOR");
+        auto protect = stream.at("/ProtectXOR");
         if (protect.isBool() && protect.getBoolValue()) {
             stream.setFilterOnWrite(false);
         }

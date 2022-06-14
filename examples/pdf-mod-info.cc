@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <qpdf/MyObjectHandle.hh>
+
 static char const* version = "1.1";
 static char const* whoami = 0;
 
@@ -31,7 +33,7 @@ dumpInfoDict(
 {
     QPDFObjectHandle trailer = pdf.getTrailer();
     if (trailer.hasKey("/Info")) {
-        for (auto& it: trailer.getKey("/Info").ditems()) {
+        for (auto& it: trailer.at("/Info").ditems()) {
             std::string val;
             if (it.second.isString()) {
                 val = it.second.getStringValue();
@@ -136,11 +138,10 @@ main(int argc, char* argv[])
             if (!fileinfo.isInitialized()) {
                 if (filetrailer.hasKey("/Info")) {
                     QTC::TC("examples", "pdf-mod-info has info");
-                    fileinfo = filetrailer.getKey("/Info");
+                    fileinfo = filetrailer.at("/Info");
                 } else {
                     QTC::TC("examples", "pdf-mod-info file no info");
-                    fileinfo = QPDFObjectHandle::newDictionary();
-                    filetrailer.replaceKey("/Info", fileinfo);
+                    fileinfo = filetrailer.at("/Info") = "<<>>"_qpdf;
                 }
             }
             if (it.second == "") {
@@ -148,7 +149,7 @@ main(int argc, char* argv[])
             } else {
                 QPDFObjectHandle elt = fileinfo.newString(it.second);
                 elt.makeDirect();
-                fileinfo.replaceKey(it.first, elt);
+                fileinfo.at(it.first) = elt;
             }
         }
         QPDFWriter w(file, fl_tmp.c_str());

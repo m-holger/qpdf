@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <qpdf/MyObjectHandle.hh>
+
 static char const* whoami = 0;
 
 // This is a simple StreamDataProvider that writes image data for an
@@ -174,49 +176,40 @@ add_page(
     size_t width = p->getWidth();
     size_t height = p->getHeight();
     QPDFObjectHandle image = QPDFObjectHandle::newStream(&pdf);
-    auto image_dict =
-        // line-break
-        "<<"
-        " /Type /XObject"
-        " /Subtype /Image"
-        " /BitsPerComponent 8"
-        ">>"_qpdf;
-    image_dict.replaceKey("/ColorSpace", newName(color_space));
-    image_dict.replaceKey("/Width", newInteger(width));
-    image_dict.replaceKey("/Height", newInteger(height));
-    image.replaceDict(image_dict);
+    image.replaceDict("<<"
+                      " /Type /XObject"
+                      " /Subtype /Image"
+                      " /BitsPerComponent 8"
+                      ">>"_qpdf);
+    image.at("/ColorSpace") = newName(color_space);
+    image.at("/Width") = newInteger(width);
+    image.at("/Height") = newInteger(height);
 
     // Provide the stream data.
     image.replaceStreamData(
         provider, QPDFObjectHandle::parse(filter), QPDFObjectHandle::newNull());
 
+    // Create the page dictionary
+    auto page = pdf.makeIndirectObject("<<"
+                                       " /Type /Page"
+                                       " /MediaBox [0 0 612 392]"
+                                       " /Resources <<"
+                                       "   /ProcSet [/PDF /Text /ImageC]"
+                                       "   /Font <<>>"
+                                       "   /XObject <<>>"
+                                       " >>"
+                                       ">>"_qpdf);
+
     // Create direct objects as needed by the page dictionary.
-    QPDFObjectHandle procset = "[/PDF /Text /ImageC]"_qpdf;
-
-    QPDFObjectHandle rfont = QPDFObjectHandle::newDictionary();
-    rfont.replaceKey("/F1", font);
-
-    QPDFObjectHandle xobject = QPDFObjectHandle::newDictionary();
-    xobject.replaceKey("/Im1", image);
-
-    QPDFObjectHandle resources = QPDFObjectHandle::newDictionary();
-    resources.replaceKey("/ProcSet", procset);
-    resources.replaceKey("/Font", rfont);
-    resources.replaceKey("/XObject", xobject);
+    auto resources = page.at("/Resources");
+    resources.at("/Font").replaceKey("/F1", font);
+    resources.at("/XObject").replaceKey("/Im1", image);
 
     // Create the page content stream
     QPDFObjectHandle contents =
         createPageContents(pdf, color_space + " with filter " + filter);
 
-    // Create the page dictionary
-    QPDFObjectHandle page = pdf.makeIndirectObject("<<"
-                                                   " /Type /Page"
-                                                   " /MediaBox [0 0 612 392]"
-                                                   ">>"_qpdf);
     page.replaceKey("/Contents", contents);
-    page.replaceKey("/Resources", resources);
-
-    // Add the page to the PDF file
     dh.addPage(page, false);
 }
 
@@ -268,9 +261,8 @@ check(
             desired_filter = "/FlateDecode";
         }
         QPDFObjectHandle image = images.begin()->second;
-        QPDFObjectHandle image_dict = image.getDict();
-        QPDFObjectHandle color_space = image_dict.getKey("/ColorSpace");
-        QPDFObjectHandle filter = image_dict.getKey("/Filter");
+        auto color_space = image.at("/ColorSpace");
+        auto filter = image.at("/Filter");
         bool this_errors = false;
         if (!filter.isNameAndEquals(desired_filter)) {
             this_errors = errors = true;

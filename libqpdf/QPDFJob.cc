@@ -37,6 +37,8 @@
 
 #include <qpdf/auto_job_schema.hh> // JOB_SCHEMA_DATA
 
+#include <qpdf/MyObjectHandle.hh>
+
 namespace
 {
     class ImageOptimizer: public QPDFObjectHandle::StreamDataProvider
@@ -127,10 +129,9 @@ std::shared_ptr<Pipeline>
 ImageOptimizer::makePipeline(std::string const& description, Pipeline* next)
 {
     std::shared_ptr<Pipeline> result;
-    QPDFObjectHandle dict = image.getDict();
-    QPDFObjectHandle w_obj = dict.getKey("/Width");
-    QPDFObjectHandle h_obj = dict.getKey("/Height");
-    QPDFObjectHandle colorspace_obj = dict.getKey("/ColorSpace");
+    auto w_obj = image.at("/Width");
+    auto h_obj = image.at("/Height");
+    auto colorspace_obj = image.at("/ColorSpace");
     if (!(w_obj.isNumber() && h_obj.isNumber())) {
         if (!description.empty()) {
             o.doIfVerbose([&](Pipeline& v, std::string const& prefix) {
@@ -141,7 +142,7 @@ ImageOptimizer::makePipeline(std::string const& description, Pipeline* next)
         }
         return result;
     }
-    QPDFObjectHandle components_obj = dict.getKey("/BitsPerComponent");
+    auto components_obj = image.at("/BitsPerComponent");
     if (!(components_obj.isInteger() && (components_obj.getIntValue() == 8))) {
         QTC::TC("qpdf", "QPDFJob image optimize bits per component");
         if (!description.empty()) {
@@ -231,6 +232,7 @@ ImageOptimizer::evaluate(std::string const& description)
     if (!image.pipeStreamData(p.get(), 0, qpdf_dl_specialized)) {
         return false;
     }
+
     long long orig_length = image.getDict().getKey("/Length").getIntValue();
     if (c.getCount() >= orig_length) {
         QTC::TC("qpdf", "QPDFJob image optimize no shrink");
@@ -969,9 +971,8 @@ QPDFJob::doShowPages(QPDF& pdf)
                 for (auto const& iter2: images) {
                     std::string const& name = iter2.first;
                     QPDFObjectHandle image = iter2.second;
-                    QPDFObjectHandle dict = image.getDict();
-                    int width = dict.getKey("/Width").getIntValueAsInt();
-                    int height = dict.getKey("/Height").getIntValueAsInt();
+                    int width = image.at("/Width").getIntValueAsInt();
+                    int height = image.at("/Height").getIntValueAsInt();
                     cout << "    " << name << ": " << image.unparse() << ", "
                          << width << " x " << height << "\n";
                 }
@@ -1136,14 +1137,14 @@ QPDFJob::doJSONObjectinfo(Pipeline* p, bool& first, QPDF& pdf)
             j_stream.addDictionaryMember("is", JSON::makeBool(is_stream));
             j_stream.addDictionaryMember(
                 "length",
-                (is_stream ? obj.getDict().getKey("/Length").getJSON(
-                                 this->m->json_version, true)
-                           : JSON::makeNull()));
+                (is_stream
+                     ? obj.at("/Length").getJSON(this->m->json_version, true)
+                     : JSON::makeNull()));
             j_stream.addDictionaryMember(
                 "filter",
-                (is_stream ? obj.getDict().getKey("/Filter").getJSON(
-                                 this->m->json_version, true)
-                           : JSON::makeNull()));
+                (is_stream
+                     ? obj.at("/Filter").getJSON(this->m->json_version, true)
+                     : JSON::makeNull()));
             JSON::writeDictionaryItem(
                 p, first_object, obj.unparse(), j_details, 1);
         }
@@ -1171,25 +1172,23 @@ QPDFJob::doJSONPages(Pipeline* p, bool& first, QPDF& pdf)
             JSON j_image = j_images.addArrayElement(JSON::makeDictionary());
             j_image.addDictionaryMember("name", JSON::makeString(iter2.first));
             QPDFObjectHandle image = iter2.second;
-            QPDFObjectHandle dict = image.getDict();
+            // QPDFObjectHandle dict = image.getDict();
             j_image.addDictionaryMember(
                 "object", image.getJSON(this->m->json_version));
             j_image.addDictionaryMember(
-                "width", dict.getKey("/Width").getJSON(this->m->json_version));
+                "width", image.at("/Width").getJSON(this->m->json_version));
             j_image.addDictionaryMember(
-                "height",
-                dict.getKey("/Height").getJSON(this->m->json_version));
+                "height", image.at("/Height").getJSON(this->m->json_version));
             j_image.addDictionaryMember(
                 "colorspace",
-                dict.getKey("/ColorSpace").getJSON(this->m->json_version));
+                image.at("/ColorSpace").getJSON(this->m->json_version));
             j_image.addDictionaryMember(
                 "bitspercomponent",
-                dict.getKey("/BitsPerComponent")
-                    .getJSON(this->m->json_version));
-            QPDFObjectHandle filters = dict.getKey("/Filter").wrapInArray();
+                image.at("/BitsPerComponent").getJSON(this->m->json_version));
+            QPDFObjectHandle filters = image.at("/Filter").wrapInArray();
             j_image.addDictionaryMember(
                 "filter", filters.getJSON(this->m->json_version));
-            QPDFObjectHandle decode_parms = dict.getKey("/DecodeParms");
+            QPDFObjectHandle decode_parms = image.at("/DecodeParms");
             QPDFObjectHandle dp_array;
             if (decode_parms.isArray()) {
                 dp_array = decode_parms;
@@ -2098,8 +2097,7 @@ QPDFJob::doUnderOverlayForPage(
     QPDFObjectHandle resources = dest_page.getAttribute("/Resources", true);
     if (!resources.isDictionary()) {
         QTC::TC("qpdf", "QPDFJob overlay page with no resources");
-        resources = dest_page.getObjectHandle().replaceKeyAndGet(
-            "/Resources", QPDFObjectHandle::newDictionary());
+        resources = dest_page.getObjectHandle().at("/Resources") = "<<>>"_qpdf;
     }
     for (int from_pageno: pagenos[pageno]) {
         doIfVerbose([&](Pipeline& v, std::string const& prefix) {
@@ -2126,9 +2124,9 @@ QPDFJob::doUnderOverlayForPage(
             from_page, cm, dest_afdh, make_afdh(from_page));
         if (!new_content.empty()) {
             resources.mergeResources("<< /XObject << >> >>"_qpdf);
-            auto xobject = resources.getKey("/XObject");
+            auto xobject = resources.at("/XObject");
             if (xobject.isDictionary()) {
-                xobject.replaceKey(name, fo[from_pageno]);
+                xobject.at(name) = fo[from_pageno];
             }
             ++min_suffix;
             content += new_content;
@@ -2223,9 +2221,9 @@ QPDFJob::handleUnderOverlay(QPDF& pdf)
 static void
 maybe_set_pagemode(QPDF& pdf, std::string const& pagemode)
 {
-    auto root = pdf.getRoot();
-    if (root.getKey("/PageMode").isNull()) {
-        root.replaceKey("/PageMode", QPDFObjectHandle::newName(pagemode));
+    auto pm = pdf.getRoot().at("/PageMode");
+    if (pm.isNull()) {
+        pm = QPDFObjectHandle::newName(pagemode);
     }
 }
 
@@ -2370,8 +2368,8 @@ QPDFJob::handleTransformations(QPDF& pdf)
                         QPDFObjectHandle::newName("/DCTDecode"),
                         QPDFObjectHandle::newNull());
                     ph.getAttribute("/Resources", true)
-                        .getKey("/XObject")
-                        .replaceKey(name, new_image);
+                        .at("/XObject")
+                        .at(name) = new_image;
                 }
             }
         }
@@ -2455,8 +2453,8 @@ QPDFJob::shouldRemoveUnreferencedResources(QPDF& pdf)
             continue;
         }
         nodes_seen.insert(og);
-        QPDFObjectHandle dict = node.isStream() ? node.getDict() : node;
-        QPDFObjectHandle kids = dict.getKey("/Kids");
+        auto dict = node.isStream() ? node.getDict() : node;
+        auto kids = node.at("/Kids");
         if (kids.isArray()) {
             // This is a non-leaf node.
             if (dict.hasKey("/Resources")) {
@@ -2796,9 +2794,8 @@ QPDFJob::handlePageSpecs(
         }
     }
     if (any_page_labels) {
-        QPDFObjectHandle page_labels = QPDFObjectHandle::newDictionary();
-        page_labels.replaceKey("/Nums", QPDFObjectHandle::newArray(new_labels));
-        pdf.getRoot().replaceKey("/PageLabels", page_labels);
+        auto page_labels = pdf.getRoot().at("/PageLabels") = "<<>>"_qpdf;
+        page_labels.at("/Nums") = QPDFObjectHandle::newArray(new_labels);
     }
 
     // Delete page objects for unused page in primary. This prevents
@@ -2820,7 +2817,7 @@ QPDFJob::handlePageSpecs(
     }
     // Remove unreferenced form fields
     if (this_afdh->hasAcroForm()) {
-        auto acroform = pdf.getRoot().getKey("/AcroForm");
+        auto acroform = pdf.getRoot().at("/AcroForm");
         auto fields = acroform.getKey("/Fields");
         if (fields.isArray()) {
             auto new_fields = QPDFObjectHandle::newArray();
@@ -2834,10 +2831,10 @@ QPDFJob::handlePageSpecs(
             }
             if (new_fields.getArrayNItems() > 0) {
                 QTC::TC("qpdf", "QPDFJob keep some fields in pages");
-                acroform.replaceKey("/Fields", new_fields);
+                acroform.at("/Fields") = new_fields;
             } else {
                 QTC::TC("qpdf", "QPDFJob no more fields in pages");
-                pdf.getRoot().removeKey("/AcroForm");
+                pdf.getRoot().at("/AcroForm") = "null"_qpdf;
             }
         }
     }
@@ -3246,9 +3243,8 @@ QPDFJob::doSplitPages(QPDF& pdf, bool& warnings)
                 QIntC::to_longlong(last - 1),
                 0,
                 labels);
-            QPDFObjectHandle page_labels = QPDFObjectHandle::newDictionary();
-            page_labels.replaceKey("/Nums", QPDFObjectHandle::newArray(labels));
-            outpdf.getRoot().replaceKey("/PageLabels", page_labels);
+            auto page_labels = outpdf.getRoot().at("/PageLabels") = "<<>>"_qpdf;
+            page_labels.at("/Nums") = QPDFObjectHandle::newArray(labels);
         }
         std::string page_range =
             QUtil::uint_to_string(first, QIntC::to_int(pageno_len));

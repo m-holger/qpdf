@@ -1,4 +1,5 @@
 set(EXAMPLE_CXX_PROGRAMS
+  oh-basics
   pdf-attach-file
   pdf-bookmarks
   pdf-count-strings

@@ -6,6 +6,8 @@
 #include <cstring>
 #include <iostream>
 
+#include <qpdf/MyObjectHandle.hh>
+
 static char const* whoami = 0;
 
 void
@@ -50,8 +52,7 @@ main(int argc, char* argv[])
     // Create a dictionary off the root where we will hang our name
     // and number tree.
     auto root = qpdf.getRoot();
-    auto example = QPDFObjectHandle::newDictionary();
-    root.replaceKey("/Example", example);
+    auto example = root.at("/Example") = "<<>>"_qpdf;
 
     // Create a name tree, attach it to the file, and add some items.
     auto name_tree = QPDFNameTreeObjectHelper::newEmpty(qpdf);
