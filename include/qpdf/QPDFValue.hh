@@ -43,6 +43,11 @@ class QPDFValue
     virtual std::shared_ptr<QPDFObject> shallowCopy() = 0;
     virtual std::string unparse() = 0;
     virtual JSON getJSON(int json_version) = 0;
+    virtual void
+    assign2(QPDFObject* a, QPDFObjectHandle& value)
+    {
+        // TODO : throw exception if called for non-containers
+    }
 
     virtual void
     setDescription(QPDF* qpdf, std::string const& description)

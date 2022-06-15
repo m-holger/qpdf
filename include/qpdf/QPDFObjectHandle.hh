@@ -65,6 +65,7 @@ class OH;
 class QPDFObjectHandle
 {
     friend class OH;
+    friend class QPDFObject;
 
   public:
     // This class is used by replaceStreamData.  It provides an

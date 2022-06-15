@@ -64,6 +64,12 @@ QPDF_Array::getJSON(int json_version)
     return j;
 }
 
+void
+QPDF_Array::assign2(QPDFObject* a, QPDFObjectHandle& oh)
+{
+    setItem(QIntC::to_int(a->index), oh);
+}
+
 int
 QPDF_Array::getNItems() const
 {

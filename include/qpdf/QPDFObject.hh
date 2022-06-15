@@ -91,6 +91,8 @@ class QPDFObject
         return value->type_code;
     }
 
+    void assign2(QPDFObjectHandle& oh);
+
     // Return a string literal that describes the type, useful for
     // debugging and testing
     char const*
@@ -178,8 +180,10 @@ class QPDFObject
     QPDFObject& operator=(QPDFObject const&) = delete;
     std::shared_ptr<QPDFValue> value;
 
-    object_type_e parent_type;
-    std::shared_ptr<QPDFObjectHandle> parent;
+    friend class QPDF_Array;
+    friend class QPDF_Dictionary;
+
+    std::shared_ptr<QPDFObject> parent;
     std::string key{};
     size_t index{std::numeric_limits<size_t>::max()};
 };

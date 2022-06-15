@@ -58,6 +58,12 @@ QPDF_Dictionary::getJSON(int json_version)
     return j;
 }
 
+void
+QPDF_Dictionary::assign2(QPDFObject* a, QPDFObjectHandle& oh)
+{
+    replaceKey(a->key, oh);
+}
+
 bool
 QPDF_Dictionary::hasKey(std::string const& key)
 {

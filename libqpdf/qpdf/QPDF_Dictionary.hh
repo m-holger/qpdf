@@ -18,6 +18,8 @@ class QPDF_Dictionary: public QPDFValue
     virtual std::string unparse();
     virtual JSON getJSON(int json_version);
 
+    virtual void assign2(QPDFObject* a, QPDFObjectHandle& oh);
+
     // hasKey() and getKeys() treat keys with null values as if they
     // aren't there.  getKey() returns null for the value of a
     // non-existent key.  This is as per the PDF spec.

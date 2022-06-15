@@ -18,6 +18,8 @@ class QPDF_Array: public QPDFValue
     virtual std::string unparse();
     virtual JSON getJSON(int json_version);
 
+    virtual void assign2(QPDFObject* a, QPDFObjectHandle& oh);
+
     int getNItems() const;
     QPDFObjectHandle getItem(int n) const;
     void getAsVector(std::vector<QPDFObjectHandle>&) const;

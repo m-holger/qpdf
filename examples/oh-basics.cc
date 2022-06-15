@@ -31,6 +31,15 @@ static char const* whoami = 0;
 // alongside the existing QPDFObjectHandle and thus allows a smooth and
 // gradual migration.
 
+// The next steps are:
+
+// - decide how to extend this for indirect objects (who by definition don't
+//   have a single parent).
+
+// - implement at and size in QPDFObject.
+
+// - implement OH::Int as an example of a typesafe handle.
+
 typedef std::vector<int> Box;
 typedef std::map<std::string, Box> Page;
 typedef std::vector<Page> Kids;
