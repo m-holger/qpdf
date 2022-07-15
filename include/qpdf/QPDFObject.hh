@@ -97,7 +97,6 @@ class QPDFObject
     {
         return value->getTypeName();
     }
-
     void
     setDescription(QPDF* qpdf, std::string const& description)
     {

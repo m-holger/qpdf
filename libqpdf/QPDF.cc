@@ -231,7 +231,6 @@ QPDF::Members::Members() :
     immediate_copy_from(false),
     in_parse(false),
     parsed(false),
-    ever_replaced_objects(false),
     first_xref_item_offset(0),
     uncompressed_after_compressed(false)
 {
@@ -1942,28 +1941,6 @@ QPDF::readObjectAtOffset(
     return oh;
 }
 
-bool
-QPDF::objectChanged(QPDFObjGen const& og, std::shared_ptr<QPDFObject>& osp)
-{
-    // See if the object cached at og, if any, is the one passed in.
-    // QPDFObjectHandle uses this to detect outdated handles to
-    // replaced or swapped objects. This is a somewhat expensive check
-    // because it happens with every dereference of a
-    // QPDFObjectHandle. To reduce the hit somewhat, short-circuit the
-    // check if we never called a function that replaces an object
-    // already in cache. It is important for functions that do this to
-    // set ever_replaced_objects = true.
-
-    if (!this->m->ever_replaced_objects) {
-        return false;
-    }
-    auto c = this->m->obj_cache.find(og);
-    if (c == this->m->obj_cache.end()) {
-        return true;
-    }
-    return (c->second.object.get() != osp.get());
-}
-
 std::shared_ptr<QPDFObject>
 QPDF::resolve(QPDFObjGen const& og)
 {
@@ -2230,8 +2207,8 @@ QPDF::replaceObject(QPDFObjGen const& og, QPDFObjectHandle oh)
     resolve(og);
 
     // Replace the object in the object cache
-    this->m->ever_replaced_objects = true;
-    this->m->obj_cache[og] = ObjCache(oh, -1, -1);
+    this->m->obj_cache[og].object->assign(
+        QPDFObjectHandle::ObjAccessor::getObject(oh));
 }
 
 void
@@ -2555,10 +2532,7 @@ QPDF::swapObjects(QPDFObjGen const& og1, QPDFObjGen const& og2)
     // cache.
     resolve(og1);
     resolve(og2);
-    ObjCache t = this->m->obj_cache[og1];
-    this->m->ever_replaced_objects = true;
-    this->m->obj_cache[og1] = this->m->obj_cache[og2];
-    this->m->obj_cache[og2] = t;
+    m->obj_cache[og1].object->swapWith(m->obj_cache[og2].object);
 }
 
 unsigned long long
