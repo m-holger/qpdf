@@ -143,8 +143,13 @@ QPDF_Stream::create(
     qpdf_offset_t offset,
     size_t length)
 {
-    return do_create(
+    auto obj = do_create(
         new QPDF_Stream(qpdf, objid, generation, stream_dict, offset, length));
+    obj->setDescription(
+        qpdf,
+        qpdf->getFilename() + ", stream object " + QUtil::int_to_string(objid) +
+            " " + QUtil::int_to_string(generation));
+    return obj;
 }
 
 std::shared_ptr<QPDFObject>
@@ -300,10 +305,10 @@ QPDF_Stream::getStreamJSON(
     return result;
 }
 
-QPDFObject::object_type_e
+qpdf_object_type_e
 QPDF_Stream::getTypeCode() const
 {
-    return QPDFObject::ot_stream;
+    return ::ot_stream;
 }
 
 char const*
@@ -315,7 +320,7 @@ QPDF_Stream::getTypeName() const
 void
 QPDF_Stream::setDescription(QPDF* qpdf, std::string const& description)
 {
-    this->QPDFObject::setDescription(qpdf, description);
+    this->QPDFValue::setDescription(qpdf, description);
     setDictDescription();
 }
 
