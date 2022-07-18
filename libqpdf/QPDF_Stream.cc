@@ -115,6 +115,7 @@ QPDF_Stream::QPDF_Stream(
     QPDFObjectHandle stream_dict,
     qpdf_offset_t offset,
     size_t length) :
+    QPDFValue(::ot_stream, "stream"),
     qpdf(qpdf),
     objid(objid),
     generation(generation),
@@ -303,18 +304,6 @@ QPDF_Stream::getStreamJSON(
     }
     result.addDictionaryMember("dict", dict.getJSON(json_version));
     return result;
-}
-
-qpdf_object_type_e
-QPDF_Stream::getTypeCode() const
-{
-    return ::ot_stream;
-}
-
-char const*
-QPDF_Stream::getTypeName() const
-{
-    return "stream";
 }
 
 void
