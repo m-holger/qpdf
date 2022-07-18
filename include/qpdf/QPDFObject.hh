@@ -100,7 +100,11 @@ class QPDFObject
     void
     setDescription(QPDF* qpdf, std::string const& description)
     {
-        return value->setDescription(qpdf, description);
+        value->owning_qpdf = qpdf;
+        value->object_description = description;
+        if (value->type_code == ::ot_stream) {
+            value->setDescription(qpdf, description);
+        }
     }
     bool
     getDescription(QPDF*& qpdf, std::string& description)

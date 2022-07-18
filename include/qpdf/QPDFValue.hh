@@ -47,8 +47,8 @@ class QPDFValue
     virtual void
     setDescription(QPDF* qpdf, std::string const& description)
     {
-        owning_qpdf = qpdf;
-        object_description = description;
+        // When implementing the method for a subclass, ensure
+        // QPDFObject::setDescription is updated.
     }
     bool
     getDescription(QPDF*& qpdf, std::string& description)

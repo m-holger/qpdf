@@ -309,7 +309,6 @@ QPDF_Stream::getStreamJSON(
 void
 QPDF_Stream::setDescription(QPDF* qpdf, std::string const& description)
 {
-    this->QPDFValue::setDescription(qpdf, description);
     setDictDescription();
 }
 
