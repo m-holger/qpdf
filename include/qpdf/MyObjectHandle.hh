@@ -11,12 +11,6 @@ class OH: public QPDFObjectHandle
 {
   public:
     QPDF_DLL
-    OH(QPDFObjectHandle oh, QPDFObjectHandle parent, std::string key);
-
-    QPDF_DLL
-    OH(QPDFObjectHandle oh, QPDFObjectHandle parent, size_t index);
-
-    QPDF_DLL
     OH(QPDFObjectHandle&);
 
     QPDF_DLL
@@ -33,6 +27,11 @@ class OH: public QPDFObjectHandle
 
     QPDF_DLL
     OH& operator=(OH&&);
+
+    // OH inherits the at() method from QPDFObjectHandle
+
+    QPDF_DLL
+    size_t size() const;
 };
 
 #endif // MYOBJECTHANDLE_HH

@@ -66,6 +66,8 @@ class QPDFObjectHandle
 {
     friend class OH;
     friend class QPDFObject;
+    friend class QPDF_Array;
+    friend class QPDF_Dictionary;
 
   public:
     // This class is used by replaceStreamData.  It provides an
@@ -1637,7 +1639,7 @@ class QPDFObjectHandle
         bool cross_indirect,
         bool first_level_only,
         bool stop_at_streams);
-    void shallowCopyInternal(QPDFObjectHandle& oh, bool first_level_only);
+    QPDFObjectHandle shallowCopy(bool first_level_only);
     void releaseResolved();
     std::string getObjGenAsStr() const;
     static void setObjectDescriptionFromInput(

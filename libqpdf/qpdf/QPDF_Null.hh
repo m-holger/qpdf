@@ -11,6 +11,7 @@ class QPDF_Null: public QPDFValue
     virtual std::shared_ptr<QPDFObject> shallowCopy();
     virtual std::string unparse();
     virtual JSON getJSON(int json_version);
+    virtual size_t size() const;
 
   private:
     QPDF_Null();

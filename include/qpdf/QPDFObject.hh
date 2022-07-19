@@ -91,8 +91,6 @@ class QPDFObject
         return value->type_code;
     }
 
-    void assign2(QPDFObjectHandle& oh);
-
     // Return a string literal that describes the type, useful for
     // debugging and testing
     char const*
@@ -149,6 +147,16 @@ class QPDFObject
         return dynamic_cast<T*>(value.get());
     }
 
+    void assign2(QPDFObjectHandle& value);
+    QPDFObjectHandle at(size_t index);
+    QPDFObjectHandle at(std::string const& key);
+
+    size_t
+    size() const
+    {
+        return value->size();
+    }
+
     // Accessor to give specific access to non-public methods
     class ObjAccessor
     {
@@ -185,7 +193,7 @@ class QPDFObject
     friend class QPDF_Array;
     friend class QPDF_Dictionary;
 
-    std::shared_ptr<QPDFObject> parent;
+    std::shared_ptr<QPDFObject> parent{nullptr};
     std::string key{};
     size_t index{std::numeric_limits<size_t>::max()};
 };

@@ -35,6 +35,9 @@ class QPDF_Array: public QPDFValue
     // API. Otherwise, these would be wrapped in accessor classes.
     void addExplicitElementsToList(std::list<QPDFObjectHandle>&) const;
 
+    virtual QPDFObjectHandle at(size_t index);
+    virtual size_t size() const;
+
   protected:
     virtual void releaseResolved();
 

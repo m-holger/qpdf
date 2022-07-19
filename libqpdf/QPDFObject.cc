@@ -20,3 +20,31 @@ QPDFObject::assign2(QPDFObjectHandle& oh)
     key = "";
     index = std::numeric_limits<size_t>::max();
 }
+
+QPDFObjectHandle
+QPDFObject::at(size_t index)
+{
+    if (index >= size()) {
+        throw std::runtime_error("index error");
+    }
+    auto tc = value->type_code;
+    if (tc == ot_array) {
+        auto oh = value->at(index);
+        oh.obj->parent = self.lock();
+        oh.obj->key = "";
+        oh.obj->index = index;
+        return oh;
+    } else {
+        return self.lock();
+    }
+}
+QPDFObjectHandle
+QPDFObject::at(std::string const& key)
+{
+    auto result = value->at(key);
+    auto obj = result.obj;
+    obj->parent = self.lock();
+    obj->key = key;
+    obj->index = std::numeric_limits<size_t>::max();
+    return result;
+}

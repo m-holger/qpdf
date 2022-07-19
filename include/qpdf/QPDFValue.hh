@@ -48,6 +48,9 @@ class QPDFValue
     {
         // TODO : throw exception if called for non-containers
     }
+    virtual QPDFObjectHandle at(size_t index);
+    virtual QPDFObjectHandle at(std::string const& key);
+    virtual size_t size() const;
 
     virtual void
     setDescription(QPDF* qpdf, std::string const& description)

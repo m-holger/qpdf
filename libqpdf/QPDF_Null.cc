@@ -28,3 +28,9 @@ QPDF_Null::getJSON(int json_version)
 {
     return JSON::makeNull();
 }
+
+size_t
+QPDF_Null::size() const
+{
+    return 0;
+}

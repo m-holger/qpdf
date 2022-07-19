@@ -12,22 +12,6 @@ OH::OH(QPDFObjectHandle&& oh) :
 {
 }
 
-OH::OH(QPDFObjectHandle oh, QPDFObjectHandle parent, std::string key) :
-    QPDFObjectHandle(oh)
-{
-    obj->parent = parent.obj;
-    obj->key = key;
-    obj->index = std::numeric_limits<size_t>::max();
-}
-
-OH::OH(QPDFObjectHandle oh, QPDFObjectHandle parent, size_t index) :
-    QPDFObjectHandle(oh)
-{
-    obj->parent = parent.obj;
-    obj->key = "";
-    obj->index = index;
-}
-
 OH::OH(OH const& other) :
     QPDFObjectHandle(other)
 {
@@ -68,4 +52,10 @@ OH::operator=(OH&& other)
     obj = val.obj;
 
     return *this;
+}
+
+size_t
+OH::size() const
+{
+    return obj->size();
 }

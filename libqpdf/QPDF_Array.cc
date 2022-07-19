@@ -4,6 +4,8 @@
 #include <qpdf/QUtil.hh>
 #include <stdexcept>
 
+#include <qpdf/MyObjectHandle.hh>
+
 QPDF_Array::QPDF_Array(std::vector<QPDFObjectHandle> const& v) :
     QPDFValue(::ot_array, "array")
 {
@@ -141,4 +143,16 @@ QPDF_Array::addExplicitElementsToList(std::list<QPDFObjectHandle>& l) const
     for (auto const& iter: this->elements) {
         l.push_back(iter.second);
     }
+}
+
+QPDFObjectHandle
+QPDF_Array::at(size_t index)
+{
+    return elements.at(index);
+}
+
+size_t
+QPDF_Array::size() const
+{
+    return elements.size();
 }
