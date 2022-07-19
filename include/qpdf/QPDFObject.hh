@@ -180,6 +180,8 @@ class QPDFObject
     QPDFObject& operator=(QPDFObject const&) = delete;
     std::shared_ptr<QPDFValue> value;
 
+    std::weak_ptr<QPDFObject> self;
+
     friend class QPDF_Array;
     friend class QPDF_Dictionary;
 
