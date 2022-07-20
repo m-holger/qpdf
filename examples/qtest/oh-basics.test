@@ -13,7 +13,12 @@ cleanup();
 
 $td->runtest("oh-basics",
              {$td->COMMAND => "oh-basics"},
-             {$td->STRING => "", $td->EXIT_STATUS => 0});
+             {$td->STRING => "0 :  1 ; 
+1 :  /Two ; 
+2 :  << /A 3 /B 4 >> ; 
+3 : 
+4 :  5 ;  6 ; 
+", $td->EXIT_STATUS => 0});
 
 cleanup();
 

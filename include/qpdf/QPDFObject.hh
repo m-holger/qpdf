@@ -190,10 +190,11 @@ class QPDFObject
 
     std::weak_ptr<QPDFObject> self;
 
+  private:
     friend class QPDF_Array;
     friend class QPDF_Dictionary;
 
-    std::shared_ptr<QPDFObject> parent{nullptr};
+    std::shared_ptr<QPDFObject> parent;
     std::string key{};
     size_t index{std::numeric_limits<size_t>::max()};
 };

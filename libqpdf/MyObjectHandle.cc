@@ -12,16 +12,6 @@ OH::OH(QPDFObjectHandle&& oh) :
 {
 }
 
-OH::OH(OH const& other) :
-    QPDFObjectHandle(other)
-{
-}
-
-OH::OH(OH&& other) :
-    QPDFObjectHandle(other)
-{
-}
-
 OH&
 OH::operator=(OH& other)
 {
@@ -54,8 +44,27 @@ OH::operator=(OH&& other)
     return *this;
 }
 
+OH::iterator
+OH::begin()
+{
+    return iterator(*this, 0);
+}
+
+OH::iterator
+OH::end()
+{
+    return iterator(*this, size());
+}
+
 size_t
 OH::size() const
 {
     return obj->size();
+}
+
+OH::iterator::iterator(OH& oh, size_t index) :
+    oh(oh),
+    index(index),
+    value(oh)
+{
 }

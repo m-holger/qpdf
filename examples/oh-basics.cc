@@ -13,54 +13,48 @@
 
 static char const* whoami = 0;
 
-// This example is part of my experiments with a new version of
-// QPDFObjectHandle.
+/*
+This example is part of my experiments with a new version of QPDFObjectHandle.
 
-// As a first step, it provides a toy implementation of the
-// QPDFObjectHandle::at method.
+As a first step, it provides a toy implementation of the QPDFObjectHandle::at
+method.
 
-// The cref_demo procedure demonstrates that:
-// - the behaviour of at is consistent with the standard library.
-// - OH behaves like a reference.
-// - at prevents an object from being inserted into a container more than
-//   once.
+The cref_demo procedure at the bottom of this file demonstrates that:
+- the behaviour of at is consistent with the standard library.
+- OH behaves like a reference.
+- at prevents an object from being inserted into a container more than
+    once.
 
-// As part of the experiment, a number of calls to getKey, getArrayItem,
-// replaceKey, etc have been replaced with calls to at in QPDFJob and
-// various example programs in order to demonstrates that OH can be used
-// alongside the existing QPDFObjectHandle and thus allows a smooth and
-// gradual migration.
+As part of the experiment, a number of calls to getKey, getArrayItem,
+replaceKey, etc have been replaced with calls to at in QPDFJob and
+various example programs in order to demonstrates that OH can be used
+alongside the existing QPDFObjectHandle and thus allows a smooth and
+gradual migration.
 
-// The next steps are:
+QPDFObject has been modified to keep track of an objects parent. This is purely
+for the purposes of this experiment and as it stands does not work reliably
+in code that uses a mixture of OH and QPDFObjectHandle methods. It only  works
+with direct objects. The experimental code makes extensive use of friend
+classes.
 
-// - decide how to extend this for indirect objects (who by definition don't
-//   have a single parent).
 
-// - implement at and size in QPDFObject.
 
-// - implement OH::Int as an example of a typesafe handle.
+at(index) and size methods
+--------------------------
 
-// QPDFObject has been modified to keep track of an objects parent. This is
-// purely for the purposes of this experiment and as it stands does not work
-// reliably in code that uses a mixture of OH and QPDFObjectHandle methods. It
-// only  works with direct objects. The experimental code makes extensive use of
-// friend classes.
+The behavior of these methods is based on two observations:
 
-// at(index) and size methods
-// --------------------------
+- It is common for entries in PDF dictionary objects to be optional.
 
-// The behavior of these methods is based on two observations:
+- It is common for entries that allow for a list of (e.g Action) objects
+  to also allow a single object of the (same) type, as well as maybe
+  a null object.
 
-// - It is common for entries in PDF dictionary objects to be optional.
-
-// - It is common for entries that allow for a list of (e.g Action) objects
-//   to also allow a single object of the (same) type, as well as maybe
-//   a null object.
-
-// To allow for this, the at and size methods are implemented for all object
-// types. For the purpose of these methods, the null object is treated as an
-// empty array, and all other non-array types, including dictionary, are treated
-// as a single element array.
+To allow for this, the at and size methods are implemented for all object
+types. For the purpose of these methods, the null object is treated as an empty
+array, and all other non-array types, including dictionary, are treated as a
+single element array.
+*/
 
 void
 demo_at_and_size()
@@ -79,14 +73,43 @@ demo_at_and_size()
     assert(array.at(4).at(0).unparse() == "5");
 }
 
-// The next steps are:
+/*
+Having at and size methods makes it straight forward to implement an iterator
+that permits looping eg over an optional Action or array of Actions.
+*/
 
-// - Migrate QPDFObjectHandle to weak_ptr.
+void
+demo_loops()
+{
+    OH array = "[1 /Two << /A 3 /B 4 >>  null [5 6]]"_qpdf;
+    int i = 0;
+    for (auto item: array) {
+        std::cout << i++ << " : "; // << item.unparse()  << std::endl;
+        for (auto subitem: item) {
+            std::cout << " " << subitem.unparse() << " ; ";
+        }
+        std::cout << std::endl;
+    }
+}
 
-// - Decide how to extend this for indirect objects (who by definition don't
-//   have a single parent).
+/*
+Output:
+0 :  1 ;
+1 :  /Two ;
+2 :  << /A 3 /B 4 >> ;
+3 :
+4 :  5 ;  6 ;
 
-// - Implement OH::Int as an example of a typesafe handle.
+
+The next steps are:
+
+- Migrate QPDFObjectHandle to weak_ptr.
+
+- Decide how to extend this for indirect objects (who by definition don't
+  have a single parent).
+
+- Implement OH::Int as an example of a typesafe handle.
+*/
 
 typedef std::vector<int> Box;
 typedef std::map<std::string, Box> Page;
@@ -188,6 +211,7 @@ main(int argc, char* argv[])
     }
 
     demo_at_and_size();
+    demo_loops();
     cref_demo();
     return 0;
 }
