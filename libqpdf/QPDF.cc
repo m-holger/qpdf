@@ -2176,9 +2176,8 @@ QPDF::makeIndirectObject(QPDFObjectHandle oh)
 QPDFObjectHandle
 QPDF::reserveObjectIfNotExists(QPDFObjGen const& og)
 {
-    if (!isCached(og) && !m->xref_table.count(og)) {
-        resolve(og);
-        m->obj_cache[og].object = QPDF_Reserved::create();
+    if (!isCached(og) && m->xref_table.count(og) == 0) {
+        updateCache(og, QPDF_Reserved::create(), -1, -1);
         return newIndirect(og, m->obj_cache[og].object);
     } else {
         return getObject(og);
@@ -2236,10 +2235,6 @@ QPDF::replaceObject(QPDFObjGen const& og, QPDFObjectHandle oh)
         throw std::logic_error(
             "QPDF::replaceObject called with indirect object handle");
     }
-    // Force new object to appear in the cache
-    resolve(og);
-
-    // Replace the object in the object cache
     updateCache(og, QPDFObjectHandle::ObjAccessor::getObject(oh), -1, -1);
 }
 
@@ -2560,8 +2555,12 @@ QPDF::swapObjects(QPDFObjGen const& og1, QPDFObjGen const& og2)
 {
     // Force objects to be loaded into cache; then swap them in the
     // cache.
-    resolve(og1);
-    resolve(og2);
+    if (isUnresolved(og1)) {
+        resolve(og1);
+    }
+    if (isUnresolved(og2)) {
+        resolve(og2);
+    }
     m->obj_cache[og1].object->swapWith(m->obj_cache[og2].object);
 }
 
