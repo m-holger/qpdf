@@ -399,6 +399,11 @@ class QPDF
     QPDFObjectHandle getObjectByObjGen(QPDFObjGen const&);
     QPDF_DLL
     QPDFObjectHandle getObjectByID(int objid, int generation);
+    // The following overload is for internal use and should not
+    // be required by users of the library. Setting resolve to false will
+    // stop getObject from trying to resolve an unresolved object.
+    QPDF_DLL
+    QPDFObjectHandle getObject(QPDFObjGen const&, bool resolve);
 
     // Replace the object with the given object id with the given
     // object. The object handle passed in must be a direct object,

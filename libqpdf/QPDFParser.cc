@@ -190,7 +190,7 @@ QPDFParser::parse(bool& empty, bool content_stream)
                         olist.at(size - 2).getIntValueAsInt(),
                         olist.back().getIntValueAsInt());
                     if (ref_og.isIndirect()) {
-                        object = context->getObject(ref_og);
+                        object = context->getObject(ref_og, false);
                         indirect_ref = true;
                     } else {
                         QTC::TC("qpdf", "QPDFParser indirect with 0 objid");
