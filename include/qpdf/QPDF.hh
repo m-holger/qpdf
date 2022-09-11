@@ -1058,26 +1058,6 @@ class QPDF
         QPDFObjGen og;
     };
 
-    class ResolveRecorder
-    {
-      public:
-        ResolveRecorder(QPDF* qpdf, QPDFObjGen const& og) :
-            qpdf(qpdf),
-            og(og)
-        {
-            qpdf->m->resolving.insert(og);
-        }
-        virtual ~ResolveRecorder()
-        {
-            this->qpdf->m->resolving.erase(og);
-        }
-
-      private:
-        QPDF* qpdf;
-        QPDFObjGen og;
-    };
-    friend class ResolveRecorder;
-
     class JSONReactor: public JSON::Reactor
     {
       public:
