@@ -399,11 +399,6 @@ class QPDF
     QPDFObjectHandle getObjectByObjGen(QPDFObjGen const&);
     QPDF_DLL
     QPDFObjectHandle getObjectByID(int objid, int generation);
-    // The following overload is for internal use and should not
-    // be required by users of the library. Setting resolve to false will
-    // stop getObject from trying to resolve an unresolved object.
-    QPDF_DLL
-    QPDFObjectHandle getObject(QPDFObjGen const&, bool resolve);
 
     // Replace the object with the given object id with the given
     // object. The object handle passed in must be a direct object,
@@ -880,8 +875,8 @@ class QPDF
     };
     friend class Resolver;
 
-    // ParseGuard class allows QPDFObjectHandle to detect re-entrant
-    // resolution
+    // The ParseGuard class allows QPDFObjectHandle to detect
+    // re-entrant parsing.
     class ParseGuard
     {
         friend class QPDFParser;
@@ -903,6 +898,21 @@ class QPDF
         QPDF* qpdf;
     };
     friend class ParseGuard;
+
+    // The GetUnresolved class allows QPDFParser to create unresolved
+    // indirect objects.
+    class GetUnresolved
+    {
+        friend class QPDFParser;
+
+      private:
+        static QPDFObjectHandle
+        getObjectWithoutResolving(QPDF* qpdf, QPDFObjGen const& og)
+        {
+            return qpdf->getObjectWithoutResolving(og);
+        }
+    };
+    friend class GetUnresolved;
 
     // Pipe class is restricted to QPDF_Stream
     class Pipe
@@ -1179,6 +1189,7 @@ class QPDF
         std::shared_ptr<QPDFObject> const& object,
         qpdf_offset_t end_before_space,
         qpdf_offset_t end_after_space);
+    QPDFObjectHandle getObjectWithoutResolving(QPDFObjGen const&);
 
     // Calls finish() on the pipeline when done but does not delete it
     bool pipeStreamData(

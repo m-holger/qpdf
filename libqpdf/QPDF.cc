@@ -2188,43 +2188,42 @@ QPDF::reserveStream(QPDFObjGen const& og)
 }
 
 QPDFObjectHandle
-QPDF::getObject(QPDFObjGen const& og, bool do_resolve)
+QPDF::getObject(QPDFObjGen const& og)
 {
     if (!og.isIndirect()) {
         return QPDFObjectHandle::newNull();
     }
-    if (do_resolve) {
-        if (isUnresolved(og)) {
-            resolve(og);
-        }
-    } else if (!isCached(og)) {
+    if (isUnresolved(og)) {
+        resolve(og);
+    }
+    return newIndirect(og, m->obj_cache[og].object);
+}
+
+QPDFObjectHandle
+QPDF::getObjectWithoutResolving(QPDFObjGen const& og)
+{
+    if (!isCached(og)) {
         m->obj_cache[og] = ObjCache(QPDF_Unresolved::create(this, og), -1, -1);
     }
     return newIndirect(og, m->obj_cache[og].object);
 }
 
 QPDFObjectHandle
-QPDF::getObject(QPDFObjGen const& og)
-{
-    return getObject(og, true);
-}
-
-QPDFObjectHandle
 QPDF::getObject(int objid, int generation)
 {
-    return getObject(QPDFObjGen(objid, generation), true);
+    return getObject(QPDFObjGen(objid, generation));
 }
 
 QPDFObjectHandle
 QPDF::getObjectByObjGen(QPDFObjGen const& og)
 {
-    return getObject(og, true);
+    return getObject(og);
 }
 
 QPDFObjectHandle
 QPDF::getObjectByID(int objid, int generation)
 {
-    return getObject(QPDFObjGen(objid, generation), true);
+    return getObject(QPDFObjGen(objid, generation));
 }
 
 void
