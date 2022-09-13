@@ -1943,7 +1943,7 @@ void
 QPDF::resolve(QPDFObjGen const& og)
 {
     if (!isUnresolved(og)) {
-        throw std::logic_error("resolve called on resolved object");
+        return;
     }
     // resolve is (and must only be) called with unresolved objects.
 
@@ -2196,9 +2196,7 @@ QPDF::getObject(QPDFObjGen const& og)
     if (!og.isIndirect()) {
         return QPDFObjectHandle::newNull();
     }
-    if (isUnresolved(og)) {
-        resolve(og);
-    }
+    resolve(og);
     return newIndirect(og, m->obj_cache[og].object);
 }
 
@@ -2561,14 +2559,10 @@ QPDF::swapObjects(int objid1, int generation1, int objid2, int generation2)
 void
 QPDF::swapObjects(QPDFObjGen const& og1, QPDFObjGen const& og2)
 {
-    // Force objects to be loaded into cache; then swap them in the
-    // cache.
-    if (isUnresolved(og1)) {
-        resolve(og1);
-    }
-    if (isUnresolved(og2)) {
-        resolve(og2);
-    }
+    // Force objects to be read from the input source if needed, then
+    // swap them in the cache.
+    resolve(og1);
+    resolve(og2);
     m->obj_cache[og1].object->swapWith(m->obj_cache[og2].object);
 }
 
