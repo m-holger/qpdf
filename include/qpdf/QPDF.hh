@@ -1073,6 +1073,25 @@ class QPDF
         QPDFObjGen og;
     };
 
+    class ResolveRecorder
+    {
+      public:
+        ResolveRecorder(QPDF* qpdf, QPDFObjGen const& og) :
+            qpdf(qpdf),
+            iter(qpdf->m->resolving.insert(og).first)
+        {
+        }
+        virtual ~ResolveRecorder()
+        {
+            this->qpdf->m->resolving.erase(iter);
+        }
+
+      private:
+        QPDF* qpdf;
+        std::set<QPDFObjGen>::const_iterator iter;
+    };
+    friend class ResolveRecorder;
+
     class JSONReactor: public JSON::Reactor
     {
       public:

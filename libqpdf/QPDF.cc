@@ -1945,14 +1945,11 @@ QPDF::resolve(QPDFObjGen const& og)
     if (!isUnresolved(og)) {
         return;
     }
-    // resolve is (and must only be) called with unresolved objects.
 
     if (this->m->resolving.count(og)) {
         // This can happen if an object references itself directly or
         // indirectly in some key that has to be resolved during
         // object parsing, such as stream length.
-        // It could also happen if resolve was called for a previously
-        // resolved object.
         QTC::TC("qpdf", "QPDF recursion loop in resolve");
         warn(
             qpdf_e_damaged_pdf,
@@ -1962,7 +1959,7 @@ QPDF::resolve(QPDFObjGen const& og)
         updateCache(og, QPDF_Null::create(), -1, -1);
         return;
     }
-    this->m->resolving.insert(og);
+    ResolveRecorder rr(this, og);
 
     if (m->xref_table.count(og) != 0) {
         QPDFXRefEntry const& entry = this->m->xref_table[og];
