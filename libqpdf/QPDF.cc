@@ -1781,9 +1781,8 @@ QPDF::readObjectAtOffset(
         // not triggered by an xref lookup.
         check_og = false;
         try_recovery = false;
-    } else {
-        setLastObjectDescription(description, exp_og);
     }
+    setLastObjectDescription(description, exp_og);
 
     if (!this->m->attempt_recovery) {
         try_recovery = false;
@@ -2189,16 +2188,6 @@ QPDF::reserveStream(QPDFObjGen const& og)
 
 QPDFObjectHandle
 QPDF::getObject(QPDFObjGen const& og)
-{
-    if (!og.isIndirect()) {
-        return QPDFObjectHandle::newNull();
-    }
-    resolve(og);
-    return newIndirect(og, m->obj_cache[og].object);
-}
-
-QPDFObjectHandle
-QPDF::getObjectWithoutResolving(QPDFObjGen const& og)
 {
     if (!isCached(og)) {
         m->obj_cache[og] = ObjCache(QPDF_Unresolved::create(this, og), -1, -1);

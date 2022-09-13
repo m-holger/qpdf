@@ -899,21 +899,6 @@ class QPDF
     };
     friend class ParseGuard;
 
-    // The GetUnresolved class allows QPDFParser to create unresolved
-    // indirect objects.
-    class GetUnresolved
-    {
-        friend class QPDFParser;
-
-      private:
-        static QPDFObjectHandle
-        getObjectWithoutResolving(QPDF* qpdf, QPDFObjGen const& og)
-        {
-            return qpdf->getObjectWithoutResolving(og);
-        }
-    };
-    friend class GetUnresolved;
-
     // Pipe class is restricted to QPDF_Stream
     class Pipe
     {
@@ -1208,7 +1193,6 @@ class QPDF
         std::shared_ptr<QPDFObject> const& object,
         qpdf_offset_t end_before_space,
         qpdf_offset_t end_after_space);
-    QPDFObjectHandle getObjectWithoutResolving(QPDFObjGen const&);
 
     // Calls finish() on the pipeline when done but does not delete it
     bool pipeStreamData(
