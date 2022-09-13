@@ -1942,6 +1942,9 @@ QPDF::readObjectAtOffset(
 void
 QPDF::resolve(QPDFObjGen const& og)
 {
+    if (!isUnresolved(og)) {
+        throw std::logic_error("resolve called on resolved object");
+    }
     // resolve is (and must only be) called with unresolved objects.
 
     if (this->m->resolving.count(og)) {
