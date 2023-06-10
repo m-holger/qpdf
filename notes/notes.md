@@ -41,20 +41,20 @@ and getDictAsMap.
 
 local branch `members`
 
-### Reconsider result unpacking in range based for loop over maps
+### Use result unpacking in range based for loop over maps
 
-i.e. consider using 
+i.e. use 
 
 ```cpp
 for (auto const& [key, value]: oh.dItems()){
     // ...
 }
 ```
-When I looked at this last time it had a noticeable negative performance impact. On Clang-15, using it in 
-QPDFWriter::enqueueObject actually had a tiny but statistically significant performance improvement.
+When I looked at this last time it had a noticeable negative performance impact. On Clang-15, using it  has a tiny 
+but statistically significant performance improvement. For GCC-12 there is a greater improvement (but also still 
+very small)
 
-Confirm that the result holds more generally (or that at least it does not have a significant negative impact) and if 
-so, tidy existing code.
+(Timings 10 Jun 2023 18:49:42, 10 Jun 2023 20:28:02)
 
 
 ### Fix comments in example pdf-invert-images 
