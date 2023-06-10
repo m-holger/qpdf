@@ -8,8 +8,8 @@ Because of the near certainty of merge commits, allmost all of my current work i
 
 ### [Apply various Clang-Tidy rules #982](https://github.com/qpdf/qpdf/pull/982)
 
-This largely replaces [Code tidy classes QPDF and QPDFObjectHandle #972 ](https://github.com/qpdf/qpdf/pull/972). 
-For the straight-forward rules I have decided to deal with one rule at a time rather than deal with one class at a 
+This largely replaces [Code tidy classes QPDF and QPDFObjectHandle #972 ](https://github.com/qpdf/qpdf/pull/972).
+For the straight-forward rules I have decided to deal with one rule at a time rather than deal with one class at a
 time. This should make it easier to review because all essentially identical changes are bunched together.
 
 ### [Avoid unnecessary copying of stream dictionary in QPDF::readObject #980 ](https://github.com/qpdf/qpdf/pull/980)
@@ -18,24 +18,24 @@ time. This should make it easier to review because all essentially identical cha
 
 The two PRs are minor code tidies of things I spotted while working on other things.
 
+### [Add new Buffer method copy and deprecate copy constructor / assignment operator #983](https://github.com/qpdf/qpdf/pull/983)
+
+As previously discussed by email.
+
 ### [Add const overloads for various QPDFObjectHandle methods #979 ](https://github.com/qpdf/qpdf/pull/979)
 
 WIP - This PR was triggered by the work on Clang-Tidy rule performance-for-range-copy.
 
 As a result of pushing all state from QPDFObjectHandle down to QPDFObject and QPDFValue most of the QPDFObjectHandle
 method that in the past had to be non-const because of the possibility that they would trigger object resolution can
-now be const. This has significant benefits including allowing range based for loops to be optimized..
+now be const. This has significant benefits including allowing range based for loops to be optimized.
 
-Switching to const methods has allows us to create a replacement for QPDFObjectHandle::ditems that outperforms both 
-ditems and getDictAsMap.
+Switching to const methods allows us to create a replacement for QPDFObjectHandle::ditems that outperforms both ditems
+and getDictAsMap.
 
 (TODO - expand)
 
 ## To Do
-
-### Deprecate Buffer copy constructor and assignment operator
-
-local branch `buffer`
 
 ### Change JSONHandler::m to unique_ptr
 
