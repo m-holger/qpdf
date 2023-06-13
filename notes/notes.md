@@ -2,6 +2,8 @@
 
 ## Current PRs
 
+The PRs are listed in the suggested order of review.
+
 ### [Code tidy - reflow comments and strings #978 ](https://github.com/qpdf/qpdf/pull/979)
 
 Because of the near certainty of merge conflicts, almost all of my current work is based on this PR.
@@ -19,23 +21,21 @@ single, more or less mechanical solution.
 
 For the moment the only points worth looking at are the open questions raised earlier:
 
-- Should the public part of the header should have individual ```// NOLINT``` annotations or should the whole public section
-  be bracketed with
+- Should the public part of the header should have individual ```// NOLINT``` annotations or should the whole public
+  section be bracketed with
   ```
   // NOLINTBEGIN (modernize-use-nodiscard) ABI
   ...
   // NOLINTEND (modernize-use-nodiscard)
   ```
 
-  pairs as in
-  eg [8dd1929](https://github.com/qpdf/qpdf/pull/972/commits/8dd1929eef323424bb3ab79410649df4a25c013b)
+  pairs as in eg [8dd1929](https://github.com/qpdf/qpdf/pull/972/commits/8dd1929eef323424bb3ab79410649df4a25c013b)
   lines 53 and 721. I would lean towards the latter as I don't see any significant benefit in the former.
 
 - Do we want to do any clean-up of declarations of exported methods at the moment. While things likely
   adding attribute [[nodiscard]] should not cause problems is the benefit worth the risk? How confident are we that
   abi-perf-test will detect all possible issues. I would lean towards suppressing warnings for the moment and
   dealing with those parts of the header files when we are ready to break ABI.
-
 
 ### [Avoid unnecessary copying of stream dictionary in QPDF::readObject #980 ](https://github.com/qpdf/qpdf/pull/980)
 
@@ -46,6 +46,12 @@ The two PRs are minor code tidies of things I spotted while working on other thi
 ### [Add new Buffer method copy and deprecate copy constructor / assignment operator #983](https://github.com/qpdf/qpdf/pull/983)
 
 As previously discussed by email.
+
+### [Change JSONHandler::m to std::unique_ptr and declare Members in implementation file #985](https://github.com/qpdf/qpdf/pull/985)
+
+This provides an example of the change I am suggesting to how we use the member pattern going forward. An update to 
+the relevant section of README-maintainer is is included.
+
 
 ### [Add const overloads for various QPDFObjectHandle methods #979 ](https://github.com/qpdf/qpdf/pull/979)
 
@@ -68,21 +74,21 @@ local branch `members`
 
 ### Use result unpacking in range based for loop over maps
 
-i.e. use 
+i.e. use
 
 ```cpp
 for (auto const& [key, value]: oh.dItems()){
     // ...
 }
 ```
-When I looked at this last time it had a noticeable negative performance impact. On Clang-15, using it  has a tiny 
-but statistically significant performance improvement. For GCC-12 there is a greater improvement (but also still 
+
+When I looked at this last time it had a noticeable negative performance impact. On Clang-15, using it has a tiny
+but statistically significant performance improvement. For GCC-12 there is a greater improvement (but also still
 very small)
 
 (Timings 10 Jun 2023 18:49:42, 10 Jun 2023 20:28:02)
 
-
-### Fix comments in example pdf-invert-images 
+### Fix comments in example pdf-invert-images
 
 Some of the comments apply to pointer holder, but not necessarily std managed pointers.
 
