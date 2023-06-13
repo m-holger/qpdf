@@ -4,6 +4,14 @@
 
 The PRs are listed in the suggested order of review.
 
+### [ Rename README-maintainer to README-maintainer.md and add table of content #987 ](https://github.com/qpdf/qpdf/pull/987)
+
+### [ Change code formatting from clang-format >= 15 to clang-format-16 #986 ](https://github.com/qpdf/qpdf/pull/986)
+
+Two minor housekeeping suggestions. If 987 is accepted it will conflict with 986 and 985.
+
+I would suggest we use a defaul indentation / tab width of 2 characters (rather than the 4 char default in CLion).
+
 ### [Code tidy - reflow comments and strings #978 ](https://github.com/qpdf/qpdf/pull/979)
 
 Because of the near certainty of merge conflicts, almost all of my current work is based on this PR.
@@ -49,9 +57,8 @@ As previously discussed by email.
 
 ### [Change JSONHandler::m to std::unique_ptr and declare Members in implementation file #985](https://github.com/qpdf/qpdf/pull/985)
 
-This provides an example of the change I am suggesting to how we use the member pattern going forward. An update to 
+This provides an example of the change I am suggesting to how we use the member pattern going forward. An update to
 the relevant section of README-maintainer is is included.
-
 
 ### [Add const overloads for various QPDFObjectHandle methods #979 ](https://github.com/qpdf/qpdf/pull/979)
 
@@ -67,10 +74,6 @@ and getDictAsMap.
 (TODO - expand)
 
 ## To Do
-
-### Change JSONHandler::m to unique_ptr
-
-local branch `members`
 
 ### Use result unpacking in range based for loop over maps
 
