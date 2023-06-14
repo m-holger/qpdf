@@ -8,9 +8,12 @@ The PRs are listed in the suggested order of review.
 
 ### [ Change code formatting from clang-format >= 15 to clang-format-16 #986 ](https://github.com/qpdf/qpdf/pull/986)
 
-Two minor housekeeping suggestions. If 987 is accepted it will conflict with 986 and 985.
+### [ Remove lgtm.yml #988 ](https://github.com/qpdf/qpdf/pull/988)
 
-I would suggest we use a defaul indentation / tab width of 2 characters (rather than the 4 char default in CLion).
+Three minor housekeeping suggestions. If 987 is accepted it will conflict with 986 and 985.
+
+I would suggest we use for Markdown a default indentation / tab width of 2 characters (rather than the 4 char
+default in CLion).
 
 ### [Code tidy - reflow comments and strings #978 ](https://github.com/qpdf/qpdf/pull/979)
 
