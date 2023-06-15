@@ -8,12 +8,24 @@ The PRs are listed in the suggested order of review.
 
 ### [ Change code formatting from clang-format >= 15 to clang-format-16 #986 ](https://github.com/qpdf/qpdf/pull/986)
 
-### [ Remove lgtm.yml #988 ](https://github.com/qpdf/qpdf/pull/988)
-
-Three minor housekeeping suggestions. If 987 is accepted it will conflict with 986 and 985.
+Two minor housekeeping suggestions. If 987 is accepted it will conflict with 986 and 985.
 
 I would suggest we use for Markdown a default indentation / tab width of 2 characters (rather than the 4 char
 default in CLion).
+
+### [ Add FUTURE build option #989 ](https://github.com/qpdf/qpdf/pull/989)
+
+This is my stab at creating a FUTURE option as discussed back in March. My implementation is based on common sense
+and your implementation of ENABLE_QTC rather than on any understanding of cmake, so handle with appropriate care.
+
+I have included basic documentation in installation.rst, but if you want to accept this PR it probably would need
+tweaking to reflect how you want to present the option.
+
+It also probably would warrant an update to the release process in README-maintainer and consideration of CI (have a
+second run of the pikepdf build with the FUTURE option?).
+
+Finally, in light of [#942](https://github.com/qpdf/qpdf/issues/942), would it make sense to also implement a
+```CPP_20``` build option?
 
 ### [Code tidy - reflow comments and strings #978 ](https://github.com/qpdf/qpdf/pull/979)
 
