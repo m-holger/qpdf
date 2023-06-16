@@ -27,6 +27,39 @@ second run of the pikepdf build with the FUTURE option?).
 Finally, in light of [#942](https://github.com/qpdf/qpdf/issues/942), would it make sense to also implement a
 ```CPP_20``` build option?
 
+### [ Ensure copied annotations are fixed (fixes #600) #990 ](https://github.com/qpdf/qpdf/pull/990)
+
+I am keen to get [600](https://github.com/qpdf/qpdf/issues/600) fixed for 11.5 as I need it for some work I am doing on
+PDF Arranger. The fix I am suggesting in the PR is sufficient for my purposes.
+
+In the longer term, there are a number of questions in my mind:-
+
+- is this going to be more fully addressed in your work on pages?
+
+- should fixing of annotations be part of QPDFPageDocumentHelper and/or QPDF addPage methods?
+
+- should repointing the /P entry to the current page be part of fixing the annotation (I don't think it is at the
+  moment)?
+
+and on a slightly wider level:
+
+- is there ever a need to have more than one QPDFAcroFormDocumentHelper per QPDF object, or for that matter, for
+  creating a new instance when there was a previous instance. If not, it would seem to make sense to cache the
+  helper in the QPDF object and reuse it if a new one is requested. I see a number of potential benefits:
+
+  - performance
+
+  - error handling
+
+    The nature of the errors detected by the analyze method is different on a first run and on subsequent runs. On a
+    first run they indicate problems with the input file that should be fixed and reported while on subsequent runs
+    they would indicate programmer errors and therefore probably should throw a logic error.
+
+  - convenience
+
+    Users don't have to implement caching of the helpers for performance reasons themselves.
+  -
+
 ### [Code tidy - reflow comments and strings #978 ](https://github.com/qpdf/qpdf/pull/979)
 
 Because of the near certainty of merge conflicts, almost all of my current work is based on this PR.
