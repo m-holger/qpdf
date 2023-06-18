@@ -1,74 +1,54 @@
 # Random Notes
 
+## Contents
+
+- [ Open questions / outstanding issues ](#open-questions--outstanding-issues)
+- [ Changelog / Release Notes ](#changelog--release-notes)
+- [ Current PRs ](#current-prs)
+- [ Future PRs](#future-prs)
+- [ Project standards ](#project-standards)
+- [ QPDFAcroFormDocumentHelper ](#qpdfacroformdocumenthelper)
+
+
+## Open questions / outstanding issues
+
+### git blame
+
+Should commits correcting doc typos be added to .git-blame-ignore-revs? My view would be yes.
+
+### [ Add FUTURE build option #989 ](https://github.com/qpdf/qpdf/pull/989)
+
+Add a CI run with FUTURE option (have a second run of the pikepdf build with the FUTURE option?)?
+
+{To do) Check whether release process in README-maintainer needs to be updated for FUTURE.
+
+### Annotations
+
+- Should repointing the /P entry to the current page be part of fixing the annotation (I don't think it is at the
+  moment)?
+
+  - If so, is it worth addressing now or leave it for 'Pages'?
+
+- Should fixing of annotations be part of QPDFPageDocumentHelper and/or QPDF addPage methods?
+
+  - Should this be left for 'Pages'?
+
+
+## Changelog / Release Notes
+
+- 17 June
+
+  - Bug fix [600](https://github.com/qpdf/qpdf/issues/600)
+
+  - Buffer [draft wording](https://github.com/qpdf/qpdf/pull/983)
+
+
 ## Current PRs
 
 The PRs are listed in the suggested order of review.
 
-### [ Rename README-maintainer to README-maintainer.md and add table of content #987 ](https://github.com/qpdf/qpdf/pull/987)
+There are currently no PRs ready for a full review, but there are a couple of questions raised in the section on 972.
 
-### [ Change code formatting from clang-format >= 15 to clang-format-16 #986 ](https://github.com/qpdf/qpdf/pull/986)
-
-Two minor housekeeping suggestions. If 987 is accepted it will conflict with 986 and 985.
-
-I would suggest we use for Markdown a default indentation / tab width of 2 characters (rather than the 4 char
-default in CLion).
-
-### [ Add FUTURE build option #989 ](https://github.com/qpdf/qpdf/pull/989)
-
-This is my stab at creating a FUTURE option as discussed back in March. My implementation is based on common sense
-and your implementation of ENABLE_QTC rather than on any understanding of cmake, so handle with appropriate care.
-
-I have included basic documentation in installation.rst, but if you want to accept this PR it probably would need
-tweaking to reflect how you want to present the option.
-
-It also probably would warrant an update to the release process in README-maintainer and consideration of CI (have a
-second run of the pikepdf build with the FUTURE option?).
-
-Finally, in light of [#942](https://github.com/qpdf/qpdf/issues/942), would it make sense to also implement a
-```CPP_20``` build option?
-
-### [ Ensure copied annotations are fixed (fixes #600) #990 ](https://github.com/qpdf/qpdf/pull/990)
-
-I am keen to get [600](https://github.com/qpdf/qpdf/issues/600) fixed for 11.5 as I need it for some work I am doing on
-PDF Arranger. The fix I am suggesting in the PR is sufficient for my purposes.
-
-In the longer term, there are a number of questions in my mind:-
-
-- is this going to be more fully addressed in your work on pages?
-
-- should fixing of annotations be part of QPDFPageDocumentHelper and/or QPDF addPage methods?
-
-- should repointing the /P entry to the current page be part of fixing the annotation (I don't think it is at the
-  moment)?
-
-and on a slightly wider level:
-
-- is there ever a need to have more than one QPDFAcroFormDocumentHelper per QPDF object, or for that matter, for
-  creating a new instance when there was a previous instance. If not, it would seem to make sense to cache the
-  helper in the QPDF object and reuse it if a new one is requested. I see a number of potential benefits:
-
-  - performance
-
-  - error handling
-
-    The nature of the errors detected by the analyze method is different on a first run and on subsequent runs. On a
-    first run they indicate problems with the input file that should be fixed and reported while on subsequent runs
-    they would indicate programmer errors and therefore probably should throw a logic error.
-
-  - convenience
-
-    Users don't have to implement caching of the helpers for performance reasons themselves.
-  -
-
-### [Code tidy - reflow comments and strings #978 ](https://github.com/qpdf/qpdf/pull/979)
-
-Because of the near certainty of merge conflicts, almost all of my current work is based on this PR.
-
-### [Apply various Clang-Tidy rules #982](https://github.com/qpdf/qpdf/pull/982)
-
-This largely replaces [Code tidy classes QPDF and QPDFObjectHandle #972 ](https://github.com/qpdf/qpdf/pull/972)
-For the straight-forward rules I have decided to deal with one rule at a time rather than deal with one class at a
-time. This should make it easier to review because all essentially identical changes are bunched together.
 
 ### [Code tidy classes QPDF and QPDFObjectHandle #972 ](https://github.com/qpdf/qpdf/pull/972)
 
@@ -93,20 +73,6 @@ For the moment the only points worth looking at are the open questions raised ea
   abi-perf-test will detect all possible issues. I would lean towards suppressing warnings for the moment and
   dealing with those parts of the header files when we are ready to break ABI.
 
-### [Avoid unnecessary copying of stream dictionary in QPDF::readObject #980 ](https://github.com/qpdf/qpdf/pull/980)
-
-### [Remove redundant loop in QPDFWriter::prepareFileForWrite #981](https://github.com/qpdf/qpdf/pull/981)
-
-The two PRs are minor code tidies of things I spotted while working on other things.
-
-### [Add new Buffer method copy and deprecate copy constructor / assignment operator #983](https://github.com/qpdf/qpdf/pull/983)
-
-As previously discussed by email.
-
-### [Change JSONHandler::m to std::unique_ptr and declare Members in implementation file #985](https://github.com/qpdf/qpdf/pull/985)
-
-This provides an example of the change I am suggesting to how we use the member pattern going forward. An update to
-the relevant section of README-maintainer is is included.
 
 ### [Add const overloads for various QPDFObjectHandle methods #979 ](https://github.com/qpdf/qpdf/pull/979)
 
@@ -121,7 +87,7 @@ and getDictAsMap.
 
 (TODO - expand)
 
-## To Do
+## Future PRs
 
 ### Use result unpacking in range based for loop over maps
 
@@ -169,3 +135,32 @@ local branch `nparse`
 ### Remove double indirection from QPDFObject/QPDFValue
 
 local branch `var4_12b`
+
+
+## Project standards
+
+### Markdown
+
+I would suggest we use for Markdown a default indentation / tab width of 2 characters (rather than the 4 char
+default in CLion).
+
+
+## QPDFAcroFormDocumentHelper
+
+Some thoughts / questions:
+
+- is there ever a need to have more than one QPDFAcroFormDocumentHelper per QPDF object, or for that matter, for
+  creating a new instance when there was a previous instance. If not, it would seem to make sense to cache the
+  helper in the QPDF object and reuse it if a new one is requested. I see a number of potential benefits:
+
+  - performance
+
+  - error handling
+
+    The nature of the errors detected by the analyze method is different on a first run and on subsequent runs. On a
+    first run they indicate problems with the input file that should be fixed and reported while on subsequent runs
+    they would indicate programmer errors and therefore probably should throw a logic error.
+
+  - convenience
+
+    Users don't have to implement caching of the helpers for performance reasons themselves.
