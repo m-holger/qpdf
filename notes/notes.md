@@ -49,6 +49,12 @@ The PRs are listed in the suggested order of review. Ignore any PRs that don't a
 This is a minor issue in itself (I don't think it affects many pdf files that don't /Moo or /Quack) but has an
 impact on how to progress [#995](#refactor-linearization-995).
 
+###  Add content table to TODO file [#998](https://github.com/qpdf/qpdf/pull/998)
+
+###   Add doxygen files to .gitignore [#999](https://github.com/qpdf/qpdf/pull/999)
+
+Two minor house-keeping PRs.
+
 ### Refactor linearization [#995 ](https://github.com/qpdf/qpdf/pull/995)
 
 This is WIP
