@@ -15,7 +15,7 @@
 
 Should commits correcting doc typos be added to .git-blame-ignore-revs? My view would be yes.
 
-### [ Add FUTURE build option #989 ](https://github.com/qpdf/qpdf/pull/989)
+### Add FUTURE build option [#989 ](https://github.com/qpdf/qpdf/pull/989)
 
 Add a CI run with FUTURE option (have a second run of the pikepdf build with the FUTURE option?)?
 
@@ -44,12 +44,12 @@ Add a CI run with FUTURE option (have a second run of the pikepdf build with the
 
 The PRs are listed in the suggested order of review. Ignore any PRs that don't appear on this list.
 
-### [ Linearization parts #997 ](https://github.com/qpdf/qpdf/pull/997)
+### Linearization parts [#997 ](https://github.com/qpdf/qpdf/pull/997)
 
 This is a minor issue in itself (I don't think it affects many pdf files that don't /Moo or /Quack) but has an
 impact on how to progress [#995](#refactor-linearization-995).
 
-### [ Refactor linearization #995 ](https://github.com/qpdf/qpdf/pull/995)
+### Refactor linearization [#995 ](https://github.com/qpdf/qpdf/pull/995)
 
 This is WIP
 
@@ -76,7 +76,7 @@ This is WIP
 
 - Make object_to_object_users a vector rather than a map for relatively dense object caches.
 
-### [Code tidy classes QPDF and QPDFObjectHandle #972 ](https://github.com/qpdf/qpdf/pull/972)
+### Code tidy classes QPDF and QPDFObjectHandle [#972 ](https://github.com/qpdf/qpdf/pull/972)
 
 As mentioned in #982 this is essentially on hold while I am dealing with rules that can be resolved with a
 single, more or less mechanical solution.
@@ -94,12 +94,12 @@ For the moment the only points worth looking at are the open questions raised ea
   pairs as in eg [8dd1929](https://github.com/qpdf/qpdf/pull/972/commits/8dd1929eef323424bb3ab79410649df4a25c013b)
   lines 53 and 721. I would lean towards the latter as I don't see any significant benefit in the former.
 
-- Do we want to do any clean-up of declarations of exported methods at the moment. While things likely
-  adding attribute [[nodiscard]] should not cause problems is the benefit worth the risk? How confident are we that
+- Do we want to do any clean-up of declarations of exported methods at the moment. While things likely adding
+  attribute [[nodiscard]] should not cause problems is the benefit worth the risk? How confident are we that
   abi-perf-test will detect all possible issues. I would lean towards suppressing warnings for the moment and
   dealing with those parts of the header files when we are ready to break ABI.
 
-### [Add const overloads for various QPDFObjectHandle methods #979 ](https://github.com/qpdf/qpdf/pull/979)
+### Add const overloads for various QPDFObjectHandle methods [#979 ](https://github.com/qpdf/qpdf/pull/979)
 
 WIP - This PR was triggered by the work on Clang-Tidy rule performance-for-range-copy.
 
