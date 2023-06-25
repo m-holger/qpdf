@@ -4,11 +4,10 @@
 
 - [ Open questions / outstanding issues ](#open-questions--outstanding-issues)
 - [ Changelog / Release Notes ](#changelog--release-notes)
-- [ Current PRs ](#current-prs)
+- [ Current PRs ](#current-prs) **updated**
 - [ Future PRs](#future-prs)
 - [ Project standards ](#project-standards)
 - [ QPDFAcroFormDocumentHelper ](#qpdfacroformdocumenthelper)
-
 
 ## Open questions / outstanding issues
 
@@ -33,7 +32,6 @@ Add a CI run with FUTURE option (have a second run of the pikepdf build with the
 
   - Should this be left for 'Pages'?
 
-
 ## Changelog / Release Notes
 
 - 17 June
@@ -42,13 +40,41 @@ Add a CI run with FUTURE option (have a second run of the pikepdf build with the
 
   - Buffer [draft wording](https://github.com/qpdf/qpdf/pull/983)
 
-
 ## Current PRs
 
-The PRs are listed in the suggested order of review.
+The PRs are listed in the suggested order of review. Ignore any PRs that don't appear on this list.
 
-There are currently no PRs ready for a full review, but there are a couple of questions raised in the section on 972.
+### [ Linearization parts #997 ](https://github.com/qpdf/qpdf/pull/997)
 
+This is a minor issue in itself (I don't think it affects many pdf files that don't /Moo or /Quack) but has an
+impact on how to progress [#995](#refactor-linearization-995).
+
+### [ Refactor linearization #995 ](https://github.com/qpdf/qpdf/pull/995)
+
+This is WIP
+
+#### Overview of approach - to be expanded and moved to PR when firmed up
+
+- Work with ObjGens for as long as possible. We repeatedly retrieve ObjGens from objects but hardly ever use the
+  objects themselves. For objects in object streams, we don't use them at all. It is also much cheaper to copy
+  ObjGens, and they are smaller.
+
+- Don't add objects to the object maps that we do not use, especially if we have to remove them later (e.g. page
+  objects and root).
+
+- Remove sets as far as possible. Build vectors immediately wherever possible.
+
+- Remove obj_user_to_objects. I don't think it is necessary, but if it turns out to be necessary, only build the
+  parts required.
+
+- Use the ordering of ObjUser to facilitate efficient processing. The aim is to elliminate sets in
+  object_to_object_users.
+
+- Review the order of scanning in updateObjectMaps to avoid unnecessary repeated visits to the same object.
+
+- Replace the 'part' vectors with vectors of 'sub-part' vectors to avoid unnecessary copying.
+
+- Make object_to_object_users a vector rather than a map for relatively dense object caches.
 
 ### [Code tidy classes QPDF and QPDFObjectHandle #972 ](https://github.com/qpdf/qpdf/pull/972)
 
@@ -72,7 +98,6 @@ For the moment the only points worth looking at are the open questions raised ea
   adding attribute [[nodiscard]] should not cause problems is the benefit worth the risk? How confident are we that
   abi-perf-test will detect all possible issues. I would lean towards suppressing warnings for the moment and
   dealing with those parts of the header files when we are ready to break ABI.
-
 
 ### [Add const overloads for various QPDFObjectHandle methods #979 ](https://github.com/qpdf/qpdf/pull/979)
 
@@ -136,14 +161,12 @@ local branch `nparse`
 
 local branch `var4_12b`
 
-
 ## Project standards
 
 ### Markdown
 
 I would suggest we use for Markdown a default indentation / tab width of 2 characters (rather than the 4 char
 default in CLion).
-
 
 ## QPDFAcroFormDocumentHelper
 
