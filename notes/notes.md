@@ -49,9 +49,9 @@ The PRs are listed in the suggested order of review. Ignore any PRs that don't a
 This is a minor issue in itself (I don't think it affects many pdf files that don't /Moo or /Quack) but has an
 impact on how to progress [#995](#refactor-linearization-995).
 
-###  Add content table to TODO file [#998](https://github.com/qpdf/qpdf/pull/998)
+### Add content table to TODO file [#998](https://github.com/qpdf/qpdf/pull/998)
 
-###   Add doxygen files to .gitignore [#999](https://github.com/qpdf/qpdf/pull/999)
+### Add doxygen files to .gitignore [#999](https://github.com/qpdf/qpdf/pull/999)
 
 Two minor house-keeping PRs.
 
@@ -73,10 +73,71 @@ This is WIP
 - Remove obj_user_to_objects. I don't think it is necessary, but if it turns out to be necessary, only build the
   parts required.
 
-- Use the ordering of ObjUser to facilitate efficient processing. The aim is to elliminate sets in
+  There are two main uses for them at the moment:
+
+  **purpose 1** in maxEnd / checkHOutlines : calculate the length of the outlines section.
+
+  **purpose 2** for all pages (other than page 1), identify the part 6 and 8 objects used by the page.
+
+  It is also currently used for thumbnails, but can be easily replaced for this purpose.
+
+
+- Use the ordering of ObjUser to facilitate efficient processing. The aim is to eliminate sets in
   object_to_object_users.
 
-- Review the order of scanning in updateObjectMaps to avoid unnecessary repeated visits to the same object.
+- Review the order of scanning in optimize / updateObjectMaps to avoid unnecessary repeated visits to the same object.
+
+  optimize has the **purpose 3** of facilitating the allocation of objects to parts as well as populating
+  obj_user_to_objects and therefore supporting purposes 1 & 2.
+
+  At the moment, optimize calls updateObjectMaps for each page, each trailer entry and each root entry.
+  updateObjectMaps exhaustively scan the object to page boundaries.
+
+  Consider only purpose 3 for the moment.
+
+  At the moment, the object maps are populated and allocation to parts takes place afterwards. Consider a scenario
+  where objects are allocated to parts at a first encounter and are possibly reallocated on subsequent encounters.
+  In this situation the following rules apply:
+
+  - Once an object is allocated to part 4, it cannot be reallocated. Furthermore, all its decendents will belong to
+    part 4.
+
+  - An object encountered while scanning the first page must ultimately end up in parts 6(private) or 6(shared),
+    unless it belongs to part 4. Part 6(private) objects can be reallocated to part 6(shared), but not vice versa.
+    All descendents of a part 6(private) object will be part 6(private), part 6(shared) or part 4. All descendents of a
+    part 6(shared) object will be part 6(shared) or part 4.
+
+  - An object encountered while scanning other page must ultimately end up in parts 6(shared), 7 or 8, unless it belongs
+    to part 4. Part 6(private) objects can be reallocated to part 6(shared), and part 7 objects can be allocated to
+    part 8, but not vice versa. There are similar rules for decendents to the rules above.
+
+  - All objects not belonging to parts 4, 6, 7 or 8 belong to part 9.
+
+  In summary, the only transitions for objects provisionally allocated to parts are up the chain
+  ```
+  4 <──┬───────────────┬───────────────────────┐
+       |               |                       |
+       └─ 6(shared) <──┼── 6(private) <────────┼───── 9
+                       |                       |
+                       ├───── 8 <───┐          |
+                       |            |          |
+                       └────────────┴─ 7 <─────┘
+  ```
+  This suggests that from the perspective of purpose 3, the most efficient order of scanning is:
+  - all part 4 candidates,
+  - all pages, starting with the first page,
+  - all other objects.
+
+  Furthermore, there is no need to visit any descendents previously identified as belonging to a higher priority part,
+  as all of them will have at least this higher priority.
+
+  Consider only purpose 2 for the moment.
+
+  The descendents of a page are its children and their descendents. Once the descendents of a child have been
+  established there is no need to descend into the child again. Furthermore, if any part 4 objects are encountered there
+  is no need to descend any further as all of their descendents will be part 4.
+
+  The considerations from the perspective of purpose 1 are similar to those of purpose 2.
 
 - Replace the 'part' vectors with vectors of 'sub-part' vectors to avoid unnecessary copying.
 
