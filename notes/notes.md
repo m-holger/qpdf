@@ -7,6 +7,7 @@
 - [ Current PRs ](#current-prs) **updated**
 - [ Future PRs](#future-prs)
 - [ Project standards ](#project-standards)
+  - [ Comment lines ](#avoid-underfull-lines-in-comment-blocks) **new**
 - [ QPDFAcroFormDocumentHelper ](#qpdfacroformdocumenthelper)
 
 ## Open questions / outstanding issues
@@ -229,6 +230,52 @@ local branch `nparse`
 local branch `var4_12b`
 
 ## Project standards
+
+### Avoid underfull lines in comment blocks
+
+I suggest we ensure that lines in comment blocks are always filled. clang-format does a good job of
+reflowing comments with full lines, even if some of them are short because of long words. Any lines
+shorter than necessary are treated as having a deliberate line-break, which will be preserved.
+
+This requires that when shortening comments the edited line is joint with a neighboring line to make
+it longer than 100 chars, followed by reflowing using clang-format.
+
+Example:
+```cpp
+    // Blaaah blaaaah  blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah
+    // blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah add some example text and reformat
+    // blaaaah blaaaah blaaaah blaaaah  blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah
+    // blaaaah blaaaah blaaaah  blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah  blaaaah blaaaah
+    // blaaaah  blaaaah blaaaah blaaaah blaaaah
+    // loooooooooooooooooooonnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnng  blaaaah blaaaah blaaaah blaaaah
+    // blaaaah blaaaah blaaaah blaaaah  blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah
+    // blaaaah blaaaah blaaaah  blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah
+    // *  blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaah
+    //    blaaaah blaaaah blaaaah blaaaah  blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah add some more extensive example text and reformat
+    //    blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah
+    //    blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah
+    //    loooooooooooooooooooonnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnng blaaaah blaaaah blaaaah  blaaaah
+    //    blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah
+    //    blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah
+```
+reflows to:
+```cpp
+    // Blaaah blaaaah  blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah
+    // blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah add
+    // some example text and reformat blaaaah blaaaah blaaaah blaaaah  blaaaah blaaaah blaaaah
+    // blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah  blaaaah blaaaah blaaaah blaaaah
+    // blaaaah blaaaah  blaaaah blaaaah blaaaah  blaaaah blaaaah blaaaah blaaaah
+    // loooooooooooooooooooonnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnng  blaaaah blaaaah blaaaah blaaaah
+    // blaaaah blaaaah blaaaah blaaaah  blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah
+    // blaaaah blaaaah blaaaah  blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah
+    // *  blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaah
+    //    blaaaah blaaaah blaaaah blaaaah  blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah add some
+    //    more extensive example text and reformat blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah
+    //    blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah
+    //    blaaaah loooooooooooooooooooonnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnng blaaaah blaaaah blaaaah
+    //    blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah
+    //    blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah blaaaah
+```
 
 ### Markdown
 
