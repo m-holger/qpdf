@@ -62,23 +62,24 @@ This is WIP
 
 #### Overview of approach - to be expanded and moved to PR when firmed up
 
-- Work with ObjGens for as long as possible. We repeatedly retrieve ObjGens from objects but hardly ever use the
-  objects themselves. For objects in object streams, we don't use them at all. It is also much cheaper to copy
-  ObjGens, and they are smaller.
+- Work with ObjGens for as long as possible. We repeatedly retrieve ObjGens from objects but hardly
+  ever use the objects themselves. For objects in object streams, we don't use them at all. It is
+  also much cheaper to copy ObjGens, and they are smaller.
 
-- Don't add objects to the object maps that we do not use, especially if we have to remove them later (e.g. page
-  objects and root).
+- Don't add objects to the object maps that we do not use, especially if we have to remove them
+  later (e.g. page objects and root).
 
 - Remove sets as far as possible. Build vectors immediately wherever possible.
 
-- Remove obj_user_to_objects. I don't think it is necessary, but if it turns out to be necessary, only build the
-  parts required.
+- Remove obj_user_to_objects. I don't think it is necessary, but if it turns out to be necessary,
+  only build the parts required.
 
   There are two main uses for them at the moment:
 
   **purpose 1** in maxEnd / checkHOutlines : calculate the length of the outlines section.
 
-  **purpose 2** for all pages (other than page 1), identify the part 6 and 8 objects used by the page.
+  **purpose 2** for all pages (other than page 1), identify the part 6 and 8 objects used by the
+  page.
 
   It is also currently used for thumbnails, but can be easily replaced for this purpose.
 
@@ -86,59 +87,90 @@ This is WIP
 - Use the ordering of ObjUser to facilitate efficient processing. The aim is to eliminate sets in
   object_to_object_users.
 
-- Review the order of scanning in optimize / updateObjectMaps to avoid unnecessary repeated visits to the same object.
+- Review the order of scanning in optimize / updateObjectMaps to avoid unnecessary repeated visits
+  to the same object.
 
-  optimize has the **purpose 3** of facilitating the allocation of objects to parts as well as populating
-  obj_user_to_objects and therefore supporting purposes 1 & 2.
+  optimize has the **purpose 3** of facilitating the allocation of objects to parts as well as
+  populating obj_user_to_objects and therefore supporting purposes 1 & 2.
 
-  At the moment, optimize calls updateObjectMaps for each page, each trailer entry and each root entry.
-  updateObjectMaps exhaustively scan the object to page boundaries.
+  At the moment, optimize calls updateObjectMaps for each page, each trailer entry and each root
+  entry. updateObjectMaps exhaustively scan the object to page boundaries.
 
-  Consider only purpose 3 for the moment.
+##### Allocation of objects to parts
 
-  At the moment, the object maps are populated and allocation to parts takes place afterwards. Consider a scenario
-  where objects are allocated to parts at a first encounter and are possibly reallocated on subsequent encounters.
-  In this situation the following rules apply:
+Currently the object maps are populated in optimize and allocation to parts takes place afterwards
+in calculateLinearizationData. Consider a scenario where objects are allocated to parts at a first
+encounter and are possibly reallocated on subsequent encounters. In this situation the following
+rules apply:
 
-  - Once an object is allocated to part 4, it cannot be reallocated. Furthermore, all its decendents will belong to
-    part 4.
+- Once an object is allocated to part 4, it cannot be reallocated. Furthermore, all its decendents
+  will belong to part 4.
 
-  - An object encountered while scanning the first page must ultimately end up in parts 6(private) or 6(shared),
-    unless it belongs to part 4. Part 6(private) objects can be reallocated to part 6(shared), but not vice versa.
-    All descendents of a part 6(private) object will be part 6(private), part 6(shared) or part 4. All descendents of a
-    part 6(shared) object will be part 6(shared) or part 4.
+- An object encountered while scanning the first page must ultimately end up in parts 6(private)
+  or 6(shared), unless it belongs to part 4. Part 6(private) objects can be reallocated to part 6(
+  shared), but not vice versa. All descendents of a part 6(private) object will be part 6(
+  private), part 6(shared) or part 4. All descendents of a part 6(shared) object will be part 6(
+  shared) or part 4.
 
-  - An object encountered while scanning other page must ultimately end up in parts 6(shared), 7 or 8, unless it belongs
-    to part 4. Part 6(private) objects can be reallocated to part 6(shared), and part 7 objects can be allocated to
-    part 8, but not vice versa. There are similar rules for decendents to the rules above.
+- An object encountered while scanning other page must ultimately end up in parts 6(shared), 7 or 8,
+  unless it belongs to part 4. Part 6(private) objects can be reallocated to part 6(shared), and
+  part 7 objects can be allocated to part 8, but not vice versa. There are similar rules for
+  decendents to the rules above.
 
-  - All objects not belonging to parts 4, 6, 7 or 8 belong to part 9.
+- All objects not belonging to parts 4, 6, 7 or 8 belong to part 9.
 
-  In summary, the only transitions for objects provisionally allocated to parts are up the chain
-  ```
-  4 <──┬───────────────┬───────────────────────┐
-       |               |                       |
-       └─ 6(shared) <──┼── 6(private) <────────┼───── 9
-                       |                       |
-                       ├───── 8 <───┐          |
-                       |            |          |
-                       └────────────┴─ 7 <─────┘
-  ```
-  This suggests that from the perspective of purpose 3, the most efficient order of scanning is:
-  - all part 4 candidates,
-  - all pages, starting with the first page,
-  - all other objects.
+In summary, the only transitions for objects provisionally allocated to parts are up the chain
 
-  Furthermore, there is no need to visit any descendents previously identified as belonging to a higher priority part,
-  as all of them will have at least this higher priority.
+![transition1](images/995_1.png)
 
-  Consider only purpose 2 for the moment.
+This suggests that from the perspective of purpose 3, the most efficient order of scanning is:
 
-  The descendents of a page are its children and their descendents. Once the descendents of a child have been
-  established there is no need to descend into the child again. Furthermore, if any part 4 objects are encountered there
-  is no need to descend any further as all of their descendents will be part 4.
+- all part 4 candidates,
+- the first page,
+- all other pages,
+- all other objects.
 
-  The considerations from the perspective of purpose 1 are similar to those of purpose 2.
+Using this order, the transitions simplify to
+
+![transition2](images/995_2.png)
+
+Furthermore, there is no need to visit any descendents previously identified as belonging to a
+higher priority part, as all of them will have at least this higher priority.
+
+Consider only purpose 2 for the moment.
+
+The descendents of a page are its children and their descendents. Once the descendents of a child
+have been established there is no need to descend into the child again. Furthermore, if any part 4
+objects are encountered there is no need to descend any further as all of their descendents will be
+part 4.
+
+##### Object streams
+
+It is likely that many of the objects allocated above are members of object streams, and that the
+object streams were generated by qpdf. As this is the most common it would make sense to optimize
+for this case, so let us consider this case further.
+
+Currently, prior to calling optimize, QPDFWriter calls getCompressibleObjGens to select objects and
+determine their order. Writer then splits the retuned objects into approximately equal (by object
+count) streams and then calls optimize with a object / stream mapping.
+
+To select the objects, getCompressibleObjGens has to walk the entire object tree in much the same
+way as optimize does. It appears that:
+
+- getCompressibleObjGens and optimize can be combined so that only a single pass over the object
+  tree is required. Even as it stands at the moment, the object / stream mapping is only required
+  after optimize has completed its pass over the object tree.
+
+- there is nothing preventing us from tweaking the object order outlined in the previous section.
+  This does not only have the benefit outlined in the previous section, but also allows us to know
+  the object stream of each object as we process it. Therefore there is no need for the extra pass
+  currently happening in filterCompressedObjects.
+
+- there is nothing preventing us fixing the allocation of objects to streams to ensure that in
+  practically all cases all objects associated with the first page are in a single object stream,
+  and that there are no part 7 object streams. This im
+
+The considerations from the perspective of purpose 1 are similar to those of purpose 2.
 
 - Replace the 'part' vectors with vectors of 'sub-part' vectors to avoid unnecessary copying.
 
@@ -294,10 +326,56 @@ Some thoughts / questions:
 
   - error handling
 
-    The nature of the errors detected by the analyze method is different on a first run and on subsequent runs. On a
-    first run they indicate problems with the input file that should be fixed and reported while on subsequent runs
-    they would indicate programmer errors and therefore probably should throw a logic error.
+    The nature of the errors detected by the analyze method is different on a first run and on
+    subsequent runs. On a first run they indicate problems with the input file that should be fixed
+    and reported while on subsequent runs they would indicate programmer errors and therefore
+    probably should throw a logic error.
 
   - convenience
 
     Users don't have to implement caching of the helpers for performance reasons themselves.
+
+
+
+
+##### Resources
+
+Diagram 995_1:
+```python
+Diagram(
+    NonTerminal('part 9'),
+    Choice(1,
+           Sequence(
+               Choice(1,
+                      Sequence(
+                          NonTerminal('part 7'),
+                          Choice(1,
+                                 NonTerminal('part 8'),
+                                 Skip())),
+                      NonTerminal('part 6(private)')),
+               Choice(1,
+                      NonTerminal('part 6(shared)'),
+                      Skip())),
+           Skip()),
+    NonTerminal('part 4'))
+```
+
+Diagram 995_2:
+```python
+Diagram(
+    Choice(1,
+           NonTerminal('part 4'),
+           Sequence(
+               NonTerminal('part 6(private)'),
+               Choice(1,
+                      NonTerminal('part 6(shared)'),
+                      Skip())),
+           Sequence(
+               NonTerminal('part 7'),
+               Choice(1,
+                      NonTerminal('part 8'),
+                      Skip())),
+           NonTerminal('part 9')
+           ))
+```
+
