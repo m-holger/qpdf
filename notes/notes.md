@@ -174,98 +174,118 @@ way as optimize does. It appears that:
 ---
 title: Linearization Call Graphs
 ---
-graph LR   
-    
-    subgraph cli[checkLinearizationInternal]
-        direction LR
-        clii[checkLinearizationInternal] --> checkHSharedObject & checkHPageOffset & checkHOutlines
-        checkHOutlines --> maxEnd
-        checkHOutlines --> getLinearizationOffset
-        checkHPageOffset --> getLinearizationOffset
-        checkHPageOffset --> lengthNextN
-        checkHPageOffset --> adjusted_offset
-        checkHSharedObject --> getLinearizationOffset
-        checkHSharedObject --> lengthNextN
-        lengthNextN --> getLinearizationOffset
+graph LR
+
+    subgraph internal
+
+        subgraph calculate
+            cld[calculateLinearizationData] --> pushOutlinesToPart --> getUncompressedObject
+            cld --> getUncompressedObject
+            o[optimize] --> filterCompressedObjects
+        end
+
+        subgraph check
+            direction LR
+            clii[checkLinearizationInternal]
+            clii -->  checkHOutlines & checkHPageOffset & checkHSharedObject
+            checkHOutlines --> maxEnd
+            checkHOutlines --> getLinearizationOffset
+            checkHPageOffset --> getLinearizationOffset & adjusted_offset & lengthNextN
+            checkHSharedObject --> lengthNextN & getLinearizationOffset
+            lengthNextN --> getLinearizationOffset
+        end
+
+
+        subgraph read
+            direction LR
+            rldi[readLinearizationData] --> readHintStream --> readObjectAtOffset
+            rldi --> readHPageOffset & readHSharedObject & readHGeneric
+
+        end
+
+        subgraph show
+            dldi[dumpLinearizationDataInternal] --> dumpHSharedObject & dumpHPageOffset
+            dldi --> dumpHGeneric
+        end
+
+        subgraph wr[write]
+            ghs[generateHintStream] --> calculateHPageOffset & calculateHSharedObject
+            ghs --> calculateHOutline & writeHPageOffset & writeHSharedObject
+            writeHPageOffset & writeHSharedObject
+            calculateHPageOffset --> outputLengthNextN
+            calculateHSharedObject --> outputLengthNextN
+            calculateHOutline --> outputLengthNextN
+        end
+
+
     end
 
-    subgraph rld[readLinearizationData]
-        direction LR
-        rldi[readLinearizationData] --> readHintStream --> readObjectAtOffset
-        rldi --> readHPageOffset & readHSharedObject & readHGeneric
 
-    end
-    
-    subgraph cccc 
-        vvv --> aaa --> bbbb 
-    end
-    
-    subgraph QPDFWriter
-        direction TB
-        write
-        subgraph generate object_to_object_stream
-            generateObjectStreams
-            preserveObjectStreams
-        end
-        subgraph clean-up object_to_object_stream
-            doWriteSetup
-        end
-        write --> doWriteSetup
-        doWriteSetup -->generateObjectStreams
-        doWriteSetup -->preserveObjectStreams
-        write --> writeLinearized
-        writeLinearized --> discardGeneration
-        writeLinearized --> writeHintStream
-    end
-    subgraph QPDF
-        subgraph "QPDF public"
+    subgraph public
+        subgraph QP[QPDF public]
+            direction LR
             isLinearized
             checkLinearization
             showLinearizationData
         end
 
-            pushOutlinesToPart --> getUncompressedObject
-            generateHintStream --> calculateHPageOffset --> outputLengthNextN
-            calculateHSharedObject --> outputLengthNextN
-            calculateHOutline --> outputLengthNextN
-            generateHintStream --> writeHPageOffset
-            generateHintStream --> writeHSharedObject
+        subgraph QPDFWriter
+            direction LR
+            write
+            subgraph generate object_to_object_stream
+                generateObjectStreams
+                preserveObjectStreams
+            end
+            subgraph clean-up object_to_object_stream
+                doWriteSetup
+            end
+            write --> doWriteSetup
+            doWriteSetup --> generateObjectStreams
+            doWriteSetup --> preserveObjectStreams
+            write --> writeLinearized
+            writeLinearized --> discardGeneration
+            writeLinearized --> writeHintStream
+        end
+    end
 
+    subgraph QPDF
+        readLinearizationData --> il[isLinearized]
+        dumpLinearizationDataInternal
+        generateHintStream
+        checkLinearizationInternal --> calculateLinearizationData & optimize
+        getLinearizedParts --> calculateLinearizationData
         subgraph "object stream"
             getCompressibleObjGens
             getObjectStreamData
         end
-
-            readLinearizationData --> isLinearized
-
-        checkLinearization --> checkLinearizationInternal
-        checkLinearization --> readLinearizationData
-
-        showLinearizationData --> checkLinearizationInternal
-        showLinearizationData --> dumpLinearizationDataInternal
-        showLinearizationData --> readLinearizationData
-        dumpLinearizationDataInternal --> dumpHPageOffset
-        dumpLinearizationDataInternal --> dumpHSharedObject
-        dumpLinearizationDataInternal --> dumpHGeneric
-        checkLinearizationInternal --> optimize
-        checkLinearizationInternal --> calculateLinearizationData
-        optimize --> filterCompressedObjects
-        getLinearizedParts --> calculateLinearizationData
-        calculateLinearizationData --> getUncompressedObject
-        calculateLinearizationData --> pushOutlinesToPart
     end
-    generateObjectStreams --> getCompressibleObjGens 
-    preserveObjectStreams --> getCompressibleObjGens
-    preserveObjectStreams --> getObjectStreamData
-    writeLinearized -- passes object_to_object_stream --> optimize
-    writeLinearized ----> getLinearizedParts
-    writeHintStream --> generateHintStream
-    QPDF ~~~~~~ cli
-%%    QPDFWriter ~~~ QPDF
-    
 
-    
-    
+%% QPDF public / QPDF
+
+    showLinearizationData --> dumpLinearizationDataInternal --> dldi
+    isLinearized --> il
+    checkLinearization & showLinearizationData --> checkLinearizationInternal
+    checkLinearization & showLinearizationData --> readLinearizationData
+    readLinearizationData ~~~ il[isLinearized]
+
+%% QPDFWriter / QPDF
+
+    generateObjectStreams --> getCompressibleObjGens
+    preserveObjectStreams --> getCompressibleObjGens & getObjectStreamData
+    writeLinearized ----> getLinearizedParts
+    writeHintStream --> generateHintStream --> ghs
+
+%% QPDF / internal
+
+    checkLinearizationInternal --- clii
+    readLinearizationData --- rldi
+    optimize --> o
+    calculateLinearizationData --> cld
+
+    QPDF ~~~~~ check
+    QPDF ~~~~ calculate
+    readLinearizationData ~~~ check
+
 
 ```
 
