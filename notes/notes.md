@@ -171,8 +171,34 @@ way as optimize does. It appears that:
   and that there are no part 7 object streams. This implies that only part 
 
 ```mermaid
+---
+title: Linearization Call Graphs
+---
 graph LR
+
+
+    subgraph cli[checkLinearizationInternal]
+        direction LR
+        clii[checkLinearizationInternal] --> checkHSharedObject & checkHPageOffset & checkHOutlines
+        checkHOutlines --> maxEnd
+        checkHOutlines --> getLinearizationOffset
+        checkHPageOffset --> getLinearizationOffset
+        checkHPageOffset --> lengthNextN
+        checkHPageOffset --> adjusted_offset
+        checkHSharedObject --> getLinearizationOffset
+        checkHSharedObject --> lengthNextN
+        lengthNextN --> getLinearizationOffset
+    end
+
+    subgraph rld[readLinearizationData]
+        direction LR
+        rldi[readLinearizationData] --> readHintStream --> readObjectAtOffset
+        rldi --> readHPageOffset & readHSharedObject & readHGeneric
+
+    end
+    
     subgraph QPDFWriter
+        write
         subgraph "generate object_to_object_stream"
             generateObjectStreams
             preserveObjectStreams
@@ -193,28 +219,24 @@ graph LR
             checkLinearization
             showLinearizationData
         end
-        subgraph write
+
             pushOutlinesToPart --> getUncompressedObject
             generateHintStream --> calculateHPageOffset --> outputLengthNextN
             calculateHSharedObject --> outputLengthNextN
             calculateHOutline --> outputLengthNextN
             generateHintStream --> writeHPageOffset
             generateHintStream --> writeHSharedObject
-        end
+
         subgraph "object stream"
             getCompressibleObjGens
             getObjectStreamData
         end
-        subgraph read
+
             readLinearizationData --> isLinearized
-            readLinearizationData --> readHintStream
-            readLinearizationData --> readHPageOffset
-            readLinearizationData --> readHSharedObject
-            readLinearizationData --> readHGeneric
-        end
+
         checkLinearization --> checkLinearizationInternal
         checkLinearization --> readLinearizationData
-        readHintStream --> readObjectAtOffset
+
         showLinearizationData --> checkLinearizationInternal
         showLinearizationData --> dumpLinearizationDataInternal
         showLinearizationData --> readLinearizationData
@@ -223,19 +245,8 @@ graph LR
         dumpLinearizationDataInternal --> dumpHGeneric
         checkLinearizationInternal --> optimize
         checkLinearizationInternal --> calculateLinearizationData
-        checkLinearizationInternal --> checkHSharedObject
-        checkLinearizationInternal --> checkHPageOffset
-        checkLinearizationInternal --> checkHOutlines
         optimize --> filterCompressedObjects
         getLinearizedParts --> calculateLinearizationData
-        checkHOutlines --> maxEnd
-        checkHOutlines --> getLinearizationOffset
-        checkHPageOffset --> getLinearizationOffset
-        checkHPageOffset --> lengthNextN
-        checkHPageOffset --> adjusted_offset
-        checkHSharedObject --> getLinearizationOffset
-        checkHSharedObject --> lengthNextN
-        lengthNextN --> getLinearizationOffset
         calculateLinearizationData --> getUncompressedObject
         calculateLinearizationData --> pushOutlinesToPart
     end
@@ -243,8 +254,14 @@ graph LR
     preserveObjectStreams --> getCompressibleObjGens
     preserveObjectStreams --> getObjectStreamData
     writeLinearized -- passes object_to_object_stream --> optimize
-    writeLinearized --> getLinearizedParts
+    writeLinearized ----> getLinearizedParts
     writeHintStream --> generateHintStream
+    
+    QPDFWriter ~~~~~ QPDF
+    
+
+    
+    
 
 ```
 
