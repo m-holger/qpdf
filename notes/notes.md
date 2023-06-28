@@ -174,9 +174,8 @@ way as optimize does. It appears that:
 ---
 title: Linearization Call Graphs
 ---
-graph LR
-
-
+graph LR   
+    
     subgraph cli[checkLinearizationInternal]
         direction LR
         clii[checkLinearizationInternal] --> checkHSharedObject & checkHPageOffset & checkHOutlines
@@ -197,13 +196,18 @@ graph LR
 
     end
     
+    subgraph cccc 
+        vvv --> aaa --> bbbb 
+    end
+    
     subgraph QPDFWriter
+        direction TB
         write
-        subgraph "generate object_to_object_stream"
+        subgraph generate object_to_object_stream
             generateObjectStreams
             preserveObjectStreams
         end
-        subgraph "clean-up object_to_object_stream"
+        subgraph clean-up object_to_object_stream
             doWriteSetup
         end
         write --> doWriteSetup
@@ -250,14 +254,14 @@ graph LR
         calculateLinearizationData --> getUncompressedObject
         calculateLinearizationData --> pushOutlinesToPart
     end
-    generateObjectStreams --> getCompressibleObjGens
+    generateObjectStreams --> getCompressibleObjGens 
     preserveObjectStreams --> getCompressibleObjGens
     preserveObjectStreams --> getObjectStreamData
     writeLinearized -- passes object_to_object_stream --> optimize
     writeLinearized ----> getLinearizedParts
     writeHintStream --> generateHintStream
-    
-    QPDFWriter ~~~~~ QPDF
+    QPDF ~~~~~~ cli
+%%    QPDFWriter ~~~ QPDF
     
 
     
