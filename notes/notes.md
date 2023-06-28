@@ -249,10 +249,10 @@ graph LR
     end
 
     subgraph QPDF
-        readLinearizationData --> il[isLinearized]
         dumpLinearizationDataInternal
+        readLinearizationData --> il[isLinearized]
         generateHintStream
-        checkLinearizationInternal --> calculateLinearizationData & optimize
+        checkLinearizationInternal --> optimize & calculateLinearizationData
         getLinearizedParts --> calculateLinearizationData
         subgraph "object stream"
             getCompressibleObjGens
@@ -272,7 +272,7 @@ graph LR
 
     generateObjectStreams --> getCompressibleObjGens
     preserveObjectStreams --> getCompressibleObjGens & getObjectStreamData
-    writeLinearized ----> getLinearizedParts
+    writeLinearized ----> optimize & getLinearizedParts
     writeHintStream --> generateHintStream --> ghs
 
 %% QPDF / internal
