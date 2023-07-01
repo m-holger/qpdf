@@ -286,7 +286,7 @@ QPDF::readHintStream(Pipeline& pl, qpdf_offset_t offset, size_t length)
     QPDFObjGen og;
     QPDFObjectHandle H =
         readObjectAtOffset(false, offset, "linearization hint stream", QPDFObjGen(0, 0), og, false);
-    ObjCache& oc = m->obj_cache[og];
+    Obj& oc = m->obj_table[og];
     qpdf_offset_t min_end_offset = oc.end_before_space;
     qpdf_offset_t max_end_offset = oc.end_after_space;
     if (!H.isStream()) {
@@ -304,7 +304,7 @@ QPDF::readHintStream(Pipeline& pl, qpdf_offset_t offset, size_t length)
         QTC::TC("qpdf", "QPDF hint table length indirect");
         // Force resolution
         (void)length_obj.getIntValue();
-        ObjCache& oc2 = m->obj_cache[length_obj.getObjGen()];
+        Obj& oc2 = m->obj_table[length_obj.getObjGen()];
         min_end_offset = oc2.end_before_space;
         max_end_offset = oc2.end_after_space;
     } else {
@@ -443,7 +443,7 @@ QPDF::checkLinearizationInternal()
     for (size_t i = 0; i < toS(npages); ++i) {
         QPDFObjectHandle const& page = pages.at(i);
         QPDFObjGen og(page.getObjGen());
-        if (m->xref_table[og].getType() == 2) {
+        if (m->obj_table[og].xref.getType() == 2) {
             linearizationWarning(
                 "page dictionary for page " + std::to_string(i) + " is compressed");
         }
@@ -485,11 +485,9 @@ QPDF::checkLinearizationInternal()
     // to figure out which objects are compressed and which are uncompressed.
     { // local scope
         std::map<int, int> object_stream_data;
-        for (auto const& iter: m->xref_table) {
-            QPDFObjGen const& og = iter.first;
-            QPDFXRefEntry const& entry = iter.second;
-            if (entry.getType() == 2) {
-                object_stream_data[og.getObj()] = entry.getObjStreamNumber();
+        for (auto const& [og, entry]: m->obj_table) {
+            if (entry.xref.getType() == 2) {
+                object_stream_data[og.getObj()] = entry.xref.getObjStreamNumber();
             }
         }
         optimize(object_stream_data, false);
@@ -511,11 +509,11 @@ QPDF::checkLinearizationInternal()
     qpdf_offset_t max_E = -1;
     for (auto const& oh: m->part6) {
         QPDFObjGen og(oh.getObjGen());
-        if (m->obj_cache.count(og) == 0) {
+        if (m->obj_table.count(og) == 0) {
             // All objects have to have been dereferenced to be classified.
             throw std::logic_error("linearization part6 object not in cache");
         }
-        ObjCache const& oc = m->obj_cache[og];
+        Obj const& oc = m->obj_table[og];
         min_E = std::max(min_E, oc.end_before_space);
         max_E = std::max(max_E, oc.end_after_space);
     }
@@ -544,10 +542,10 @@ QPDF::maxEnd(ObjUser const& ou)
     }
     qpdf_offset_t end = 0;
     for (auto const& og: m->obj_user_to_objects[ou]) {
-        if (m->obj_cache.count(og) == 0) {
+        if (m->obj_table.count(og) == 0) {
             stopOnError("unknown object referenced in object user table");
         }
-        end = std::max(end, m->obj_cache[og].end_after_space);
+        end = std::max(end, m->obj_table[og].end_after_space);
     }
     return end;
 }
@@ -555,7 +553,7 @@ QPDF::maxEnd(ObjUser const& ou)
 qpdf_offset_t
 QPDF::getLinearizationOffset(QPDFObjGen const& og)
 {
-    QPDFXRefEntry entry = m->xref_table[og];
+    QPDFXRefEntry entry = m->obj_table[og].xref;
     qpdf_offset_t result = 0;
     switch (entry.getType()) {
     case 1:
@@ -588,20 +586,23 @@ QPDF::getUncompressedObject(QPDFObjectHandle& obj, std::map<int, int> const& obj
 int
 QPDF::lengthNextN(int first_object, int n)
 {
-    int length = 0;
+    qpdf_offset_t length = 0;
+    auto iter = m->obj_table.find(QPDFObjGen(first_object, 0));
+    auto end = m->obj_table.end();
     for (int i = 0; i < n; ++i) {
         QPDFObjGen og(first_object + i, 0);
-        if (m->xref_table.count(og) == 0) {
+        if (iter == end || iter->first != QPDFObjGen(first_object + i, 0)) {
+            stopOnError("found unknown object while calculating length for linearization data");
+        }
+        if (iter->second.xref.getType() == 3) {
             linearizationWarning(
                 "no xref table entry for " + std::to_string(first_object + i) + " 0");
         } else {
-            if (m->obj_cache.count(og) == 0) {
-                stopOnError("found unknown object while calculating length for linearization data");
-            }
-            length += toI(m->obj_cache[og].end_after_space - getLinearizationOffset(og));
+            length += iter->second.end_after_space - getLinearizationOffset(og);
         }
+        ++iter;
     }
-    return length;
+    return toI(length);
 }
 
 void
@@ -623,7 +624,7 @@ QPDF::checkHPageOffset(
     int npages = toI(pages.size());
     qpdf_offset_t table_offset = adjusted_offset(m->page_offset_hints.first_page_offset);
     QPDFObjGen first_page_og(pages.at(0).getObjGen());
-    if (m->xref_table.count(first_page_og) == 0) {
+    if (m->obj_table[first_page_og].xref.getType() == 4) {
         stopOnError("supposed first page object is not known");
     }
     qpdf_offset_t offset = getLinearizationOffset(first_page_og);
@@ -634,7 +635,7 @@ QPDF::checkHPageOffset(
     for (int pageno = 0; pageno < npages; ++pageno) {
         QPDFObjGen page_og(pages.at(toS(pageno)).getObjGen());
         int first_object = page_og.getObj();
-        if (m->xref_table.count(page_og) == 0) {
+        if (m->obj_table[page_og].xref.getType() == 4) {
             stopOnError("unknown object in page offset hint table");
         }
         offset = getLinearizationOffset(page_og);
@@ -756,7 +757,7 @@ QPDF::checkHSharedObject(std::vector<QPDFObjectHandle> const& pages, std::map<in
                 cur_object = so.first_shared_obj;
 
                 QPDFObjGen og(cur_object, 0);
-                if (m->xref_table.count(og) == 0) {
+                if (m->obj_table[og].xref.getType() == 4) {
                     stopOnError("unknown object in shared object hint table");
                 }
                 qpdf_offset_t offset = getLinearizationOffset(og);
@@ -807,7 +808,7 @@ QPDF::checkHOutlines()
                 return;
             }
             QPDFObjGen og(outlines.getObjGen());
-            if (m->xref_table.count(og) == 0) {
+            if (m->obj_table[og].xref.getType() == 4) {
                 stopOnError("unknown object in outlines hint table");
             }
             qpdf_offset_t offset = getLinearizationOffset(og);

@@ -859,18 +859,13 @@ class QPDF
 
     static std::string const qpdf_version;
 
-    class ObjCache
+    class Obj
     {
       public:
-        ObjCache() :
-            end_before_space(0),
-            end_after_space(0)
-        {
-        }
-        ObjCache(
-            std::shared_ptr<QPDFObject> object,
-            qpdf_offset_t end_before_space,
-            qpdf_offset_t end_after_space) :
+        Obj() = default;
+        Obj(std::shared_ptr<QPDFObject> object,
+            qpdf_offset_t end_before_space = -1,
+            qpdf_offset_t end_after_space = -1) :
             object(object),
             end_before_space(end_before_space),
             end_after_space(end_after_space)
@@ -878,8 +873,9 @@ class QPDF
         }
 
         std::shared_ptr<QPDFObject> object;
-        qpdf_offset_t end_before_space;
-        qpdf_offset_t end_after_space;
+        qpdf_offset_t end_before_space{-1};
+        qpdf_offset_t end_after_space{-1};
+        QPDFXRefEntry xref{QPDFXRefEntry::missing()};
     };
 
     class ObjCopier
@@ -1458,9 +1454,8 @@ class QPDF
         bool check_mode{false};
         std::shared_ptr<EncryptionParameters> encp;
         std::string pdf_version;
-        std::map<QPDFObjGen, QPDFXRefEntry> xref_table;
         std::set<int> deleted_objects;
-        std::map<QPDFObjGen, ObjCache> obj_cache;
+        std::map<QPDFObjGen, Obj> obj_table;
         std::set<QPDFObjGen> resolving;
         QPDFObjectHandle trailer;
         std::vector<QPDFObjectHandle> all_pages;

@@ -232,8 +232,8 @@ class QPDF::JSONReactor: public JSON::Reactor
         descr(std::make_shared<QPDFValue::Description>(
             QPDFValue::JSON_Descr(std::make_shared<std::string>(is->getName()), "")))
     {
-        for (auto& oc: pdf.m->obj_cache) {
-            if (oc.second.object->getTypeCode() == ::ot_reserved) {
+        for (auto& oc: pdf.m->obj_table) {
+            if (oc.second.object && oc.second.object->getTypeCode() == ::ot_reserved) {
                 reserved.insert(oc.first);
             }
         }
@@ -416,8 +416,9 @@ QPDF::JSONReactor::containerEnd(JSON const& value)
         // Handle dangling indirect object references which the PDF spec says to treat as nulls.
         // It's tempting to make this an error, but that would be wrong since valid input files may
         // have these.
-        for (auto& oc: pdf.m->obj_cache) {
-            if (oc.second.object->getTypeCode() == ::ot_reserved && reserved.count(oc.first) == 0) {
+        for (auto& oc: pdf.m->obj_table) {
+            if (oc.second.object && oc.second.object->getTypeCode() == ::ot_reserved &&
+                reserved.count(oc.first) == 0) {
                 QTC::TC("qpdf", "QPDF_json non-trivial null reserved");
                 pdf.updateCache(oc.first, QPDF_Null::create(), -1, -1);
             }
