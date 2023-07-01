@@ -1132,11 +1132,11 @@ QPDF::insertXrefEntry(int obj, int f0, qpdf_offset_t f1, int f2)
     case 1:
         // f2 is generation
         QTC::TC("qpdf", "QPDF xref gen > 0", ((f2 > 0) ? 1 : 0));
-        iter->second = QPDFXRefEntry(f1);
+        iter->second = QPDFXRefEntry::uncompressed(f1);
         break;
 
     case 2:
-        iter->second = QPDFXRefEntry(toI(f1), f2);
+        iter->second = QPDFXRefEntry::compressed(toI(f1), f2);
         break;
 
     default:
@@ -1163,7 +1163,7 @@ QPDF::insertReconstructedXrefEntry(int obj, qpdf_offset_t f1, int f2)
         // deleted_objects stores the uncompressed objects removed from the xref table at the start
         // of recovery.
         QTC::TC("qpdf", "QPDF xref overwrite object");
-        m->xref_table[QPDFObjGen(obj, f2)] = QPDFXRefEntry(f1);
+        m->xref_table[QPDFObjGen(obj, f2)] = QPDFXRefEntry::uncompressed(f1);
     }
 }
 

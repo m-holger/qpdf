@@ -1038,7 +1038,7 @@ QPDFWriter::openObject(int objid)
     if (objid == 0) {
         objid = m->next_objid++;
     }
-    m->xref[objid] = QPDFXRefEntry(m->pipeline->getCount());
+    m->xref[objid] = QPDFXRefEntry::uncompressed(m->pipeline->getCount());
     writeString(std::to_string(objid));
     writeString(" 0 obj\n");
     return objid;
@@ -2416,7 +2416,7 @@ QPDFWriter::writeXRefStream(
 
     // Must store in xref table in advance of writing the actual data rather than waiting for
     // openObject to do it.
-    m->xref[xref_id] = QPDFXRefEntry(m->pipeline->getCount());
+    m->xref[xref_id] = QPDFXRefEntry::uncompressed(m->pipeline->getCount());
 
     Pipeline* p = pushPipeline(new Pl_Buffer("xref stream"));
     bool compressed = false;
@@ -2794,7 +2794,7 @@ QPDFWriter::writeLinearized()
                     writeEncryptionDictionary();
                 }
                 if (pass == 1) {
-                    m->xref[hint_id] = QPDFXRefEntry(m->pipeline->getCount());
+                    m->xref[hint_id] = QPDFXRefEntry::uncompressed(m->pipeline->getCount());
                 } else {
                     // Part 5: hint stream
                     writeBuffer(hint_buffer);
@@ -2881,7 +2881,7 @@ QPDFWriter::writeLinearized()
             hint_length = QIntC::to_offset(hint_buffer->getSize());
 
             // Restore hint offset
-            m->xref[hint_id] = QPDFXRefEntry(hint_offset1);
+            m->xref[hint_id] = QPDFXRefEntry::uncompressed(hint_offset1);
             if (lin_pass1_file) {
                 // Write some debugging information
                 fprintf(
