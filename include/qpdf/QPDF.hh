@@ -878,6 +878,10 @@ class QPDF
         QPDFXRefEntry xref{QPDFXRefEntry::missing()};
     };
 
+    class ObjTable: public std::map<QPDFObjGen, Obj>
+    {
+    };
+
     class ObjCopier
     {
       public:
@@ -1455,7 +1459,7 @@ class QPDF
         std::shared_ptr<EncryptionParameters> encp;
         std::string pdf_version;
         std::set<int> deleted_objects;
-        std::map<QPDFObjGen, Obj> obj_table;
+        ObjTable obj_table;
         std::set<QPDFObjGen> resolving;
         QPDFObjectHandle trailer;
         std::vector<QPDFObjectHandle> all_pages;
