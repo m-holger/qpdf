@@ -538,7 +538,7 @@ QPDF::reconstruct_xref(QPDFExc& e)
 
     // Delete all references to type 1 (uncompressed) objects
     for (auto& [og, entry]: m->obj_table) {
-        if (entry.xref.getType() == 1) {
+        if (entry.uncompressed()) {
             entry.xref = QPDFXRefEntry::missing();
         }
     }
@@ -659,7 +659,7 @@ QPDF::read_xref(qpdf_offset_t xref_offset)
     int size = m->trailer.getKey("/Size").getIntValueAsInt();
     int max_obj = 0;
     for (auto iter = m->obj_table.rbegin(); iter != m->obj_table.rend(); ++iter) {
-        if (iter->second.xref.getType() != 3) {
+        if (iter->second.contains_xref()) {
             max_obj = iter->first.getObj();
             break;
         }
@@ -1124,7 +1124,7 @@ QPDF::insertXrefEntry(int obj, int f0, qpdf_offset_t f1, int f2)
     }
 
     auto [iter, created] = m->obj_table.try_emplace(QPDFObjGen(obj, (f0 == 2 ? 0 : f2)));
-    if (!created && iter->second.xref.getType() != 3) {
+    if (!created && iter->second.contains_xref()) {
         QTC::TC("qpdf", "QPDF xref reused object");
         return;
     }
@@ -1132,7 +1132,7 @@ QPDF::insertXrefEntry(int obj, int f0, qpdf_offset_t f1, int f2)
     switch (f0) {
     case 1:
         // f2 is generation
-        QTC::TC("qpdf", "QPDF xref gen > 0", ((f2 > 0) ? 1 : 0));
+        QTC::TC("qpdf", "QPDF xref gen > 0", (f2 > 0 ? 1 : 0));
         iter->second.xref = QPDFXRefEntry::uncompressed(f1);
         break;
 
@@ -1464,7 +1464,7 @@ QPDF::recoverStreamLength(
 
         // Make sure this is inside this object
         for (auto const& [og_e, entry]: m->obj_table) {
-            if (entry.xref.getType() == 1) {
+            if (entry.uncompressed()) {
                 qpdf_offset_t obj_offset = entry.xref.getOffset();
                 if ((obj_offset > stream_offset) &&
                     ((this_obj_offset == 0) || (this_obj_offset > obj_offset))) {
@@ -1623,8 +1623,7 @@ QPDF::readObjectAtOffset(
             }
         }
         qpdf_offset_t end_after_space = m->file->tell();
-        if (skip_cache_if_in_xref && m->obj_table.count(og) &&
-            m->obj_table[og].xref.getType() != 3) {
+        if (skip_cache_if_in_xref && m->obj_table.contains_xref(og)) {
             // Ordinarily, an object gets read here when resolved through xref table or stream. In
             // the special case of the xref stream and linearization hint tables, the offset comes
             // from another source. For the specific case of xref streams, the xref stream is read
@@ -1785,8 +1784,8 @@ QPDF::resolveObjectsInStream(int obj_stream_number)
     m->last_object_description += "object ";
     for (auto const& [obj, offset]: offsets) {
         QPDFObjGen og(obj, 0);
-        QPDFXRefEntry const& entry = m->obj_table[og].xref;
-        if ((entry.getType() == 2) && (entry.getObjStreamNumber() == obj_stream_number)) {
+        auto const& entry = m->obj_table[og];
+        if (entry.compressed() && entry.xref.getObjStreamNumber() == obj_stream_number) {
             input->seek(offset, SEEK_SET);
             QPDFObjectHandle oh = readObjectInStream(input, obj);
             updateCache(og, oh.getObj(), end_before_space, end_after_space);
@@ -2319,7 +2318,7 @@ QPDF::getXRefTable()
     }
     std::map<QPDFObjGen, QPDFXRefEntry> result;
     for (auto const& [og, entry]: m->obj_table) {
-        if (entry.xref.getType() != 3) {
+        if (entry.contains_xref()) {
             result[og] = entry.xref;
         }
     }
@@ -2330,7 +2329,7 @@ void
 QPDF::getObjectStreamData(std::map<int, int>& omap)
 {
     for (auto const& [og, entry]: m->obj_table) {
-        if (entry.xref.getType() == 2) {
+        if (entry.compressed()) {
             omap[og.getObj()] = entry.xref.getObjStreamNumber();
         }
     }

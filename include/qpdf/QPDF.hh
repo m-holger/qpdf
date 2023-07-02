@@ -872,6 +872,27 @@ class QPDF
         {
         }
 
+        // Contains a "type 1" xref record.
+        bool
+        uncompressed() const noexcept
+        {
+            return xref.getType() == 1;
+        }
+
+        // Contains a "type 2" xref record.
+        bool
+        compressed() const noexcept
+        {
+            return xref.getType() == 2;
+        }
+
+        // Contains a "type 1" or "type 2" xref record.
+        bool
+        contains_xref() const
+        {
+            return xref.getType() != 3;
+        }
+
         std::shared_ptr<QPDFObject> object;
         qpdf_offset_t end_before_space{-1};
         qpdf_offset_t end_after_space{-1};
@@ -880,6 +901,76 @@ class QPDF
 
     class ObjTable: public std::map<QPDFObjGen, Obj>
     {
+      public:
+        // C++20: remove
+        bool
+        contains(QPDFObjGen og) const
+        {
+            return count(og) != 0;
+        }
+
+        // iter points to entry with a ("type 1" or "type 2") xref entry.
+        bool
+        contains_xref(iterator iter) const
+        {
+            return iter != end() && iter->second.contains_xref();
+        }
+
+        // iter points to entry with a ("type 1" or "type 2") xref entry.
+        bool
+        contains_xref(const_iterator iter) const
+        {
+            return iter != end() && iter->second.contains_xref();
+        }
+
+        // og has a ("type 1" or "type 2") xref entry.
+        bool
+        contains_xref(QPDFObjGen og) const
+        {
+            return contains_xref(find(og));
+        }
+
+        // iter points to entry with a "type 1" xref entry.
+        bool
+        uncompressed(iterator iter) const
+        {
+            return iter != end() && iter->second.uncompressed();
+        }
+
+        // iter points to entry with a "type 1" xref entry.
+        bool
+        uncompressed(const_iterator iter) const
+        {
+            return iter != end() && iter->second.uncompressed();
+        }
+
+        // og has a "type 1" xref entry.
+        bool
+        uncompressed(QPDFObjGen og) const
+        {
+            return uncompressed(find(og));
+        }
+
+        // iter points to entry with a "type 2" xref entry.
+        bool
+        compressed(iterator iter) const
+        {
+            return iter != end() && iter->second.compressed();
+        }
+
+        // iter points to entry with a "type 2" xref entry.
+        bool
+        compressed(const_iterator iter) const
+        {
+            return iter != end() && iter->second.compressed();
+        }
+
+        // og has a "type 2" xref entry.
+        bool
+        compressed(QPDFObjGen og) const
+        {
+            return compressed(find(og));
+        }
     };
 
     class ObjCopier
