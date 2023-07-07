@@ -921,6 +921,12 @@ class QPDF
         }
 
         bool unresolved() const;
+
+        void updateObject(
+            std::shared_ptr<QPDFObject> const& object,
+            qpdf_offset_t end_before_space = -1,
+            qpdf_offset_t end_after_space = -1);
+
         std::shared_ptr<QPDFObject> object;
         qpdf_offset_t end_before_space{-1};
         qpdf_offset_t end_after_space{-1};
@@ -1151,10 +1157,15 @@ class QPDF
     QPDFObjectHandle makeIndirectFromQPDFObject(std::shared_ptr<QPDFObject> const& obj);
     bool isCached(QPDFObjGen const& og);
     void updateCache(
-        QPDFObjGen const& og,
+        QPDFObjGen og,
         std::shared_ptr<QPDFObject> const& object,
-        qpdf_offset_t end_before_space,
-        qpdf_offset_t end_after_space);
+        qpdf_offset_t end_before_space = -1,
+        qpdf_offset_t end_after_space = -1);
+    void updateCache(
+        std::pair<QPDFObjGen const, QPDF::Obj>& elem,
+        std::shared_ptr<QPDFObject> const& object,
+        qpdf_offset_t end_before_space = -1,
+        qpdf_offset_t end_after_space = -1);
     static QPDFExc damagedPDF(
         std::shared_ptr<InputSource> const& input,
         std::string const& object,

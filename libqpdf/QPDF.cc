@@ -1622,7 +1622,8 @@ QPDF::readObjectAtOffset(
             }
         }
         qpdf_offset_t end_after_space = m->file->tell();
-        if (skip_cache_if_in_xref && m->obj_table.contains_xref(og)) {
+        auto obj_iter = m->obj_table.find(og);
+        if (skip_cache_if_in_xref && m->obj_table.contains_xref(obj_iter)) {
             // Ordinarily, an object gets read here when resolved through xref table or stream. In
             // the special case of the xref stream and linearization hint tables, the offset comes
             // from another source. For the specific case of xref streams, the xref stream is read
@@ -1650,7 +1651,7 @@ QPDF::readObjectAtOffset(
             // could use !check_og in place of skip_cache_if_in_xref.
             QTC::TC("qpdf", "QPDF skipping cache for known unchecked object");
         } else {
-            updateCache(og, oh.getObj(), end_before_space, end_after_space);
+            obj_iter->second.updateObject(oh.getObj(), end_before_space, end_after_space);
         }
     }
 
@@ -1669,7 +1670,7 @@ QPDF::resolve(QPDFObjGen og)
         // has to be resolved during object parsing, such as stream length.
         QTC::TC("qpdf", "QPDF recursion loop in resolve");
         warn(damagedPDF("", "loop detected resolving object " + og.unparse(' ')));
-        updateCache(og, QPDF_Null::create(), -1, -1);
+        updateCache(og, QPDF_Null::create());
         return;
     }
     ResolveRecorder rr(this, og);
@@ -1708,7 +1709,7 @@ QPDF::resolve(QPDFObjGen og)
     if (m->obj_table[og].unresolved()) {
         // PDF spec says unknown objects resolve to the null object.
         QTC::TC("qpdf", "QPDF resolve failure to null");
-        updateCache(og, QPDF_Null::create(), -1, -1);
+        updateCache(og, QPDF_Null::create());
     }
 
     auto result(m->obj_table[og].object);
@@ -1803,23 +1804,24 @@ QPDF::newIndirect(QPDFObjGen const& og, std::shared_ptr<QPDFObject> const& obj)
 
 void
 QPDF::updateCache(
-    QPDFObjGen const& og,
+    QPDFObjGen og,
     std::shared_ptr<QPDFObject> const& object,
     qpdf_offset_t end_before_space,
     qpdf_offset_t end_after_space)
 {
     object->setObjGen(this, og);
-    if (isCached(og)) {
-        auto& cache = m->obj_table[og];
-        if (!cache.object) {
-            cache.object = QPDF_Unresolved::create(this, og);
-        }
-        cache.object->assign(object);
-        cache.end_before_space = end_before_space;
-        cache.end_after_space = end_after_space;
-    } else {
-        m->obj_table[og] = Obj(object, end_before_space, end_after_space);
-    }
+    m->obj_table[og].updateObject(object, end_before_space, end_after_space);
+}
+
+void
+QPDF::updateCache(
+    std::pair<QPDFObjGen const, QPDF::Obj>& elem,
+    std::shared_ptr<QPDFObject> const& object,
+    qpdf_offset_t end_before_space,
+    qpdf_offset_t end_after_space)
+{
+    object->setObjGen(this, elem.first);
+    elem.second.updateObject(object, end_before_space, end_after_space);
 }
 
 bool
@@ -1832,6 +1834,20 @@ bool
 QPDF::Obj::unresolved() const
 {
     return !object || object->isUnresolved();
+}
+
+void QPDF::Obj::updateObject(
+    std::shared_ptr<QPDFObject> const& a_object,
+    qpdf_offset_t a_end_before_space,
+    qpdf_offset_t a_end_after_space)
+{
+    if (object) {
+        object->assign(a_object);
+    } else {
+        object = a_object;
+    }
+    end_before_space = a_end_before_space;
+    end_after_space = a_end_after_space;
 }
 
 QPDFObjGen
@@ -1893,9 +1909,10 @@ QPDF::newStream(std::string const& data)
 QPDFObjectHandle
 QPDF::reserveObjectIfNotExists(QPDFObjGen const& og)
 {
-    if (!isCached(og)) {
-        updateCache(og, QPDF_Reserved::create(), -1, -1);
-        return newIndirect(og, m->obj_table[og].object);
+    auto [iter, created] = m->obj_table.try_emplace(og);
+    if (created) {
+        updateCache(*iter, QPDF_Reserved::create());
+        return newIndirect(og, iter->second.object);
     } else {
         return getObject(og);
     }
@@ -1950,7 +1967,7 @@ QPDF::replaceObject(QPDFObjGen const& og, QPDFObjectHandle oh)
         QTC::TC("qpdf", "QPDF replaceObject called with indirect object");
         throw std::logic_error("QPDF::replaceObject called with indirect object handle");
     }
-    updateCache(og, oh.getObj(), -1, -1);
+    updateCache(og, oh.getObj());
 }
 
 void
