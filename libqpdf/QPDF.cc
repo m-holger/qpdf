@@ -1173,15 +1173,14 @@ QPDF::showXRefTable()
 {
     auto& cout = *m->log->getInfo();
     for (auto const& [og, entry]: m->obj_table) {
-        switch (entry.xref.getType()) {
+        switch (entry.xref_type()) {
         case 1:
-            cout << og.unparse('/') << ": uncompressed; offset = " << entry.xref.getOffset()
-                 << "\n";
+            cout << og.unparse('/') << ": uncompressed; offset = " << entry.offset() << "\n";
             break;
 
         case 2:
-            cout << og.unparse('/') << ": compressed; stream = " << entry.xref.getObjStreamNumber()
-                 << ", index = " << entry.xref.getObjStreamIndex() << "\n";
+            cout << og.unparse('/') << ": compressed; stream = " << entry.stream_number()
+                 << ", index = " << entry.stream_index() << "\n";
             break;
 
         case 3:
@@ -1202,7 +1201,7 @@ QPDF::resolveXRefTable()
 {
     bool may_change = !m->reconstructed_xref;
     for (auto& [og, entry]: m->obj_table) {
-        if (isUnresolved(og)) {
+        if (entry.unresolved()) {
             resolve(og);
             if (may_change && m->reconstructed_xref) {
                 return false;
@@ -1577,8 +1576,8 @@ QPDF::readObjectAtOffset(
             // Try again after reconstructing xref table
             reconstruct_xref(e);
             auto iter = m->obj_table.find(exp_og);
-            if (iter != m->obj_table.end() && iter->second.xref.getType() == 1) {
-                qpdf_offset_t new_offset = iter->second.xref.getOffset();
+            if (m->obj_table.uncompressed(iter)) {
+                qpdf_offset_t new_offset = iter->second.offset();
                 QPDFObjectHandle result =
                     readObjectAtOffset(false, new_offset, description, exp_og, og, false);
                 QTC::TC("qpdf", "QPDF recovered in readObjectAtOffset");
@@ -1600,7 +1599,7 @@ QPDF::readObjectAtOffset(
 
     QPDFObjectHandle oh = readObject(description, og);
 
-    if (isUnresolved(og)) {
+    if (m->obj_table[og].unresolved()) {
         // Store the object in the cache here so it gets cached whether we first know the offset or
         // whether we first know the object ID and generation (in which we case we would get here
         // through resolve).
@@ -1661,7 +1660,7 @@ QPDF::readObjectAtOffset(
 void
 QPDF::resolve(QPDFObjGen og)
 {
-    if (!isUnresolved(og)) {
+    if (!m->obj_table[og].unresolved()) {
         return;
     }
 
@@ -1706,7 +1705,7 @@ QPDF::resolve(QPDFObjGen og)
             "", 0, ("object " + og.unparse('/') + ": error reading object: " + e.what())));
     }
 
-    if (isUnresolved(og)) {
+    if (m->obj_table[og].unresolved()) {
         // PDF spec says unknown objects resolve to the null object.
         QTC::TC("qpdf", "QPDF resolve failure to null");
         updateCache(og, QPDF_Null::create(), -1, -1);
@@ -1785,7 +1784,7 @@ QPDF::resolveObjectsInStream(int obj_stream_number)
     for (auto const& [obj, offset]: offsets) {
         QPDFObjGen og(obj, 0);
         auto const& entry = m->obj_table[og];
-        if (entry.compressed() && entry.xref.getObjStreamNumber() == obj_stream_number) {
+        if (entry.compressed() && entry.stream_number() == obj_stream_number) {
             input->seek(offset, SEEK_SET);
             QPDFObjectHandle oh = readObjectInStream(input, obj);
             updateCache(og, oh.getObj(), end_before_space, end_after_space);
@@ -1830,15 +1829,9 @@ QPDF::isCached(QPDFObjGen const& og)
 }
 
 bool
-QPDF::isUnresolved(QPDFObjGen const& og)
+QPDF::Obj::unresolved() const
 {
-    auto [iter, _ok] = m->obj_table.try_emplace(og);
-
-    if (!iter->second.object) {
-        iter->second.object = QPDF_Unresolved::create(this, og);
-        return true;
-    }
-    return iter->second.object->isUnresolved();
+    return !object || object->isUnresolved();
 }
 
 QPDFObjGen
@@ -1918,8 +1911,12 @@ QPDFObjectHandle
 QPDF::getObject(QPDFObjGen const& og)
 {
     // This method is called by the parser and therefore must not resolve any objects.
-    isUnresolved(og);
-    return newIndirect(og, m->obj_table[og].object);
+    auto& entry = m->obj_table[og];
+    if (!entry.object) {
+        entry.object = QPDF_Unresolved::create(this, og);
+    }
+    entry.object->setDefaultDescription(this, og);
+    return {entry.object};
 }
 
 QPDFObjectHandle
@@ -2330,7 +2327,7 @@ QPDF::getObjectStreamData(std::map<int, int>& omap)
 {
     for (auto const& [og, entry]: m->obj_table) {
         if (entry.compressed()) {
-            omap[og.getObj()] = entry.xref.getObjStreamNumber();
+            omap[og.getObj()] = entry.stream_number();
         }
     }
 }

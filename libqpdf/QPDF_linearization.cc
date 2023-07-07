@@ -487,7 +487,7 @@ QPDF::checkLinearizationInternal()
         std::map<int, int> object_stream_data;
         for (auto const& [og, entry]: m->obj_table) {
             if (entry.compressed()) {
-                object_stream_data[og.getObj()] = entry.xref.getObjStreamNumber();
+                object_stream_data[og.getObj()] = entry.stream_number();
             }
         }
         optimize(object_stream_data, false);

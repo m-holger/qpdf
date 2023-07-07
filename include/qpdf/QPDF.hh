@@ -872,6 +872,12 @@ class QPDF
         {
         }
 
+        int
+        xref_type() const noexcept
+        {
+            return xref.getType();
+        }
+
         // Contains a "type 1" xref record.
         bool
         uncompressed() const noexcept
@@ -893,6 +899,28 @@ class QPDF
             return xref.getType() != 3;
         }
 
+        // For "type 1" xref records return offset, otherwise throw a logic error.
+        qpdf_offset_t
+        offset() const
+        {
+            return xref.getOffset();
+        }
+
+        // For "type 2" xref records return stream number, otherwise throw a logic error.
+        int
+        stream_number() const
+        {
+            return xref.getObjStreamNumber();
+        }
+
+        // For "type 2" xref records return stream index, otherwise throw a logic error.
+        int
+        stream_index() const
+        {
+            return xref.getObjStreamIndex();
+        }
+
+        bool unresolved() const;
         std::shared_ptr<QPDFObject> object;
         qpdf_offset_t end_before_space{-1};
         qpdf_offset_t end_after_space{-1};
@@ -1122,7 +1150,6 @@ class QPDF
     QPDFObjectHandle newIndirect(QPDFObjGen const&, std::shared_ptr<QPDFObject> const&);
     QPDFObjectHandle makeIndirectFromQPDFObject(std::shared_ptr<QPDFObject> const& obj);
     bool isCached(QPDFObjGen const& og);
-    bool isUnresolved(QPDFObjGen const& og);
     void updateCache(
         QPDFObjGen const& og,
         std::shared_ptr<QPDFObject> const& object,
