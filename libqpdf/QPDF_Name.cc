@@ -1,23 +1,23 @@
 #include <qpdf/QPDF_Name.hh>
 
+#include <qpdf/QPDFObject_private.hh>
+#include <qpdf/QPDFValue.hh>
 #include <qpdf/QUtil.hh>
 
-QPDF_Name::QPDF_Name(std::string const& name) :
-    QPDFValue(::ot_name, "name"),
-    name(name)
-{
-}
-
-std::shared_ptr<QPDFObject>
-QPDF_Name::create(std::string const& name)
-{
-    return do_create(new QPDF_Name(name));
-}
+//std::shared_ptr<QPDFObject>
+//QPDF_Name::create(std::string const& name)
+//{
+//    // auto obj = std::make_shared<QPDFObject>();
+//    // obj->value = std::make_shared<Value>(QPDF_Name(name));
+//    // return obj;
+//    return QPDFObject::create<QPDF_Name>(name);
+//    // return do_create(new QPDF_Name(name));
+//}
 
 std::shared_ptr<QPDFObject>
 QPDF_Name::copy(bool shallow)
 {
-    return create(name);
+    return QPDFObject::create<QPDF_Name>(name);
 }
 
 std::string
@@ -43,20 +43,4 @@ QPDF_Name::normalizeName(std::string const& name)
         }
     }
     return result;
-}
-
-std::string
-QPDF_Name::unparse()
-{
-    return normalizeName(this->name);
-}
-
-JSON
-QPDF_Name::getJSON(int json_version)
-{
-    if (json_version == 1) {
-        return JSON::makeString(normalizeName(this->name));
-    } else {
-        return JSON::makeString(this->name);
-    }
 }

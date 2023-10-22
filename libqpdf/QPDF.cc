@@ -23,8 +23,10 @@
 #include <qpdf/QPDFLogger.hh>
 #include <qpdf/QPDFObject_private.hh>
 #include <qpdf/QPDFParser.hh>
+#include <qpdf/QPDFValue.hh>
 #include <qpdf/QPDF_Array.hh>
 #include <qpdf/QPDF_Dictionary.hh>
+#include <qpdf/QPDF_IndirectRef.hh>
 #include <qpdf/QPDF_Null.hh>
 #include <qpdf/QPDF_Reserved.hh>
 #include <qpdf/QPDF_Stream.hh>
@@ -1666,7 +1668,7 @@ QPDF::resolve(QPDFObjGen og)
         // has to be resolved during object parsing, such as stream length.
         QTC::TC("qpdf", "QPDF recursion loop in resolve");
         warn(damagedPDF("", "loop detected resolving object " + og.unparse(' ')));
-        updateCache(og, QPDF_Null::create(), -1, -1);
+        updateCache(og, QPDFObject::create<QPDF_Null>(), -1, -1);
         return;
     }
     ResolveRecorder rr(this, og);
@@ -1703,7 +1705,7 @@ QPDF::resolve(QPDFObjGen og)
     if (isUnresolved(og)) {
         // PDF spec says unknown objects resolve to the null object.
         QTC::TC("qpdf", "QPDF resolve failure to null");
-        updateCache(og, QPDF_Null::create(), -1, -1);
+        updateCache(og, QPDFObject::create<QPDF_Null>(), -1, -1);
     }
 
     auto result(m->obj_cache[og].object);
@@ -1857,13 +1859,13 @@ QPDF::makeIndirectObject(QPDFObjectHandle oh)
 QPDFObjectHandle
 QPDF::newReserved()
 {
-    return makeIndirectFromQPDFObject(QPDF_Reserved::create());
+    return makeIndirectFromQPDFObject(QPDFObject::create<QPDF_Reserved>());
 }
 
 QPDFObjectHandle
 QPDF::newIndirectNull()
 {
-    return makeIndirectFromQPDFObject(QPDF_Null::create());
+    return makeIndirectFromQPDFObject(QPDFObject::create<QPDF_Null>());
 }
 
 QPDFObjectHandle
@@ -1893,7 +1895,7 @@ QPDFObjectHandle
 QPDF::reserveObjectIfNotExists(QPDFObjGen const& og)
 {
     if (!isCached(og) && m->xref_table.count(og) == 0) {
-        updateCache(og, QPDF_Reserved::create(), -1, -1);
+        updateCache(og, QPDFObject::create<QPDF_Reserved>(), -1, -1);
         return newIndirect(og, m->obj_cache[og].object);
     } else {
         return getObject(og);
@@ -1948,6 +1950,7 @@ QPDF::replaceObject(QPDFObjGen const& og, QPDFObjectHandle oh)
         throw std::logic_error("QPDF::replaceObject called with indirect object handle");
     }
     updateCache(og, oh.getObj(), -1, -1);
+    oh.getObjectPtr()->value = QPDFValue(QPDF_IndirectRef(m->obj_cache[og].object));
 }
 
 void
@@ -2179,6 +2182,7 @@ QPDF::copyStreamData(QPDFObjectHandle result, QPDFObjectHandle foreign)
         foreign.getQPDF("unable to retrieve owning qpdf from foreign stream");
 
     auto stream = foreign.getObjectPtr()->as<QPDF_Stream>();
+    auto stream_obj = foreign.getObjectPtr();
     if (stream == nullptr) {
         throw std::logic_error("unable to retrieve underlying"
                                " stream object from foreign stream");
@@ -2212,7 +2216,7 @@ QPDF::copyStreamData(QPDFObjectHandle result, QPDFObjectHandle foreign)
             foreign_stream_qpdf.m->encp,
             foreign_stream_qpdf.m->file,
             foreign.getObjGen(),
-            stream->getParsedOffset(),
+            stream_obj->getParsedOffset(),
             stream->getLength(),
             dict);
         m->copied_stream_data_provider->registerForeignStream(local_og, foreign_stream_data);

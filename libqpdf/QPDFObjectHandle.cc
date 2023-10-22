@@ -10,6 +10,7 @@
 #include <qpdf/QPDFObject_private.hh>
 #include <qpdf/QPDFPageObjectHelper.hh>
 #include <qpdf/QPDFParser.hh>
+#include <qpdf/QPDFValue.hh>
 #include <qpdf/QPDF_Array.hh>
 #include <qpdf/QPDF_Bool.hh>
 #include <qpdf/QPDF_Dictionary.hh>
@@ -978,7 +979,7 @@ QPDFObjectHandle
 QPDFObjectHandle::getKey(std::string const& key)
 {
     if (auto dict = asDictionary()) {
-        return dict->getKey(key);
+        return dict->getKey(obj, key);
     } else {
         typeWarning("dictionary", "returning null for attempted key retrieval");
         QTC::TC("qpdf", "QPDFObjectHandle dictionary null for getKey");
@@ -1241,7 +1242,7 @@ QPDFObjectHandle::removeKeyAndGetOld(std::string const& key)
     auto result = QPDFObjectHandle::newNull();
     auto dict = asDictionary();
     if (dict) {
-        result = dict->getKey(key);
+        result = dict->getKey(obj, key);
     }
     removeKey(key);
     return result;
@@ -1861,43 +1862,43 @@ QPDFObjectHandle::getParsedOffset()
 QPDFObjectHandle
 QPDFObjectHandle::newBool(bool value)
 {
-    return {QPDF_Bool::create(value)};
+    return {QPDFObject::create<QPDF_Bool>(value)};
 }
 
 QPDFObjectHandle
 QPDFObjectHandle::newNull()
 {
-    return {QPDF_Null::create()};
+    return {QPDFObject::create<QPDF_Null>()};
 }
 
 QPDFObjectHandle
 QPDFObjectHandle::newInteger(long long value)
 {
-    return {QPDF_Integer::create(value)};
+    return {QPDFObject::create<QPDF_Integer>(value)};
 }
 
 QPDFObjectHandle
 QPDFObjectHandle::newReal(std::string const& value)
 {
-    return {QPDF_Real::create(value)};
+    return {QPDFObject::create<QPDF_Real>(value)};
 }
 
 QPDFObjectHandle
 QPDFObjectHandle::newReal(double value, int decimal_places, bool trim_trailing_zeroes)
 {
-    return {QPDF_Real::create(value, decimal_places, trim_trailing_zeroes)};
+    return {QPDFObject::create<QPDF_Real>(value, decimal_places, trim_trailing_zeroes)};
 }
 
 QPDFObjectHandle
 QPDFObjectHandle::newName(std::string const& name)
 {
-    return {QPDF_Name::create(name)};
+    return {QPDFObject::create<QPDF_Name>(name)};
 }
 
 QPDFObjectHandle
 QPDFObjectHandle::newString(std::string const& str)
 {
-    return {QPDF_String::create(str)};
+    return {QPDFObject::create<QPDF_String>(str)};
 }
 
 QPDFObjectHandle
@@ -1909,13 +1910,13 @@ QPDFObjectHandle::newUnicodeString(std::string const& utf8_str)
 QPDFObjectHandle
 QPDFObjectHandle::newOperator(std::string const& value)
 {
-    return {QPDF_Operator::create(value)};
+    return {QPDFObject::create<QPDF_Operator>(value)};
 }
 
 QPDFObjectHandle
 QPDFObjectHandle::newInlineImage(std::string const& value)
 {
-    return {QPDF_InlineImage::create(value)};
+    return {QPDFObject::create<QPDF_InlineImage>(value)};
 }
 
 QPDFObjectHandle
@@ -2090,7 +2091,7 @@ QPDFObjectHandle::makeDirect(QPDFObjGen::set& visited, bool stop_at_streams)
         std::map<std::string, QPDFObjectHandle> items;
         auto dict = asDictionary();
         for (auto const& key: getKeys()) {
-            items[key] = dict->getKey(key);
+            items[key] = dict->getKey(obj, key);
             items[key].makeDirect(visited, stop_at_streams);
         }
         this->obj = QPDF_Dictionary::create(items);

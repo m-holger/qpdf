@@ -1,20 +1,44 @@
 #ifndef QPDF_BOOL_HH
 #define QPDF_BOOL_HH
 
-#include <qpdf/QPDFValue.hh>
+#include <qpdf/JSON.hh>
 
-class QPDF_Bool: public QPDFValue
+class QPDFObject;
+
+class QPDF_Bool
 {
+    friend class QPDFObject;
+
   public:
-    ~QPDF_Bool() override = default;
-    static std::shared_ptr<QPDFObject> create(bool val);
-    std::shared_ptr<QPDFObject> copy(bool shallow = false) override;
-    std::string unparse() override;
-    JSON getJSON(int json_version) override;
-    bool getVal() const;
+    QPDF_Bool(QPDF_Bool&&) = default;
+    QPDF_Bool& operator=(QPDF_Bool&&) = default;
+    ~QPDF_Bool() = default;
+
+    std::shared_ptr<QPDFObject>
+    copy(bool shallow = false);
+
+    std::string
+    unparse()
+    {
+        return (val ? "true" : "false");
+    }
+
+    JSON
+    getJSON(int json_version)
+    {
+        return JSON::makeBool(this->val);
+    }
+    bool
+    getVal() const
+    {
+        return this->val;
+    }
 
   private:
-    QPDF_Bool(bool val);
+    QPDF_Bool(bool val) :
+        val(val)
+    {
+    }
     bool val;
 };
 

@@ -3,41 +3,77 @@
 
 #include <qpdf/Types.h>
 
+#include <qpdf/JSON.hh>
 #include <qpdf/QPDFObjectHandle.hh>
 #include <qpdf/QPDFStreamFilter.hh>
-#include <qpdf/QPDFValue.hh>
 
 #include <functional>
 #include <memory>
 
 class Pipeline;
 class QPDF;
+class QPDFValue;
 
-class QPDF_Stream: public QPDFValue
+class QPDF_Stream
 {
+    friend class QPDFObject;
+
   public:
-    ~QPDF_Stream() override = default;
+    QPDF_Stream(QPDF_Stream&&) = default;
+    QPDF_Stream& operator=(QPDF_Stream&&) = default;
+    ~QPDF_Stream() = default;
     static std::shared_ptr<QPDFObject> create(
         QPDF*,
         QPDFObjGen const& og,
         QPDFObjectHandle stream_dict,
         qpdf_offset_t offset,
         size_t length);
-    std::shared_ptr<QPDFObject> copy(bool shallow = false) override;
-    std::string unparse() override;
-    JSON getJSON(int json_version) override;
-    void setDescription(
-        QPDF*, std::shared_ptr<QPDFValue::Description>& description, qpdf_offset_t offset) override;
-    void disconnect() override;
-    QPDFObjectHandle getDict() const;
-    bool isDataModified() const;
-    void setFilterOnWrite(bool);
-    bool getFilterOnWrite() const;
+    std::shared_ptr<QPDFObject> copy(bool shallow = false);
+    std::string unparse();
+    JSON getJSON(int json_version);
 
+    void
+    disconnect()
+    {
+        m->stream_provider = nullptr;
+        QPDFObjectHandle::DisconnectAccess::disconnect(this->stream_dict);
+    }
+    QPDFObjectHandle
+    getDict() const
+    {
+        return this->stream_dict;
+    }
+    bool
+    isDataModified() const
+    {
+        return (!m->token_filters.empty());
+    }
+    void
+    setFilterOnWrite(bool val)
+    {
+        m->filter_on_write = val;
+    }
+    bool
+    getFilterOnWrite() const
+    {
+        return m->filter_on_write;
+    }
     // Methods to help QPDF copy foreign streams
-    size_t getLength() const;
-    std::shared_ptr<Buffer> getStreamDataBuffer() const;
-    std::shared_ptr<QPDFObjectHandle::StreamDataProvider> getStreamDataProvider() const;
+    size_t
+    getLength() const
+    {
+        return m->length;
+    }
+    std::shared_ptr<Buffer>
+    getStreamDataBuffer() const
+    {
+        return m->stream_data;
+    }
+    std::shared_ptr<QPDFObjectHandle::StreamDataProvider>
+    getStreamDataProvider() const
+    {
+        return m->stream_provider;
+    }
 
     // See comments in QPDFObjectHandle.hh for these methods.
     bool pipeStreamData(
@@ -57,7 +93,11 @@ class QPDF_Stream: public QPDFValue
         std::shared_ptr<QPDFObjectHandle::StreamDataProvider> provider,
         QPDFObjectHandle const& filter,
         QPDFObjectHandle const& decode_parms);
-    void addTokenFilter(std::shared_ptr<QPDFObjectHandle::TokenFilter> token_filter);
+    void
+    addTokenFilter(std::shared_ptr<QPDFObjectHandle::TokenFilter> token_filter)
+    {
+        m->token_filters.push_back(token_filter);
+    }
     JSON getStreamJSON(
         int json_version,
         qpdf_json_stream_data_e json_data,
@@ -65,10 +105,19 @@ class QPDF_Stream: public QPDFValue
         Pipeline* p,
         std::string const& data_filename);
 
-    void replaceDict(QPDFObjectHandle const& new_dict);
+    void
+    replaceDict(QPDFObjectHandle const& new_dict)
+    {
+        this->stream_dict = new_dict;
+        setDictDescription();
+    }
 
-    static void registerStreamFilter(
-        std::string const& filter_name, std::function<std::shared_ptr<QPDFStreamFilter>()> factory);
+    static void
+    registerStreamFilter(
+        std::string const& filter_name, std::function<std::shared_ptr<QPDFStreamFilter>()> factory)
+    {
+        filter_factories[filter_name] = factory;
+    }
 
   private:
     QPDF_Stream(
@@ -90,12 +139,23 @@ class QPDF_Stream: public QPDFValue
     void warn(std::string const& message);
     void setDictDescription();
 
-    bool filter_on_write;
+    struct Members
+    {
+        Members(size_t length) :
+            length(length)
+        {
+        }
+
+        bool filter_on_write{true};
+        size_t length;
+        std::shared_ptr<Buffer> stream_data;
+        std::shared_ptr<QPDFObjectHandle::StreamDataProvider> stream_provider;
+        std::vector<std::shared_ptr<QPDFObjectHandle::TokenFilter>> token_filters;
+    };
+
+    std::unique_ptr<Members> m;
     QPDFObjectHandle stream_dict;
-    size_t length;
-    std::shared_ptr<Buffer> stream_data;
-    std::shared_ptr<QPDFObjectHandle::StreamDataProvider> stream_provider;
-    std::vector<std::shared_ptr<QPDFObjectHandle::TokenFilter>> token_filters;
+    QPDFValue* value{nullptr};
 };
 
 #endif // QPDF_STREAM_HH

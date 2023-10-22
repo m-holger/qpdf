@@ -1,20 +1,41 @@
 #ifndef QPDF_INTEGER_HH
 #define QPDF_INTEGER_HH
 
-#include <qpdf/QPDFValue.hh>
+#include <qpdf/JSON.hh>
 
-class QPDF_Integer: public QPDFValue
+class QPDFObject;
+
+class QPDF_Integer
 {
+    friend class QPDFObject;
+
   public:
-    ~QPDF_Integer() override = default;
-    static std::shared_ptr<QPDFObject> create(long long value);
-    std::shared_ptr<QPDFObject> copy(bool shallow = false) override;
-    std::string unparse() override;
-    JSON getJSON(int json_version) override;
-    long long getVal() const;
+    QPDF_Integer() = default;
+    QPDF_Integer(QPDF_Integer&&) = default;
+    QPDF_Integer& operator=(QPDF_Integer&&) = default;
+    ~QPDF_Integer() = default;
+    std::shared_ptr<QPDFObject> copy(bool shallow = false);
+    std::string
+    unparse()
+    {
+        return std::to_string(this->val);
+    }
+    JSON
+    getJSON(int json_version)
+    {
+        return JSON::makeInt(this->val);
+    }
+    long long
+    getVal() const
+    {
+        return this->val;
+    }
 
   private:
-    QPDF_Integer(long long val);
+    QPDF_Integer(long long val) :
+        val(val)
+    {
+    }
     long long val;
 };
 

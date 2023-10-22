@@ -1,27 +1,38 @@
 #ifndef QPDF_NULL_HH
 #define QPDF_NULL_HH
 
-#include <qpdf/QPDFValue.hh>
+#include <qpdf/JSON.hh>
 
-class QPDF_Null: public QPDFValue
+class QPDFObject;
+class Value;
+
+class QPDF_Null
 {
+    friend class QPDFObject;
+
   public:
-    ~QPDF_Null() override = default;
-    static std::shared_ptr<QPDFObject> create();
+    QPDF_Null(QPDF_Null&&) = default;
+    QPDF_Null& operator=(QPDF_Null&&) = default;
+    ~QPDF_Null() = default;
+
     static std::shared_ptr<QPDFObject> create(
         std::shared_ptr<QPDFObject> parent,
         std::string_view const& static_descr,
         std::string var_descr);
-    static std::shared_ptr<QPDFObject> create(
-        std::shared_ptr<QPDFValue> parent,
-        std::string_view const& static_descr,
-        std::string var_descr);
-    std::shared_ptr<QPDFObject> copy(bool shallow = false) override;
-    std::string unparse() override;
-    JSON getJSON(int json_version) override;
+    std::string
+    unparse()
+    {
+        return "null";
+    }
+    JSON
+    getJSON(int json_version)
+    {
+        // If this is updated, QPDF_Array::getJSON must also be updated.
+        return JSON::makeNull();
+    }
 
   private:
-    QPDF_Null();
+    QPDF_Null() = default;
 };
 
 #endif // QPDF_NULL_HH

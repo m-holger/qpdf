@@ -6,8 +6,8 @@
 void
 QPDFObject::doResolve()
 {
-    auto og = value->og;
-    QPDF::Resolver::resolve(value->qpdf, og);
+    auto og = value.og;
+    QPDF::Resolver::resolve(value.qpdf, og);
 }
 
 void

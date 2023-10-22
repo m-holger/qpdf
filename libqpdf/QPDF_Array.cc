@@ -1,7 +1,9 @@
 #include <qpdf/QPDF_Array.hh>
 
+#include <qpdf/JSON.hh>
 #include <qpdf/QPDFObjectHandle.hh>
 #include <qpdf/QPDFObject_private.hh>
+#include <qpdf/QPDFValue.hh>
 
 static const QPDFObjectHandle null_oh = QPDFObjectHandle::newNull();
 
@@ -9,9 +11,9 @@ inline void
 QPDF_Array::checkOwnership(QPDFObjectHandle const& item) const
 {
     if (auto obj = item.getObjectPtr()) {
-        if (qpdf) {
+        if (value->qpdf) {
             if (auto item_qpdf = obj->getQPDF()) {
-                if (qpdf != item_qpdf) {
+                if (value->qpdf != item_qpdf) {
                     throw std::logic_error(
                         "Attempting to add an object from a different QPDF. Use "
                         "QPDF::copyForeignObject to add objects from another file.");
@@ -23,36 +25,16 @@ QPDF_Array::checkOwnership(QPDFObjectHandle const& item) const
     }
 }
 
-QPDF_Array::QPDF_Array() :
-    QPDFValue(::ot_array, "array")
-{
-}
-
-QPDF_Array::QPDF_Array(QPDF_Array const& other) :
-    QPDFValue(::ot_array, "array"),
-    sparse(other.sparse),
-    sp_size(other.sp_size),
-    sp_elements(other.sp_elements),
-    elements(other.elements)
-{
-}
-
-QPDF_Array::QPDF_Array(std::vector<QPDFObjectHandle> const& v) :
-    QPDFValue(::ot_array, "array")
-{
-    setFromVector(v);
-}
-
 QPDF_Array::QPDF_Array(std::vector<std::shared_ptr<QPDFObject>>&& v, bool sparse) :
-    QPDFValue(::ot_array, "array"),
     sparse(sparse)
 {
     if (sparse) {
+        m = std::make_unique<Members>();
         for (auto&& item: v) {
             if (item->getTypeCode() != ::ot_null || item->getObjGen().isIndirect()) {
-                sp_elements[sp_size] = std::move(item);
+                m->sp_elements[m->sp_size] = std::move(item);
             }
-            ++sp_size;
+            ++m->sp_size;
         }
     } else {
         elements = std::move(v);
@@ -62,30 +44,34 @@ QPDF_Array::QPDF_Array(std::vector<std::shared_ptr<QPDFObject>>&& v, bool sparse
 std::shared_ptr<QPDFObject>
 QPDF_Array::create(std::vector<QPDFObjectHandle> const& items)
 {
-    return do_create(new QPDF_Array(items));
+    auto obj = QPDFObject::create_container<QPDF_Array>();
+    auto& array = std::get<QPDF_Array>(obj->value.var);
+    array.setFromVector(items);
+    return obj;
 }
 
 std::shared_ptr<QPDFObject>
 QPDF_Array::create(std::vector<std::shared_ptr<QPDFObject>>&& items, bool sparse)
 {
-    return do_create(new QPDF_Array(std::move(items), sparse));
+    return QPDFObject::create_container<QPDF_Array>(std::move(items), sparse);
 }
 
 std::shared_ptr<QPDFObject>
 QPDF_Array::copy(bool shallow)
 {
     if (shallow) {
-        return do_create(new QPDF_Array(*this));
+        return QPDFObject::create_container<QPDF_Array>(*this);
     } else {
         if (sparse) {
-            auto* result = new QPDF_Array();
-            result->sp_size = sp_size;
-            for (auto const& element: sp_elements) {
+            QPDF_Array* result = new QPDF_Array();
+            result->m = std::make_unique<Members>();
+            result->m->sp_size = m->sp_size;
+            for (auto const& element: m->sp_elements) {
                 auto const& obj = element.second;
-                result->sp_elements[element.first] =
+                result->m->sp_elements[element.first] =
                     obj->getObjGen().isIndirect() ? obj : obj->copy();
             }
-            return do_create(result);
+            return QPDFObject::create_container<QPDF_Array>(*result);
         } else {
             std::vector<std::shared_ptr<QPDFObject>> result;
             result.reserve(elements.size());
@@ -103,7 +89,7 @@ void
 QPDF_Array::disconnect()
 {
     if (sparse) {
-        for (auto& item: sp_elements) {
+        for (auto& item: m->sp_elements) {
             auto& obj = item.second;
             if (!obj->getObjGen().isIndirect()) {
                 obj->disconnect();
@@ -124,7 +110,7 @@ QPDF_Array::unparse()
     std::string result = "[ ";
     if (sparse) {
         int next = 0;
-        for (auto& item: sp_elements) {
+        for (auto& item: m->sp_elements) {
             int key = item.first;
             for (int j = next; j < key; ++j) {
                 result += "null ";
@@ -134,7 +120,7 @@ QPDF_Array::unparse()
             result += og.isIndirect() ? og.unparse(' ') + " R " : item.second->unparse() + " ";
             next = ++key;
         }
-        for (int j = next; j < sp_size; ++j) {
+        for (int j = next; j < m->sp_size; ++j) {
             result += "null ";
         }
     } else {
@@ -155,7 +141,7 @@ QPDF_Array::getJSON(int json_version)
     JSON j_array = JSON::makeArray();
     if (sparse) {
         int next = 0;
-        for (auto& item: sp_elements) {
+        for (auto& item: m->sp_elements) {
             int key = item.first;
             for (int j = next; j < key; ++j) {
                 j_array.addArrayElement(j_null);
@@ -166,7 +152,7 @@ QPDF_Array::getJSON(int json_version)
                                 : item.second->getJSON(json_version));
             next = ++key;
         }
-        for (int j = next; j < sp_size; ++j) {
+        for (int j = next; j < m->sp_size; ++j) {
             j_array.addArrayElement(j_null);
         }
     } else {
@@ -186,8 +172,8 @@ QPDF_Array::at(int n) const noexcept
     if (n < 0 || n >= size()) {
         return {};
     } else if (sparse) {
-        auto const& iter = sp_elements.find(n);
-        return iter == sp_elements.end() ? null_oh : (*iter).second;
+        auto const& iter = m->sp_elements.find(n);
+        return iter == m->sp_elements.end() ? null_oh : (*iter).second;
     } else {
         return elements[size_t(n)];
     }
@@ -199,7 +185,7 @@ QPDF_Array::getAsVector() const
     if (sparse) {
         std::vector<QPDFObjectHandle> v;
         v.reserve(size_t(size()));
-        for (auto const& item: sp_elements) {
+        for (auto const& item: m->sp_elements) {
             v.resize(size_t(item.first), null_oh);
             v.emplace_back(item.second);
         }
@@ -218,7 +204,7 @@ QPDF_Array::setAt(int at, QPDFObjectHandle const& oh)
     }
     checkOwnership(oh);
     if (sparse) {
-        sp_elements[at] = oh.getObj();
+        m->sp_elements[at] = oh.getObj();
     } else {
         elements[size_t(at)] = oh.getObj();
     }
@@ -248,19 +234,19 @@ QPDF_Array::insert(int at, QPDFObjectHandle const& item)
     } else {
         checkOwnership(item);
         if (sparse) {
-            auto iter = sp_elements.crbegin();
-            while (iter != sp_elements.crend()) {
+            auto iter = m->sp_elements.crbegin();
+            while (iter != m->sp_elements.crend()) {
                 auto key = (iter++)->first;
                 if (key >= at) {
-                    auto nh = sp_elements.extract(key);
+                    auto nh = m->sp_elements.extract(key);
                     ++nh.key();
-                    sp_elements.insert(std::move(nh));
+                    m->sp_elements.insert(std::move(nh));
                 } else {
                     break;
                 }
             }
-            sp_elements[at] = item.getObj();
-            ++sp_size;
+            m->sp_elements[at] = item.getObj();
+            ++m->sp_size;
         } else {
             elements.insert(elements.cbegin() + at, item.getObj());
         }
@@ -273,7 +259,7 @@ QPDF_Array::push_back(QPDFObjectHandle const& item)
 {
     checkOwnership(item);
     if (sparse) {
-        sp_elements[sp_size++] = item.getObj();
+        m->sp_elements[m->sp_size++] = item.getObj();
     } else {
         elements.push_back(item.getObj());
     }
@@ -286,20 +272,20 @@ QPDF_Array::erase(int at)
         return false;
     }
     if (sparse) {
-        auto end = sp_elements.end();
-        if (auto iter = sp_elements.lower_bound(at); iter != end) {
+        auto end = m->sp_elements.end();
+        if (auto iter = m->sp_elements.lower_bound(at); iter != end) {
             if (iter->first == at) {
                 iter++;
-                sp_elements.erase(at);
+                m->sp_elements.erase(at);
             }
 
             while (iter != end) {
-                auto nh = sp_elements.extract(iter++);
+                auto nh = m->sp_elements.extract(iter++);
                 --nh.key();
-                sp_elements.insert(std::move(nh));
+                m->sp_elements.insert(std::move(nh));
             }
         }
-        --sp_size;
+        --m->sp_size;
     } else {
         elements.erase(elements.cbegin() + at);
     }

@@ -1748,10 +1748,10 @@ QPDF::writeHSharedObject(BitWriter& w)
 void
 QPDF::writeHGeneric(BitWriter& w, HGeneric& t)
 {
-    w.writeBitsInt(t.first_object, 32);             // 1
-    w.writeBits(toULL(t.first_object_offset), 32);  // 2
-    w.writeBitsInt(t.nobjects, 32);                 // 3
-    w.writeBitsInt(t.group_length, 32);             // 4
+    w.writeBitsInt(t.first_object, 32);            // 1
+    w.writeBits(toULL(t.first_object_offset), 32); // 2
+    w.writeBitsInt(t.nobjects, 32);                // 3
+    w.writeBitsInt(t.group_length, 32);            // 4
 }
 
 void

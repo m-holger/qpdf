@@ -7,27 +7,25 @@
 using namespace std::literals;
 
 QPDF_Dictionary::QPDF_Dictionary(std::map<std::string, QPDFObjectHandle> const& items) :
-    QPDFValue(::ot_dictionary, "dictionary"),
     items(items)
 {
 }
 
 QPDF_Dictionary::QPDF_Dictionary(std::map<std::string, QPDFObjectHandle>&& items) :
-    QPDFValue(::ot_dictionary, "dictionary"),
-    items(items)
+    items(std::move(items))
 {
 }
 
 std::shared_ptr<QPDFObject>
 QPDF_Dictionary::create(std::map<std::string, QPDFObjectHandle> const& items)
 {
-    return do_create(new QPDF_Dictionary(items));
+    return QPDFObject::create<QPDF_Dictionary>(items);
 }
 
 std::shared_ptr<QPDFObject>
 QPDF_Dictionary::create(std::map<std::string, QPDFObjectHandle>&& items)
 {
-    return do_create(new QPDF_Dictionary(items));
+    return QPDFObject::create<QPDF_Dictionary>(std::move(items));
 }
 
 std::shared_ptr<QPDFObject>
@@ -87,7 +85,7 @@ QPDF_Dictionary::hasKey(std::string const& key)
 }
 
 QPDFObjectHandle
-QPDF_Dictionary::getKey(std::string const& key)
+QPDF_Dictionary::getKey(std::shared_ptr<QPDFObject>& self, std::string const& key)
 {
     // PDF spec says fetching a non-existent key from a dictionary returns the null object.
     auto item = this->items.find(key);
@@ -96,7 +94,7 @@ QPDF_Dictionary::getKey(std::string const& key)
         return item->second;
     } else {
         static auto constexpr msg = " -> dictionary key $VD"sv;
-        return QPDF_Null::create(shared_from_this(), msg, key);
+        return QPDF_Null::create(self, msg, key);
     }
 }
 

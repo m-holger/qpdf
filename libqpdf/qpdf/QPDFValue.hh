@@ -7,6 +7,23 @@
 #include <qpdf/QPDFObjGen.hh>
 #include <qpdf/Types.h>
 
+#include <qpdf/QPDF_Array.hh>
+#include <qpdf/QPDF_Bool.hh>
+#include <qpdf/QPDF_Destroyed.hh>
+#include <qpdf/QPDF_Dictionary.hh>
+#include <qpdf/QPDF_IndirectRef.hh>
+#include <qpdf/QPDF_InlineImage.hh>
+#include <qpdf/QPDF_Integer.hh>
+#include <qpdf/QPDF_Name.hh>
+#include <qpdf/QPDF_Null.hh>
+#include <qpdf/QPDF_Operator.hh>
+#include <qpdf/QPDF_Real.hh>
+#include <qpdf/QPDF_Reserved.hh>
+#include <qpdf/QPDF_Stream.hh>
+#include <qpdf/QPDF_String.hh>
+#include <qpdf/QPDF_Unresolved.hh>
+
+#include <memory>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -15,16 +32,31 @@ class QPDF;
 class QPDFObjectHandle;
 class QPDFObject;
 
-class QPDFValue: public std::enable_shared_from_this<QPDFValue>
+using ObjValue = std::variant<
+    std::monostate,
+    QPDF_Reserved,
+    QPDF_Null,
+    QPDF_Bool,
+    QPDF_Integer,
+    QPDF_Real,
+    QPDF_String,
+    QPDF_Name,
+    QPDF_Array,
+    QPDF_Dictionary,
+    QPDF_Stream,
+    QPDF_Operator,
+    QPDF_InlineImage,
+    QPDF_Unresolved,
+    QPDF_Destroyed,
+    QPDF_IndirectRef>;
+
+class QPDFValue
 {
     friend class QPDFObject;
+    friend class QPDF;
 
   public:
-    virtual ~QPDFValue() = default;
-
-    virtual std::shared_ptr<QPDFObject> copy(bool shallow = false) = 0;
-    virtual std::string unparse() = 0;
-    virtual JSON getJSON(int json_version) = 0;
+    ~QPDFValue() = default;
 
     struct JSON_Descr
     {
@@ -41,7 +73,7 @@ class QPDFValue: public std::enable_shared_from_this<QPDFValue>
     struct ChildDescr
     {
         ChildDescr(
-            std::shared_ptr<QPDFValue> parent,
+            std::shared_ptr<QPDFObject> parent,
             std::string_view const& static_descr,
             std::string var_descr) :
             parent(parent),
@@ -50,14 +82,14 @@ class QPDFValue: public std::enable_shared_from_this<QPDFValue>
         {
         }
 
-        std::weak_ptr<QPDFValue> parent;
+        std::weak_ptr<QPDFObject> parent;
         std::string_view const& static_descr;
         std::string var_descr;
     };
 
     using Description = std::variant<std::string, JSON_Descr, ChildDescr>;
 
-    virtual void
+    void
     setDescription(QPDF* qpdf_p, std::shared_ptr<Description>& description, qpdf_offset_t offset)
     {
         qpdf = qpdf_p;
@@ -73,7 +105,7 @@ class QPDFValue: public std::enable_shared_from_this<QPDFValue>
     void
     setChildDescription(
         QPDF* a_qpdf,
-        std::shared_ptr<QPDFValue> parent,
+        std::shared_ptr<QPDFObject> parent,
         std::string_view const& static_descr,
         std::string var_descr)
     {
@@ -109,44 +141,26 @@ class QPDFValue: public std::enable_shared_from_this<QPDFValue>
     {
         return og;
     }
-    virtual void
-    disconnect()
+    QPDFValue(ObjValue&& ov) :
+
+        var(std::move(ov))
     {
-    }
-    virtual std::string
-    getStringValue() const
-    {
-        return "";
     }
 
-  protected:
     QPDFValue() = default;
-
-    QPDFValue(qpdf_object_type_e type_code, char const* type_name) :
-        type_code(type_code),
-        type_name(type_name)
-    {
-    }
-    QPDFValue(
-        qpdf_object_type_e type_code, char const* type_name, QPDF* qpdf, QPDFObjGen const& og) :
-        type_code(type_code),
-        type_name(type_name),
-        qpdf(qpdf),
-        og(og)
-    {
-    }
-
-    static std::shared_ptr<QPDFObject> do_create(QPDFValue*);
 
   private:
     QPDFValue(QPDFValue const&) = delete;
     QPDFValue& operator=(QPDFValue const&) = delete;
+    QPDFValue(QPDFValue&& other) = default;
+
+    QPDFValue& operator=(QPDFValue&&) = default;
     std::shared_ptr<Description> object_description;
 
-    const qpdf_object_type_e type_code{::ot_uninitialized};
-    char const* type_name{"uninitialized"};
+  public:
+    ObjValue var;
 
-  protected:
+  public:
     QPDF* qpdf{nullptr};
     QPDFObjGen og{};
     qpdf_offset_t parsed_offset{-1};

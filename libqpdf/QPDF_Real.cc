@@ -1,41 +1,13 @@
 #include <qpdf/QPDF_Real.hh>
 
+#include <qpdf/QPDFObject_private.hh>
+#include <qpdf/QPDFValue.hh>
 #include <qpdf/QUtil.hh>
-
-QPDF_Real::QPDF_Real(std::string const& val) :
-    QPDFValue(::ot_real, "real"),
-    val(val)
-{
-}
-
-QPDF_Real::QPDF_Real(double value, int decimal_places, bool trim_trailing_zeroes) :
-    QPDFValue(::ot_real, "real"),
-    val(QUtil::double_to_string(value, decimal_places, trim_trailing_zeroes))
-{
-}
-
-std::shared_ptr<QPDFObject>
-QPDF_Real::create(std::string const& val)
-{
-    return do_create(new QPDF_Real(val));
-}
-
-std::shared_ptr<QPDFObject>
-QPDF_Real::create(double value, int decimal_places, bool trim_trailing_zeroes)
-{
-    return do_create(new QPDF_Real(value, decimal_places, trim_trailing_zeroes));
-}
 
 std::shared_ptr<QPDFObject>
 QPDF_Real::copy(bool shallow)
 {
-    return create(val);
-}
-
-std::string
-QPDF_Real::unparse()
-{
-    return this->val;
+    return QPDFObject::create<QPDF_Real>(val);
 }
 
 JSON

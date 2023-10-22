@@ -1,36 +1,17 @@
 #include <qpdf/QPDF_Destroyed.hh>
 
-#include <stdexcept>
+#include <qpdf/QPDFObject_private.hh>
+#include <qpdf/QPDFValue.hh>
 
-QPDF_Destroyed::QPDF_Destroyed() :
-    QPDFValue(::ot_destroyed, "destroyed")
-{
-}
-
-std::shared_ptr<QPDFValue>
+QPDFValue
 QPDF_Destroyed::getInstance()
 {
-    static std::shared_ptr<QPDFValue> instance(new QPDF_Destroyed());
-    return instance;
+    static ObjValue destroyed{QPDF_Destroyed()};
+    return QPDFValue(QPDF_Destroyed());
 }
 
 std::shared_ptr<QPDFObject>
-QPDF_Destroyed::copy(bool shallow)
+QPDF_Destroyed::create()
 {
-    throw std::logic_error("attempted to shallow copy QPDFObjectHandle from destroyed QPDF");
-    return nullptr;
-}
-
-std::string
-QPDF_Destroyed::unparse()
-{
-    throw std::logic_error("attempted to unparse a QPDFObjectHandle from a destroyed QPDF");
-    return "";
-}
-
-JSON
-QPDF_Destroyed::getJSON(int json_version)
-{
-    throw std::logic_error("attempted to get JSON from a QPDFObjectHandle from a destroyed QPDF");
-    return JSON::makeNull();
+    return QPDFObject::create<QPDF_Destroyed>();
 }

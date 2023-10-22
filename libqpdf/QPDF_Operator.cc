@@ -1,31 +1,20 @@
 #include <qpdf/QPDF_Operator.hh>
 
-QPDF_Operator::QPDF_Operator(std::string const& val) :
-    QPDFValue(::ot_operator, "operator"),
-    val(val)
-{
-}
+#include <qpdf/QPDFObject_private.hh>
+#include <qpdf/QPDFValue.hh>
 
-std::shared_ptr<QPDFObject>
-QPDF_Operator::create(std::string const& val)
-{
-    return do_create(new QPDF_Operator(val));
-}
+//std::shared_ptr<QPDFObject>
+//QPDF_Operator::create(std::string const& val)
+//{
+//    // auto obj = std::make_shared<QPDFObject>();
+//    // obj->value = std::make_shared<Value>(QPDF_Operator(val));
+//    // return obj;
+//    return QPDFObject::create<QPDF_Operator>(val);
+//    // return do_create(new QPDF_Operator(val));
+//}
 
 std::shared_ptr<QPDFObject>
 QPDF_Operator::copy(bool shallow)
 {
-    return create(val);
-}
-
-std::string
-QPDF_Operator::unparse()
-{
-    return val;
-}
-
-JSON
-QPDF_Operator::getJSON(int json_version)
-{
-    return JSON::makeNull();
+    return QPDFObject::create<QPDF_Operator>(val);
 }

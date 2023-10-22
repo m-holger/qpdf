@@ -1,19 +1,44 @@
 #ifndef QPDF_UNRESOLVED_HH
 #define QPDF_UNRESOLVED_HH
 
-#include <qpdf/QPDFValue.hh>
+#include <qpdf/JSON.hh>
+#include <qpdf/QPDFObjGen.hh>
 
-class QPDF_Unresolved: public QPDFValue
+#include <stdexcept>
+
+class QPDF;
+class QPDFObject;
+
+class QPDF_Unresolved
 {
+    friend class QPDFObject;
+
   public:
-    ~QPDF_Unresolved() override = default;
+    QPDF_Unresolved(QPDF_Unresolved&&) = default;
+    QPDF_Unresolved& operator=(QPDF_Unresolved&&) = default;
+    ~QPDF_Unresolved() = default;
     static std::shared_ptr<QPDFObject> create(QPDF* qpdf, QPDFObjGen const& og);
-    std::shared_ptr<QPDFObject> copy(bool shallow = false) override;
-    std::string unparse() override;
-    JSON getJSON(int json_version) override;
+    std::shared_ptr<QPDFObject>
+    copy(bool shallow = false)
+    {
+        throw std::logic_error("attempted to shallow copy an unresolved QPDFObjectHandle");
+        return nullptr;
+    }
+    std::string
+    unparse()
+    {
+        throw std::logic_error("attempted to unparse an unresolved QPDFObjectHandle");
+        return "";
+    }
+    JSON
+    getJSON(int json_version)
+    {
+        throw std::logic_error("attempted to get JSON from an unresolved QPDFObjectHandle");
+        return JSON::makeNull();
+    }
 
   private:
-    QPDF_Unresolved(QPDF* qpdf, QPDFObjGen const& og);
+    QPDF_Unresolved() = default;
 };
 
 #endif // QPDF_UNRESOLVED_HH
