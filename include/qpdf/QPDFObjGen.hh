@@ -111,13 +111,7 @@ class QPDFObjGen
         bool
         add(QPDFObjGen og)
         {
-            if (og.isIndirect()) {
-                if (count(og) > 0) {
-                    return false;
-                }
-                emplace(og);
-            }
-            return true;
+            return og.isIndirect() ? std::set<QPDFObjGen>::insert(og).second : true;
         }
 
         QPDF_DLL
@@ -130,9 +124,7 @@ class QPDFObjGen
         void
         erase(QPDFObjGen og)
         {
-            if (og.isIndirect()) {
-                std::set<QPDFObjGen>::erase(og);
-            }
+            std::set<QPDFObjGen>::erase(og);
         }
 
         QPDF_DLL
