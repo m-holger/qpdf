@@ -120,7 +120,7 @@ my @bad = (
     "stray low surrogate",      # 37
     "high high surrogate",      # 38
     "dangling high surrogate",  # 39
-    "bs char in string",        # 40
+    undef,                      # 40, removed
     "decimal point after minus",# 41
     "e after minus",            # 42
     "missing digit after e",    # 43
@@ -128,7 +128,7 @@ my @bad = (
     "tab char in string",       # 45
     "cr char in string",        # 46
     "lf char in string",        # 47
-    #"bs char in string",       # 40
+    "bs char in string",        # 48
     );
 
 my $i = 0;
@@ -136,10 +136,22 @@ foreach my $d (@bad)
 {
     ++$i;
     my $n = sprintf("%02d", $i);
-    $td->runtest("$n: $d",
-                 {$td->COMMAND => "json_parse bad-$n.json"},
-                 {$td->FILE => "bad-$n.out", $td->EXIT_STATUS => 2},
-                 $td->NORMALIZE_NEWLINES);
+    if (defined $d)
+    {
+        $td->runtest("$n: $d",
+                     {$td->COMMAND => "json_parse bad-$n.json"},
+                     {$td->FILE => "bad-$n.out", $td->EXIT_STATUS => 2},
+                     $td->NORMALIZE_NEWLINES);
+    }
+    else
+    {
+        # We used to disallow duplicated keys but no longer do. Add
+        # this hack to ignore a test number rather than renaming
+        # tests.
+        $td->runtest("$n: no longer used",
+                     {$td->STRING => ""},
+                     {$td->STRING => ""});
+    }
 }
 
 cleanup();
