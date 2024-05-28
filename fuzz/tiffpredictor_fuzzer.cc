@@ -26,11 +26,11 @@ void
 FuzzHelper::doChecks()
 {
     Pl_Discard discard;
-    Pl_TIFFPredictor p("decoder", &discard, Pl_TIFFPredictor::a_decode, 16, 1, 8);
+    Pl_TIFFPredictor p("decoder", discard, Pl_TIFFPredictor::a_decode, 16, 1, 8);
     p.write(const_cast<unsigned char*>(data), size);
     p.finish();
     // Exercise with strange values for some of the parameters.
-    Pl_TIFFPredictor p2("decoder", &discard, Pl_TIFFPredictor::a_decode, 16, 2, 5);
+    Pl_TIFFPredictor p2("decoder", discard, Pl_TIFFPredictor::a_decode, 16, 2, 5);
     p2.write(const_cast<unsigned char*>(data), size);
     p2.finish();
 }
