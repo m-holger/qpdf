@@ -39,7 +39,12 @@ class QPDF_DLL_CLASS Pl_Buffer: public Pipeline
 {
   public:
     QPDF_DLL
-    Pl_Buffer(char const* identifier, Pipeline* next = nullptr);
+    Pl_Buffer(std::string_view identifier, Pipeline& next) :
+        Pl_Buffer(identifier, &next)
+    {
+    }
+    QPDF_DLL
+    explicit Pl_Buffer(std::string_view identifier, Pipeline* next = nullptr);
     QPDF_DLL
     ~Pl_Buffer() override;
     QPDF_DLL
@@ -69,23 +74,9 @@ class QPDF_DLL_CLASS Pl_Buffer: public Pipeline
     std::string getString();
 
   private:
-    class QPDF_DLL_PRIVATE Members
-    {
-        friend class Pl_Buffer;
+    class Members;
 
-      public:
-        QPDF_DLL
-        ~Members() = default;
-
-      private:
-        Members() = default;
-        Members(Members const&) = delete;
-
-        bool ready{true};
-        std::string data;
-    };
-
-    std::shared_ptr<Members> m;
+    std::unique_ptr<Members> m;
 };
 
 #endif // PL_BUFFER_HH

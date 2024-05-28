@@ -5,7 +5,14 @@
 #include <cstring>
 #include <stdexcept>
 
-Pl_Buffer::Pl_Buffer(char const* identifier, Pipeline* next) :
+class Pl_Buffer::Members
+{
+  public:
+    bool ready{true};
+    std::string data;
+};
+
+Pl_Buffer::Pl_Buffer(std::string_view identifier, Pipeline* next) :
     Pipeline(identifier, next),
     m(new Members())
 {
@@ -22,8 +29,8 @@ Pl_Buffer::write(unsigned char const* buf, size_t len)
     m->data.append(reinterpret_cast<char const*>(buf), len);
     m->ready = false;
 
-    if (getNext(true)) {
-        getNext()->write(buf, len);
+    if (next) {
+        next->write(buf, len);
     }
 }
 
@@ -31,8 +38,8 @@ void
 Pl_Buffer::finish()
 {
     m->ready = true;
-    if (getNext(true)) {
-        getNext()->finish();
+    if (next) {
+        next->finish();
     }
 }
 
