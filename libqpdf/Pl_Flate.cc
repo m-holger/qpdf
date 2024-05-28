@@ -9,59 +9,78 @@
 
 int Pl_Flate::compression_level = Z_DEFAULT_COMPRESSION;
 
-Pl_Flate::Members::Members(size_t out_bufsize, action_e action) :
-    out_bufsize(out_bufsize),
-    action(action),
-    initialized(false),
-    zdata(nullptr)
+class Pl_Flate::Members
 {
-    this->outbuf = QUtil::make_shared_array<unsigned char>(out_bufsize);
-    // Indirect through zdata to reach the z_stream so we don't have to include zlib.h in
-    // Pl_Flate.hh.  This means people using shared library versions of qpdf don't have to have zlib
-    // development files available, which particularly helps in a Windows environment.
-    this->zdata = new z_stream;
+  public:
+    Members(size_t out_bufsize, action_e action) :
+        out_bufsize(out_bufsize),
+        action(action),
+        initialized(false),
+        zdata(nullptr)
+    {
+        this->outbuf = QUtil::make_shared_array<unsigned char>(out_bufsize);
+        // Indirect through zdata to reach the z_stream so we don't have to include zlib.h in
+        // Pl_Flate.hh.  This means people using shared library versions of qpdf don't have to have
+        // zlib development files available, which particularly helps in a Windows environment.
+        this->zdata = new z_stream;
 
-    if (out_bufsize > UINT_MAX) {
-        throw std::runtime_error(
-            "Pl_Flate: zlib doesn't support buffer sizes larger than unsigned int");
-    }
-
-    z_stream& zstream = *(static_cast<z_stream*>(this->zdata));
-    zstream.zalloc = nullptr;
-    zstream.zfree = nullptr;
-    zstream.opaque = nullptr;
-    zstream.next_in = nullptr;
-    zstream.avail_in = 0;
-    zstream.next_out = this->outbuf.get();
-    zstream.avail_out = QIntC::to_uint(out_bufsize);
-}
-
-Pl_Flate::Members::~Members()
-{
-    if (this->initialized) {
-        z_stream& zstream = *(static_cast<z_stream*>(this->zdata));
-        if (action == a_deflate) {
-            deflateEnd(&zstream);
-        } else {
-            inflateEnd(&zstream);
+        if (out_bufsize > UINT_MAX) {
+            throw std::runtime_error(
+                "Pl_Flate: zlib doesn't support buffer sizes larger than unsigned int");
         }
+
+        z_stream& zstream = *(static_cast<z_stream*>(this->zdata));
+        zstream.zalloc = nullptr;
+        zstream.zfree = nullptr;
+        zstream.opaque = nullptr;
+        zstream.next_in = nullptr;
+        zstream.avail_in = 0;
+        zstream.next_out = this->outbuf.get();
+        zstream.avail_out = QIntC::to_uint(out_bufsize);
     }
 
-    delete static_cast<z_stream*>(this->zdata);
-    this->zdata = nullptr;
-}
+    ~Members()
+    {
+        if (this->initialized) {
+            z_stream& zstream = *(static_cast<z_stream*>(this->zdata));
+            if (action == a_deflate) {
+                deflateEnd(&zstream);
+            } else {
+                inflateEnd(&zstream);
+            }
+        }
+
+        delete static_cast<z_stream*>(this->zdata);
+        this->zdata = nullptr;
+    }
+
+    std::shared_ptr<unsigned char> outbuf;
+    size_t out_bufsize;
+    action_e action;
+    bool initialized;
+    void* zdata;
+    std::function<void(char const*, int)> callback;
+};
 
 Pl_Flate::Pl_Flate(
-    char const* identifier, Pipeline* next, action_e action, unsigned int out_bufsize_int) :
-    Pipeline(identifier, next),
+    std::string_view identifier, Pipeline& next, action_e action, unsigned int out_bufsize_int) :
+    Pipeline(identifier, &next),
     m(new Members(QIntC::to_size(out_bufsize_int), action))
 {
 }
 
-Pl_Flate::~Pl_Flate() // NOLINT (modernize-use-equals-default)
+Pl_Flate::Pl_Flate(
+    std::string_view identifier, Pipeline* next, action_e action, unsigned int out_bufsize_int) :
+    Pipeline(identifier, next),
+    m(new Members(QIntC::to_size(out_bufsize_int), action))
 {
-    // Must be explicit and not inline -- see QPDF_DLL_CLASS in README-maintainer
+    if (!next) {
+        throw std::logic_error("Pl_Dct: next cannot be nullptr");
+    }
 }
+
+Pl_Flate::~Pl_Flate() = default;
+// Must be explicit and not inline -- see QPDF_DLL_CLASS in README-maintainer
 
 void
 Pl_Flate::setWarnCallback(std::function<void(char const*, int)> callback)
@@ -170,7 +189,7 @@ Pl_Flate::handleData(unsigned char const* data, size_t len, int flush)
                 }
                 uLong ready = QIntC::to_ulong(m->out_bufsize - zstream.avail_out);
                 if (ready > 0) {
-                    this->getNext()->write(m->outbuf.get(), ready);
+                    next->write(m->outbuf.get(), ready);
                     zstream.next_out = m->outbuf.get();
                     zstream.avail_out = QIntC::to_uint(m->out_bufsize);
                 }
@@ -208,13 +227,13 @@ Pl_Flate::finish()
         }
     } catch (std::exception& e) {
         try {
-            this->getNext()->finish();
+            next->finish();
         } catch (...) {
             // ignore secondary exception
         }
         throw std::runtime_error(e.what());
     }
-    this->getNext()->finish();
+    next->finish();
 }
 
 void
