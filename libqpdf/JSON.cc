@@ -184,7 +184,7 @@ JSON::JSON_blob::write(Pipeline* p, size_t) const
 {
     *p << "\"";
     Pl_Concatenate cat("blob concatenate", p);
-    Pl_Base64 base64("blob base64", &cat, Pl_Base64::a_encode);
+    Pl_Base64 base64("blob base64", cat, Pl_Base64::a_encode);
     fn(&base64);
     base64.finish();
     *p << "\"";

@@ -53,7 +53,7 @@ main(int argc, char* argv[])
 
     try {
         Pl_OStream out("stdout", std::cout);
-        Pl_Base64 decode("decode", &out, action);
+        Pl_Base64 decode("decode", out, action);
         // The comments are "n: n%4 n%3", where n is the number of
         // bytes read at the end of the call, and are there to
         // indicate that we are reading in chunks that exercise

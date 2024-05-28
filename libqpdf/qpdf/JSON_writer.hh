@@ -33,7 +33,7 @@ class JSON::Writer
     writeBase64(std::string_view sv)
     {
         Pl_Concatenate cat{"writer concat", p};
-        Pl_Base64 base{"writer base64", &cat, Pl_Base64::a_encode};
+        Pl_Base64 base{"writer base64", cat, Pl_Base64::a_encode};
         base.write(reinterpret_cast<unsigned char const*>(sv.data()), sv.size());
         base.finish();
         return *this;
