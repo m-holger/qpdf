@@ -80,7 +80,7 @@ SF_FlateLzwDecode::getDecodePipeline(Pipeline* next)
         QTC::TC("qpdf", "SF_FlateLzwDecode PNG filter");
         pipeline = std::make_shared<Pl_PNGFilter>(
             "png decode",
-            next,
+            *next,
             Pl_PNGFilter::a_decode,
             QIntC::to_uint(this->columns),
             QIntC::to_uint(this->colors),

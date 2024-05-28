@@ -2451,7 +2451,7 @@ QPDFWriter::writeXRefStream(
             // us with computation of padding for pass 1 of linearization.
             p = pushPipeline(new Pl_Flate("compress xref", p, Pl_Flate::a_deflate));
         }
-        p = pushPipeline(new Pl_PNGFilter("pngify xref", p, Pl_PNGFilter::a_encode, esize));
+        p = pushPipeline(new Pl_PNGFilter("pngify xref", *p, Pl_PNGFilter::a_encode, esize));
     }
     std::shared_ptr<Buffer> xref_data;
     {
