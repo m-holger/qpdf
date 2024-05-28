@@ -101,7 +101,7 @@ SF_FlateLzwDecode::getDecodePipeline(Pipeline* next)
     }
 
     if (lzw) {
-        pipeline = std::make_shared<Pl_LZWDecoder>("lzw decode", next, early_code_change);
+        pipeline = std::make_shared<Pl_LZWDecoder>("lzw decode", *next, early_code_change);
     } else {
         pipeline = std::make_shared<Pl_Flate>("stream inflate", next, Pl_Flate::a_inflate);
     }

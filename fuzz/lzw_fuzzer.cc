@@ -26,7 +26,7 @@ void
 FuzzHelper::doChecks()
 {
     Pl_Discard discard;
-    Pl_LZWDecoder p("decode", &discard, false);
+    Pl_LZWDecoder p("decode", discard, false);
     p.write(const_cast<unsigned char*>(data), size);
     p.finish();
 }
