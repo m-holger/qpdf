@@ -4,14 +4,22 @@
 #include <qpdf/QTC.hh>
 #include <stdexcept>
 
-Pl_QPDFTokenizer::Members::Members() :
-    filter(nullptr),
-    buf("tokenizer buffer")
+class Pl_QPDFTokenizer::Members
+{
+  public:
+    QPDFObjectHandle::TokenFilter* filter{nullptr};
+    QPDFTokenizer tokenizer;
+    Pl_Buffer buf{"tokenizer buffer"};
+};
+
+Pl_QPDFTokenizer::Pl_QPDFTokenizer(
+    std::string_view identifier, Pipeline& next, QPDFObjectHandle::TokenFilter* filter) :
+    Pl_QPDFTokenizer(identifier, filter, &next)
 {
 }
 
 Pl_QPDFTokenizer::Pl_QPDFTokenizer(
-    char const* identifier, QPDFObjectHandle::TokenFilter* filter, Pipeline* next) :
+    std::string_view identifier, QPDFObjectHandle::TokenFilter* filter, Pipeline* next) :
     Pipeline(identifier, next),
     m(new Members)
 {
@@ -21,10 +29,8 @@ Pl_QPDFTokenizer::Pl_QPDFTokenizer(
     m->tokenizer.includeIgnorable();
 }
 
-Pl_QPDFTokenizer::~Pl_QPDFTokenizer() // NOLINT (modernize-use-equals-default)
-{
-    // Must be explicit and not inline -- see QPDF_DLL_CLASS in README-maintainer
-}
+Pl_QPDFTokenizer::~Pl_QPDFTokenizer() = default;
+// Must be explicit and not inline -- see QPDF_DLL_CLASS in README-maintainer
 
 void
 Pl_QPDFTokenizer::write(unsigned char const* data, size_t len)
@@ -59,7 +65,6 @@ Pl_QPDFTokenizer::finish()
     }
     m->filter->handleEOF();
     QPDFObjectHandle::TokenFilter::PipelineAccessor::setPipeline(m->filter, nullptr);
-    Pipeline* next = this->getNext(true);
     if (next) {
         next->finish();
     }
