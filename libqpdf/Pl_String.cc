@@ -2,14 +2,15 @@
 
 #include <stdexcept>
 
-Pl_String::Members::Members(std::string& s) :
+Pl_String::Pl_String(std::string_view identifier, Pipeline& next, std::string& s) :
+    Pipeline(identifier, &next),
     s(s)
 {
 }
 
-Pl_String::Pl_String(char const* identifier, Pipeline* next, std::string& s) :
+Pl_String::Pl_String(std::string_view identifier, Pipeline* next, std::string& s) :
     Pipeline(identifier, next),
-    m(new Members(s))
+    s(s)
 {
 }
 
@@ -21,16 +22,8 @@ Pl_String::~Pl_String() // NOLINT (modernize-use-equals-default)
 void
 Pl_String::write(unsigned char const* buf, size_t len)
 {
-    m->s.append(reinterpret_cast<char const*>(buf), len);
-    if (getNext(true)) {
-        getNext()->write(buf, len);
-    }
-}
-
-void
-Pl_String::finish()
-{
-    if (getNext(true)) {
-        getNext()->finish();
+    s.append(reinterpret_cast<char const*>(buf), len);
+    if (next) {
+        next->write(buf, len);
     }
 }
