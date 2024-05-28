@@ -1011,7 +1011,7 @@ QPDFWriter::pushMD5Pipeline(PipelinePopper& pp)
     qpdf_assert_debug(m->deterministic_id);
     qpdf_assert_debug(m->md5_pipeline == nullptr);
     qpdf_assert_debug(m->pipeline->getCount() == 0);
-    m->md5_pipeline = new Pl_MD5("qpdf md5", m->pipeline);
+    m->md5_pipeline = new Pl_MD5("qpdf md5", *m->pipeline);
     m->md5_pipeline->persistAcrossFinish(true);
     // Special case code in popPipelineStack clears m->md5_pipeline upon deletion.
     pushPipeline(m->md5_pipeline);
