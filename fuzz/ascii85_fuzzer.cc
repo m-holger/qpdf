@@ -26,7 +26,7 @@ void
 FuzzHelper::doChecks()
 {
     Pl_Discard discard;
-    Pl_ASCII85Decoder p("decode", &discard);
+    Pl_ASCII85Decoder p("decode", discard);
     p.write(const_cast<unsigned char*>(data), size);
     p.finish();
 }
