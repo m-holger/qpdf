@@ -980,11 +980,7 @@ QPDFWriter::pushEncryptionFilter(PipelinePopper& pp)
         if (m->encrypt_use_aes) {
             p = new Pl_AES_PDF("aes stream encryption", *m->pipeline, true, m->cur_data_key);
         } else {
-            p = new Pl_RC4(
-                "rc4 stream encryption",
-                m->pipeline,
-                QUtil::unsigned_char_pointer(m->cur_data_key),
-                QIntC::to_int(m->cur_data_key.length()));
+            p = new Pl_RC4("rc4 stream encryption", *m->pipeline, m->cur_data_key);
         }
         pushPipeline(p);
     }

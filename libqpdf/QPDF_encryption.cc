@@ -1134,11 +1134,7 @@ QPDF::decryptStream(
             std::make_unique<Pl_AES_PDF>("AES stream decryption", *pipeline, false, key);
     } else {
         QTC::TC("qpdf", "QPDF_encryption rc4 decode stream");
-        decrypt_pipeline = std::make_unique<Pl_RC4>(
-            "RC4 stream decryption",
-            pipeline,
-            QUtil::unsigned_char_pointer(key),
-            toI(key.length()));
+        decrypt_pipeline = std::make_unique<Pl_RC4>("RC4 stream decryption", *pipeline, key);
     }
     pipeline = decrypt_pipeline.get();
 }
