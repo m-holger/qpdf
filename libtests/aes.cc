@@ -85,7 +85,8 @@ main(int argc, char* argv[])
     }
 
     auto* out = new Pl_StdioFile("stdout", outfile);
-    auto* aes = new Pl_AES_PDF("aes_128_cbc", out, encrypt, key, keylen);
+    auto* aes =
+        new Pl_AES_PDF("aes_128_cbc", *out, encrypt, {reinterpret_cast<char*>(key), keylen});
     delete[] key;
     key = nullptr;
     if (!cbc_mode) {
