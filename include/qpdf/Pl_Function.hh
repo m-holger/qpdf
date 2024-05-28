@@ -41,43 +41,35 @@ class QPDF_DLL_CLASS Pl_Function: public Pipeline
 
     // The supplied function is called every time write is called.
     QPDF_DLL
-    Pl_Function(char const* identifier, Pipeline* next, writer_t fn);
+    Pl_Function(std::string_view identifier, Pipeline& next, writer_t fn);
+    QPDF_DLL
+    Pl_Function(std::string_view identifier, Pipeline* next, writer_t fn);
 
     // The supplied C-style function is called every time write is called. The udata option is
     // passed into the function with each call. If the function returns a non-zero value, a runtime
     // error is thrown.
     typedef int (*writer_c_t)(unsigned char const*, size_t, void*);
     QPDF_DLL
-    Pl_Function(char const* identifier, Pipeline* next, writer_c_t fn, void* udata);
+    Pl_Function(std::string_view identifier, Pipeline& next, writer_c_t fn, void* udata);
+    QPDF_DLL
+    Pl_Function(std::string_view identifier, Pipeline* next, writer_c_t fn, void* udata);
     typedef int (*writer_c_char_t)(char const*, size_t, void*);
     QPDF_DLL
-    Pl_Function(char const* identifier, Pipeline* next, writer_c_char_t fn, void* udata);
+    Pl_Function(std::string_view identifier, Pipeline& next, writer_c_char_t fn, void* udata);
+    QPDF_DLL
+    Pl_Function(std::string_view identifier, Pipeline* next, writer_c_char_t fn, void* udata);
 
     QPDF_DLL
     ~Pl_Function() override;
 
     QPDF_DLL
     void write(unsigned char const* buf, size_t len) override;
-    QPDF_DLL
-    void finish() override;
 
   private:
-    class QPDF_DLL_PRIVATE Members
-    {
-        friend class Pl_Function;
+    class Members;
 
-      public:
-        QPDF_DLL
-        ~Members() = default;
-
-      private:
-        Members(writer_t);
-        Members(Members const&) = delete;
-
-        writer_t fn;
-    };
-
-    std::shared_ptr<Members> m;
+    writer_t fn;
+    std::unique_ptr<Members> m;
 };
 
 #endif // PL_FUNCTION_HH
