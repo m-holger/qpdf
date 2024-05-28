@@ -3,7 +3,7 @@
 #include <cstring>
 #include <stdexcept>
 
-Pipeline::Pipeline(char const* identifier, Pipeline* next) :
+Pipeline::Pipeline(std::string_view identifier, Pipeline* next) :
     identifier(identifier),
     next(next)
 {

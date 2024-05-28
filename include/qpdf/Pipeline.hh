@@ -36,19 +36,21 @@
 #define PIPELINE_HH
 
 #include <qpdf/DLL.h>
-#include <qpdf/PointerHolder.hh> // unused -- remove in qpdf 12 (see #785)
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 // Remember to use QPDF_DLL_CLASS on anything derived from Pipeline so it will work with
 // dynamic_cast across the shared object boundary.
 class QPDF_DLL_CLASS Pipeline
 {
   public:
-    QPDF_DLL
-    Pipeline(char const* identifier, Pipeline* next);
-
+    Pipeline() = delete;
+    Pipeline(Pipeline const&) = delete;
+    Pipeline(Pipeline&&) = delete;
+    Pipeline& operator=(Pipeline const&) = delete;
+    Pipeline& operator=(Pipeline&&) = delete;
     QPDF_DLL
     virtual ~Pipeline() = default;
 
@@ -57,7 +59,13 @@ class QPDF_DLL_CLASS Pipeline
     QPDF_DLL
     virtual void write(unsigned char const* data, size_t len) = 0;
     QPDF_DLL
-    virtual void finish() = 0;
+    virtual void
+    finish()
+    {
+        if (next) {
+            next->finish();
+        }
+    }
     QPDF_DLL
     std::string getIdentifier() const;
 
@@ -97,14 +105,12 @@ class QPDF_DLL_CLASS Pipeline
 
   protected:
     QPDF_DLL
+    Pipeline(std::string_view identifier, Pipeline* next);
+    // For backward compatibility only. Access next directly instead
+    QPDF_DLL
     Pipeline* getNext(bool allow_null = false);
     std::string identifier;
-
-  private:
-    Pipeline(Pipeline const&) = delete;
-    Pipeline& operator=(Pipeline const&) = delete;
-
-    Pipeline* next;
+    Pipeline* const next;
 };
 
 #endif // PIPELINE_HH
