@@ -59,14 +59,14 @@ Pl_XOR::write(unsigned char const* data, size_t len)
 {
     for (size_t i = 0; i < len; ++i) {
         unsigned char p = data[i] ^ this->key;
-        getNext()->write(&p, 1);
+        next->write(&p, 1);
     }
 }
 
 void
 Pl_XOR::finish()
 {
-    getNext()->finish();
+    next->finish();
 }
 
 class SF_XORDecode: public QPDFStreamFilter
