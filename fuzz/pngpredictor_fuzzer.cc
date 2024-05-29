@@ -26,7 +26,7 @@ void
 FuzzHelper::doChecks()
 {
     Pl_Discard discard;
-    Pl_PNGFilter p("decode", &discard, Pl_PNGFilter::a_decode, 32, 1, 8);
+    Pl_PNGFilter p("decode", discard, Pl_PNGFilter::a_decode, 32, 1, 8);
     p.write(const_cast<unsigned char*>(data), size);
     p.finish();
 }

@@ -14,8 +14,8 @@ class SF_ASCIIHexDecode: public QPDFStreamFilter
     Pipeline*
     getDecodePipeline(Pipeline* next) override
     {
-        this->pipeline = std::make_shared<Pl_ASCIIHexDecoder>("asciiHex decode", next);
-        return this->pipeline.get();
+        pipeline = std::make_unique<Pl_ASCIIHexDecoder>("asciiHex decode", *next);
+        return pipeline.get();
     }
 
     static std::shared_ptr<QPDFStreamFilter>
@@ -25,7 +25,7 @@ class SF_ASCIIHexDecode: public QPDFStreamFilter
     }
 
   private:
-    std::shared_ptr<Pipeline> pipeline;
+    std::unique_ptr<Pipeline> pipeline;
 };
 
 #endif // SF_ASCIIHEXDECODE_HH

@@ -19,16 +19,24 @@
 #ifndef PL_COUNT_HH
 #define PL_COUNT_HH
 
-// This pipeline is reusable; i.e., it is safe to call write() after calling finish().
-
 #include <qpdf/Pipeline.hh>
+
 #include <qpdf/Types.h>
 
+// This pipeline is reusable; i.e., it is safe to call write() after calling finish().
 class QPDF_DLL_CLASS Pl_Count: public Pipeline
 {
   public:
     QPDF_DLL
-    Pl_Count(char const* identifier, Pipeline* next);
+    Pl_Count(std::string_view identifier, Pipeline& next) :
+        Pipeline(identifier, &next)
+    {
+    }
+    QPDF_DLL
+    Pl_Count(std::string_view identifier, Pipeline* next) :
+        Pipeline(identifier, next)
+    {
+    }
     QPDF_DLL
     ~Pl_Count() override;
     QPDF_DLL
@@ -44,24 +52,15 @@ class QPDF_DLL_CLASS Pl_Count: public Pipeline
     unsigned char getLastChar() const;
 
   private:
-    class QPDF_DLL_PRIVATE Members
+    class Members
     {
-        friend class Pl_Count;
-
-      public:
-        QPDF_DLL
-        ~Members() = default;
-
-      private:
-        Members();
-        Members(Members const&) = delete;
-
-        // Must be qpdf_offset_t, not size_t, to handle writing more than size_t can handle.
-        qpdf_offset_t count;
-        unsigned char last_char;
     };
 
-    std::shared_ptr<Members> m;
+    // Must be qpdf_offset_t, not size_t, to handle writing more than size_t can handle.
+    qpdf_offset_t count{0};
+    unsigned char last_char{'\0'};
+
+    std::unique_ptr<Members> m;
 };
 
 #endif // PL_COUNT_HH

@@ -1,16 +1,8 @@
 #include <qpdf/Pl_ASCII85Decoder.hh>
 
 #include <qpdf/QTC.hh>
-#include <cstring>
-#include <stdexcept>
 
-Pl_ASCII85Decoder::Pl_ASCII85Decoder(char const* identifier, Pipeline* next) :
-    Pipeline(identifier, next),
-    pos(0),
-    eod(0)
-{
-    memset(this->inbuf, 117, 5);
-}
+#include <stdexcept>
 
 void
 Pl_ASCII85Decoder::write(unsigned char const* buf, size_t len)
@@ -52,7 +44,7 @@ Pl_ASCII85Decoder::write(unsigned char const* buf, size_t len)
                     QTC::TC("libtests", "Pl_ASCII85Decoder read z");
                     unsigned char zeroes[4];
                     memset(zeroes, '\0', 4);
-                    getNext()->write(zeroes, 4);
+                    next->write(zeroes, 4);
                 }
                 break;
 
@@ -92,17 +84,17 @@ Pl_ASCII85Decoder::flush()
     }
 
     QTC::TC("libtests", "Pl_ASCII85Decoder partial flush", (this->pos == 5) ? 0 : 1);
-    // Reset before calling getNext()->write in case that throws an exception.
+    // Reset before calling next->write in case that throws an exception.
     auto t = this->pos - 1;
     this->pos = 0;
     memset(this->inbuf, 117, 5);
 
-    getNext()->write(outbuf, t);
+    next->write(outbuf, t);
 }
 
 void
 Pl_ASCII85Decoder::finish()
 {
     flush();
-    getNext()->finish();
+    next->finish();
 }

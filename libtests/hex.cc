@@ -8,7 +8,7 @@ int
 main()
 {
     Pl_StdioFile out("stdout", stdout);
-    Pl_ASCIIHexDecoder decode("decode", &out);
+    Pl_ASCIIHexDecoder decode("decode", out);
 
     try {
         unsigned char buf[10000];

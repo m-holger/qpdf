@@ -27,7 +27,7 @@ main(int argc, char* argv[])
         FILE* outfile = QUtil::safe_fopen(outfilename, "wb");
 
         Pl_StdioFile out("output", outfile);
-        Pl_LZWDecoder decode("decode", &out, early_code_change);
+        Pl_LZWDecoder decode("decode", out, early_code_change);
 
         unsigned char buf[10000];
         bool done = false;

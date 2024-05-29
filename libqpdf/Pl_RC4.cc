@@ -1,18 +1,15 @@
 #include <qpdf/Pl_RC4.hh>
 
+#include <qpdf/QIntC.hh>
 #include <qpdf/QUtil.hh>
 
 Pl_RC4::Pl_RC4(
-    char const* identifier,
-    Pipeline* next,
-    unsigned char const* key_data,
-    int key_len,
-    size_t out_bufsize) :
-    Pipeline(identifier, next),
+    std::string_view identifier, Pipeline& next, std::string_view key, size_t out_bufsize) :
+    Pipeline(identifier, &next),
     out_bufsize(out_bufsize),
-    rc4(key_data, key_len)
+    rc4(reinterpret_cast<unsigned char const*>(key.data()), QIntC::to_int(key.size()))
 {
-    this->outbuf = QUtil::make_shared_array<unsigned char>(out_bufsize);
+    outbuf = QUtil::make_shared_array<unsigned char>(out_bufsize);
 }
 
 void
@@ -31,13 +28,13 @@ Pl_RC4::write(unsigned char const* data, size_t len)
         // lgtm[cpp/weak-cryptographic-algorithm]
         rc4.process(p, bytes, outbuf.get());
         p += bytes;
-        getNext()->write(outbuf.get(), bytes);
+        next->write(outbuf.get(), bytes);
     }
 }
 
 void
 Pl_RC4::finish()
 {
-    this->outbuf = nullptr;
-    this->getNext()->finish();
+    outbuf = nullptr;
+    next->finish();
 }

@@ -21,18 +21,21 @@
 
 #include <qpdf/Pipeline.hh>
 
-#include <qpdf/Pl_Buffer.hh>
 #include <cstddef>
 
 // jpeglib.h must be included after cstddef or else it messes up the definition of size_t.
 #include <jpeglib.h>
+
+class Buffer;
 
 class QPDF_DLL_CLASS Pl_DCT: public Pipeline
 {
   public:
     // Constructor for decompressing image data
     QPDF_DLL
-    Pl_DCT(char const* identifier, Pipeline* next);
+    Pl_DCT(std::string_view identifier, Pipeline& next);
+    QPDF_DLL
+    Pl_DCT(std::string_view identifier, Pipeline* next);
 
     class QPDF_DLL_CLASS CompressConfig
     {
@@ -47,7 +50,16 @@ class QPDF_DLL_CLASS Pl_DCT: public Pipeline
     // Constructor for compressing image data
     QPDF_DLL
     Pl_DCT(
-        char const* identifier,
+        std::string_view identifier,
+        Pipeline& next,
+        JDIMENSION image_width,
+        JDIMENSION image_height,
+        int components,
+        J_COLOR_SPACE color_space,
+        CompressConfig* config_callback = nullptr);
+    QPDF_DLL
+    Pl_DCT(
+        std::string_view identifier,
         Pipeline* next,
         JDIMENSION image_width,
         JDIMENSION image_height,
@@ -64,45 +76,13 @@ class QPDF_DLL_CLASS Pl_DCT: public Pipeline
     void finish() override;
 
   private:
-    QPDF_DLL_PRIVATE
     void compress(void* cinfo, Buffer*);
-    QPDF_DLL_PRIVATE
     void decompress(void* cinfo, Buffer*);
 
     enum action_e { a_compress, a_decompress };
 
-    class QPDF_DLL_PRIVATE Members
-    {
-        friend class Pl_DCT;
-
-      public:
-        QPDF_DLL
-        ~Members() = default;
-
-      private:
-        Members(
-            action_e action,
-            char const* buf_description,
-            JDIMENSION image_width = 0,
-            JDIMENSION image_height = 0,
-            int components = 1,
-            J_COLOR_SPACE color_space = JCS_GRAYSCALE,
-            CompressConfig* config_callback = nullptr);
-        Members(Members const&) = delete;
-
-        action_e action;
-        Pl_Buffer buf;
-
-        // Used for compression
-        JDIMENSION image_width;
-        JDIMENSION image_height;
-        int components;
-        J_COLOR_SPACE color_space;
-
-        CompressConfig* config_callback;
-    };
-
-    std::shared_ptr<Members> m;
+    class Members;
+    std::unique_ptr<Members> m;
 };
 
 #endif // PL_DCT_HH

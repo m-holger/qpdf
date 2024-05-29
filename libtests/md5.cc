@@ -39,13 +39,13 @@ main(int, char*[])
               << MD5::checkFileChecksum("6f4b4321873433daae578f85c72f9e74", "glerbl") << std::endl;
 
     Pl_Discard d;
-    Pl_MD5 p("MD5", &d);
+    Pl_MD5 p("MD5", d);
     // Create a second pipeline, protect against finish, and call
     // getHexDigest only once at the end of both passes. Make sure the
     // checksum is that of the input file concatenated to itself. This
     // will require changes to Pl_MD5.cc to prevent finish from
     // calling finalize.
-    Pl_MD5 p2("MD5", &d);
+    Pl_MD5 p2("MD5", d);
     p2.persistAcrossFinish(true);
     for (int i = 0; i < 2; ++i) {
         FILE* f = QUtil::safe_fopen("md5.in", "rb");

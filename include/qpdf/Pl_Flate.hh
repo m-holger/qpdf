@@ -35,7 +35,13 @@ class QPDF_DLL_CLASS Pl_Flate: public Pipeline
 
     QPDF_DLL
     Pl_Flate(
-        char const* identifier,
+        std::string_view identifier,
+        Pipeline& next,
+        action_e action,
+        unsigned int out_bufsize = def_bufsize);
+    QPDF_DLL
+    Pl_Flate(
+        std::string_view identifier,
         Pipeline* next,
         action_e action,
         unsigned int out_bufsize = def_bufsize);
@@ -70,27 +76,9 @@ class QPDF_DLL_CLASS Pl_Flate: public Pipeline
     QPDF_DLL_PRIVATE
     static int compression_level;
 
-    class QPDF_DLL_PRIVATE Members
-    {
-        friend class Pl_Flate;
+    class Members;
 
-      public:
-        QPDF_DLL
-        ~Members();
-
-      private:
-        Members(size_t out_bufsize, action_e action);
-        Members(Members const&) = delete;
-
-        std::shared_ptr<unsigned char> outbuf;
-        size_t out_bufsize;
-        action_e action;
-        bool initialized;
-        void* zdata;
-        std::function<void(char const*, int)> callback;
-    };
-
-    std::shared_ptr<Members> m;
+    std::unique_ptr<Members> m;
 };
 
 #endif // PL_FLATE_HH

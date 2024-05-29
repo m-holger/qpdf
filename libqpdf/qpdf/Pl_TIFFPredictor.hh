@@ -14,8 +14,8 @@ class Pl_TIFFPredictor: public Pipeline
     enum action_e { a_encode, a_decode };
 
     Pl_TIFFPredictor(
-        char const* identifier,
-        Pipeline* next,
+        std::string_view identifier,
+        Pipeline& next,
         action_e action,
         unsigned int columns,
         unsigned int samples_per_pixel = 1,
@@ -36,7 +36,6 @@ class Pl_TIFFPredictor: public Pipeline
     std::vector<unsigned char> cur_row;
     std::vector<long long> previous;
     std::vector<unsigned char> out;
-    Pipeline* p_next;
 };
 
 #endif // PL_TIFFPREDICTOR_HH

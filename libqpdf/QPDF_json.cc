@@ -213,7 +213,7 @@ static std::function<void(Pipeline*)>
 provide_data(std::shared_ptr<InputSource> is, qpdf_offset_t start, qpdf_offset_t end)
 {
     return [is, start, end](Pipeline* p) {
-        Pl_Base64 decode("base64-decode", p, Pl_Base64::a_decode);
+        Pl_Base64 decode("base64-decode", *p, Pl_Base64::a_decode);
         p = &decode;
         size_t bytes = QIntC::to_size(end - start);
         char buf[8192];
@@ -272,10 +272,10 @@ class QPDF::JSONReactor: public JSON::Reactor
     struct StackFrame
     {
         StackFrame(state_e state) :
-            state(state){};
+            state(state) {};
         StackFrame(state_e state, QPDFObjectHandle&& object) :
             state(state),
-            object(object){};
+            object(object) {};
         state_e state;
         QPDFObjectHandle object;
     };

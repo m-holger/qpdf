@@ -10,24 +10,12 @@
 bool Pl_AES_PDF::use_static_iv = false;
 
 Pl_AES_PDF::Pl_AES_PDF(
-    char const* identifier,
-    Pipeline* next,
-    bool encrypt,
-    unsigned char const* key,
-    size_t key_bytes) :
-    Pipeline(identifier, next),
+    std::string_view identifier, Pipeline& next, bool encrypt, std::string_view key) :
+    Pipeline(identifier, &next),
     crypto(QPDFCryptoProvider::getImpl()),
     encrypt(encrypt),
-    cbc_mode(true),
-    first(true),
-    offset(0),
-    key_bytes(key_bytes),
-    use_zero_iv(false),
-    use_specified_iv(false),
-    disable_padding(false)
+    key(key)
 {
-    this->key = std::make_unique<unsigned char[]>(key_bytes);
-    std::memcpy(this->key.get(), key, key_bytes);
     std::memset(this->inbuf, 0, this->buf_size);
     std::memset(this->outbuf, 0, this->buf_size);
     std::memset(this->cbc_block, 0, this->buf_size);
@@ -120,7 +108,7 @@ Pl_AES_PDF::finish()
         flush(!this->disable_padding);
     }
     this->crypto->rijndael_finalize();
-    getNext()->finish();
+    next->finish();
 }
 
 void
@@ -157,7 +145,7 @@ Pl_AES_PDF::flush(bool strip_padding)
                 // output stream.
                 initializeVector();
                 if (!(this->use_zero_iv || this->use_specified_iv)) {
-                    getNext()->write(this->cbc_block, this->buf_size);
+                    next->write(this->cbc_block, this->buf_size);
                 }
             } else if (this->use_zero_iv || this->use_specified_iv) {
                 // Initialize vector with zeroes; zero vector was not written to the beginning of
@@ -172,7 +160,7 @@ Pl_AES_PDF::flush(bool strip_padding)
             }
         }
         this->crypto->rijndael_init(
-            encrypt, this->key.get(), key_bytes, this->cbc_mode, this->cbc_block);
+            encrypt, reinterpret_cast<unsigned char*>(key.data()), key.size(), cbc_mode, cbc_block);
         if (return_after_init) {
             return;
         }
@@ -196,5 +184,5 @@ Pl_AES_PDF::flush(bool strip_padding)
         }
     }
     this->offset = 0;
-    getNext()->write(this->outbuf, bytes);
+    next->write(this->outbuf, bytes);
 }

@@ -58,7 +58,7 @@ main(int argc, char* argv[])
     FILE* outfile = QUtil::safe_fopen(outfilename, "wb");
     auto* out = new Pl_StdioFile("stdout", outfile);
     // Use a small buffer size (64) for testing
-    auto* rc4 = new Pl_RC4("rc4", out, key, QIntC::to_int(keylen), 64U);
+    auto* rc4 = new Pl_RC4("rc4", *out, {reinterpret_cast<char*>(key), keylen}, 64U);
     delete[] key;
 
     // 64 < buffer size < 512, buffer_size is not a power of 2 for testing

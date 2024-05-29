@@ -1,5 +1,6 @@
 #include <qpdf/Pl_DCT.hh>
 
+#include <qpdf/Pl_Buffer.hh>
 #include <qpdf/QIntC.hh>
 #include <qpdf/QTC.hh>
 
@@ -31,32 +32,76 @@ error_handler(j_common_ptr cinfo)
     longjmp(jerr->jmpbuf, 1);
 }
 
-Pl_DCT::Members::Members(
-    action_e action,
-    char const* buf_description,
+class Pl_DCT::Members
+{
+  public:
+    Members(
+        action_e action,
+        std::string_view buf_description,
+        JDIMENSION image_width = 0,
+        JDIMENSION image_height = 0,
+        int components = 1,
+        J_COLOR_SPACE color_space = JCS_GRAYSCALE,
+        CompressConfig* config_callback = nullptr) :
+        action(action),
+        buf(buf_description),
+        image_width(image_width),
+        image_height(image_height),
+        components(components),
+        color_space(color_space),
+        config_callback(config_callback)
+    {
+    }
+
+    action_e action;
+    Pl_Buffer buf;
+
+    // Used for compression
+    JDIMENSION image_width;
+    JDIMENSION image_height;
+    int components;
+    J_COLOR_SPACE color_space;
+
+    CompressConfig* config_callback;
+};
+
+Pl_DCT::Pl_DCT(std::string_view identifier, Pipeline& next) :
+    Pipeline(identifier, &next),
+    m(new Members(a_decompress, "DCT compressed image"))
+{
+}
+
+Pl_DCT::Pl_DCT(std::string_view identifier, Pipeline* next) :
+    Pipeline(identifier, next),
+    m(new Members(a_decompress, "DCT compressed image"))
+{
+    if (!next) {
+        throw std::logic_error("Pl_Dct: next cannot be nullptr");
+    }
+}
+
+Pl_DCT::Pl_DCT(
+    std::string_view identifier,
+    Pipeline& next,
     JDIMENSION image_width,
     JDIMENSION image_height,
     int components,
     J_COLOR_SPACE color_space,
     CompressConfig* config_callback) :
-    action(action),
-    buf(buf_description),
-    image_width(image_width),
-    image_height(image_height),
-    components(components),
-    color_space(color_space),
-    config_callback(config_callback)
-{
-}
-
-Pl_DCT::Pl_DCT(char const* identifier, Pipeline* next) :
-    Pipeline(identifier, next),
-    m(new Members(a_decompress, "DCT compressed image"))
+    Pipeline(identifier, &next),
+    m(new Members(
+        a_compress,
+        "DCT uncompressed image",
+        image_width,
+        image_height,
+        components,
+        color_space,
+        config_callback))
 {
 }
 
 Pl_DCT::Pl_DCT(
-    char const* identifier,
+    std::string_view identifier,
     Pipeline* next,
     JDIMENSION image_width,
     JDIMENSION image_height,
@@ -73,12 +118,13 @@ Pl_DCT::Pl_DCT(
         color_space,
         config_callback))
 {
+    if (!next) {
+        throw std::logic_error("Pl_Dct: next cannot be nullptr");
+    }
 }
 
-Pl_DCT::~Pl_DCT() // NOLINT (modernize-use-equals-default)
-{
-    // Must be explicit and not inline -- see QPDF_DLL_CLASS in README-maintainer
-}
+Pl_DCT::~Pl_DCT() = default;
+// Must be explicit and not inline -- see QPDF_DLL_CLASS in README-maintainer
 
 void
 Pl_DCT::write(unsigned char const* data, size_t len)
@@ -98,7 +144,7 @@ Pl_DCT::finish()
         // Special case: empty data will never succeed and probably means we're calling finish a
         // second time from an exception handler.
         delete b;
-        this->getNext()->finish();
+        next->finish();
         return;
     }
 
@@ -262,7 +308,7 @@ Pl_DCT::compress(void* cinfo_p, Buffer* b)
     static int const BUF_SIZE = 65536;
     auto outbuffer_ph = std::make_unique<unsigned char[]>(BUF_SIZE);
     unsigned char* outbuffer = outbuffer_ph.get();
-    jpeg_pipeline_dest(cinfo, outbuffer, BUF_SIZE, this->getNext());
+    jpeg_pipeline_dest(cinfo, outbuffer, BUF_SIZE, next);
 
     cinfo->image_width = m->image_width;
     cinfo->image_height = m->image_height;
@@ -291,7 +337,7 @@ Pl_DCT::compress(void* cinfo_p, Buffer* b)
         (void)jpeg_write_scanlines(cinfo, row_pointer, 1);
     }
     jpeg_finish_compress(cinfo);
-    this->getNext()->finish();
+    next->finish();
 }
 
 void
@@ -319,8 +365,8 @@ Pl_DCT::decompress(void* cinfo_p, Buffer* b)
     (void)jpeg_start_decompress(cinfo);
     while (cinfo->output_scanline < cinfo->output_height) {
         (void)jpeg_read_scanlines(cinfo, buffer, 1);
-        this->getNext()->write(buffer[0], width * sizeof(buffer[0][0]));
+        next->write(buffer[0], width * sizeof(buffer[0][0]));
     }
     (void)jpeg_finish_decompress(cinfo);
-    this->getNext()->finish();
+    next->finish();
 }

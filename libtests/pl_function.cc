@@ -47,7 +47,7 @@ main(int argc, char* argv[])
 
     std::string s;
     Pl_String ps("string", nullptr, s);
-    Pl_Base64 b("base64", &ps, Pl_Base64::a_encode);
+    Pl_Base64 b("base64", ps, Pl_Base64::a_encode);
     Pl_Function p2("p2", &b, [](unsigned char const* data, size_t len) {
         std::cout << "p2: " << len << ": " << data << std::endl;
     });

@@ -3,23 +3,37 @@
 #include <qpdf/QTC.hh>
 #include <qpdf/QUtil.hh>
 
-Pl_RunLength::Members::Members(action_e action) :
-    action(action),
-    state(st_top),
-    length(0)
+class Pl_RunLength::Members
 {
-}
+  public:
+    Members(action_e action) :
+        action(action)
+    {
+    }
 
-Pl_RunLength::Pl_RunLength(char const* identifier, Pipeline* next, action_e action) :
-    Pipeline(identifier, next),
+    action_e action;
+    state_e state{st_top};
+    unsigned char buf[128];
+    unsigned int length{0};
+};
+
+Pl_RunLength::Pl_RunLength(std::string_view identifier, Pipeline& next, action_e action) :
+    Pipeline(identifier, &next),
     m(new Members(action))
 {
 }
 
-Pl_RunLength::~Pl_RunLength() // NOLINT (modernize-use-equals-default)
+Pl_RunLength::Pl_RunLength(std::string_view identifier, Pipeline* next, action_e action) :
+    Pipeline(identifier, next),
+    m(new Members(action))
 {
-    // Must be explicit and not inline -- see QPDF_DLL_CLASS in README-maintainer
+    if (!next) {
+        throw std::logic_error("Pl_RunLength: next cannot be nullptr");
+    }
 }
+
+Pl_RunLength::~Pl_RunLength() = default;
+// Must be explicit and not inline -- see QPDF_DLL_CLASS in README-maintainer
 
 void
 Pl_RunLength::write(unsigned char const* data, size_t len)
@@ -85,7 +99,7 @@ Pl_RunLength::decode(unsigned char const* data, size_t len)
             break;
 
         case st_copying:
-            this->getNext()->write(&ch, 1);
+            next->write(&ch, 1);
             if (--m->length == 0) {
                 m->state = st_top;
             }
@@ -93,7 +107,7 @@ Pl_RunLength::decode(unsigned char const* data, size_t len)
 
         case st_run:
             for (unsigned int j = 0; j < m->length; ++j) {
-                this->getNext()->write(&ch, 1);
+                next->write(&ch, 1);
             }
             m->state = st_top;
             break;
@@ -120,12 +134,12 @@ Pl_RunLength::flush_encode()
             throw std::logic_error("Pl_RunLength: invalid length in flush_encode for run");
         }
         auto ch = static_cast<unsigned char>(257 - m->length);
-        this->getNext()->write(&ch, 1);
-        this->getNext()->write(&m->buf[0], 1);
+        next->write(&ch, 1);
+        next->write(&m->buf[0], 1);
     } else if (m->length > 0) {
         auto ch = static_cast<unsigned char>(m->length - 1);
-        this->getNext()->write(&ch, 1);
-        this->getNext()->write(m->buf, m->length);
+        next->write(&ch, 1);
+        next->write(m->buf, m->length);
     }
     m->state = st_top;
     m->length = 0;
@@ -140,7 +154,7 @@ Pl_RunLength::finish()
     if (m->action == a_encode) {
         flush_encode();
         unsigned char ch = 128;
-        this->getNext()->write(&ch, 1);
+        next->write(&ch, 1);
     }
-    this->getNext()->finish();
+    next->finish();
 }

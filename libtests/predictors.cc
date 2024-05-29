@@ -25,7 +25,7 @@ run(char const* filename,
     if (strcmp(filter, "png") == 0) {
         pl = new Pl_PNGFilter(
             "png",
-            out,
+            *out,
             encode ? Pl_PNGFilter::a_encode : Pl_PNGFilter::a_decode,
             columns,
             samples_per_pixel,
@@ -33,7 +33,7 @@ run(char const* filename,
     } else if (strcmp(filter, "tiff") == 0) {
         pl = new Pl_TIFFPredictor(
             "png",
-            out,
+            *out,
             encode ? Pl_TIFFPredictor::a_encode : Pl_TIFFPredictor::a_decode,
             columns,
             samples_per_pixel,

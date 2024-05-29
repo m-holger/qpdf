@@ -80,7 +80,7 @@ SF_FlateLzwDecode::getDecodePipeline(Pipeline* next)
         QTC::TC("qpdf", "SF_FlateLzwDecode PNG filter");
         pipeline = std::make_shared<Pl_PNGFilter>(
             "png decode",
-            next,
+            *next,
             Pl_PNGFilter::a_decode,
             QIntC::to_uint(this->columns),
             QIntC::to_uint(this->colors),
@@ -91,7 +91,7 @@ SF_FlateLzwDecode::getDecodePipeline(Pipeline* next)
         QTC::TC("qpdf", "SF_FlateLzwDecode TIFF predictor");
         pipeline = std::make_shared<Pl_TIFFPredictor>(
             "tiff decode",
-            next,
+            *next,
             Pl_TIFFPredictor::a_decode,
             QIntC::to_uint(this->columns),
             QIntC::to_uint(this->colors),
@@ -101,9 +101,9 @@ SF_FlateLzwDecode::getDecodePipeline(Pipeline* next)
     }
 
     if (lzw) {
-        pipeline = std::make_shared<Pl_LZWDecoder>("lzw decode", next, early_code_change);
+        pipeline = std::make_shared<Pl_LZWDecoder>("lzw decode", *next, early_code_change);
     } else {
-        pipeline = std::make_shared<Pl_Flate>("stream inflate", next, Pl_Flate::a_inflate);
+        pipeline = std::make_shared<Pl_Flate>("stream inflate", *next, Pl_Flate::a_inflate);
     }
     this->pipelines.push_back(pipeline);
     return pipeline.get();

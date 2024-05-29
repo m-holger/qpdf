@@ -978,18 +978,9 @@ QPDFWriter::pushEncryptionFilter(PipelinePopper& pp)
     if (m->encrypted && (!m->cur_data_key.empty())) {
         Pipeline* p = nullptr;
         if (m->encrypt_use_aes) {
-            p = new Pl_AES_PDF(
-                "aes stream encryption",
-                m->pipeline,
-                true,
-                QUtil::unsigned_char_pointer(m->cur_data_key),
-                m->cur_data_key.length());
+            p = new Pl_AES_PDF("aes stream encryption", *m->pipeline, true, m->cur_data_key);
         } else {
-            p = new Pl_RC4(
-                "rc4 stream encryption",
-                m->pipeline,
-                QUtil::unsigned_char_pointer(m->cur_data_key),
-                QIntC::to_int(m->cur_data_key.length()));
+            p = new Pl_RC4("rc4 stream encryption", *m->pipeline, m->cur_data_key);
         }
         pushPipeline(p);
     }
@@ -1016,7 +1007,7 @@ QPDFWriter::pushMD5Pipeline(PipelinePopper& pp)
     qpdf_assert_debug(m->deterministic_id);
     qpdf_assert_debug(m->md5_pipeline == nullptr);
     qpdf_assert_debug(m->pipeline->getCount() == 0);
-    m->md5_pipeline = new Pl_MD5("qpdf md5", m->pipeline);
+    m->md5_pipeline = new Pl_MD5("qpdf md5", *m->pipeline);
     m->md5_pipeline->persistAcrossFinish(true);
     // Special case code in popPipelineStack clears m->md5_pipeline upon deletion.
     pushPipeline(m->md5_pipeline);
@@ -1569,12 +1560,7 @@ QPDFWriter::unparseObject(
             val = object.getStringValue();
             if (m->encrypt_use_aes) {
                 Pl_Buffer bufpl("encrypted string");
-                Pl_AES_PDF pl(
-                    "aes encrypt string",
-                    &bufpl,
-                    true,
-                    QUtil::unsigned_char_pointer(m->cur_data_key),
-                    m->cur_data_key.length());
+                Pl_AES_PDF pl("aes encrypt string", bufpl, true, m->cur_data_key);
                 pl.writeString(val);
                 pl.finish();
                 val = QPDF_String(bufpl.getString()).unparse(true);
@@ -2461,7 +2447,7 @@ QPDFWriter::writeXRefStream(
             // us with computation of padding for pass 1 of linearization.
             p = pushPipeline(new Pl_Flate("compress xref", p, Pl_Flate::a_deflate));
         }
-        p = pushPipeline(new Pl_PNGFilter("pngify xref", p, Pl_PNGFilter::a_encode, esize));
+        p = pushPipeline(new Pl_PNGFilter("pngify xref", *p, Pl_PNGFilter::a_encode, esize));
     }
     std::shared_ptr<Buffer> xref_data;
     {

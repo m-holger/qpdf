@@ -1,14 +1,13 @@
 #ifndef PL_PNGFILTER_HH
 #define PL_PNGFILTER_HH
 
-// This pipeline applies or reverses the application of a PNG filter as described in the PNG
-// specification.
-
-// NOTE: In its current implementation, this filter always encodes using the "up" filter, but it
-// decodes all the filters.
-
 #include <qpdf/Pipeline.hh>
 
+// This pipeline applies or reverses the application of a PNG filter as described in the PNG
+// specification.
+//
+// NOTE: In its current implementation, this filter always encodes using the "up" filter, but it
+// decodes all the filters.
 class Pl_PNGFilter: public Pipeline
 {
   public:
@@ -16,8 +15,8 @@ class Pl_PNGFilter: public Pipeline
     enum action_e { a_encode, a_decode };
 
     Pl_PNGFilter(
-        char const* identifier,
-        Pipeline* next,
+        std::string_view identifier,
+        Pipeline& next,
         action_e action,
         unsigned int columns,
         unsigned int samples_per_pixel = 1,
@@ -40,12 +39,12 @@ class Pl_PNGFilter: public Pipeline
     action_e action;
     unsigned int bytes_per_row;
     unsigned int bytes_per_pixel;
-    unsigned char* cur_row;  // points to buf1 or buf2
-    unsigned char* prev_row; // points to buf1 or buf2
+    unsigned char* cur_row{nullptr};  // points to buf1 or buf2
+    unsigned char* prev_row{nullptr}; // points to buf1 or buf2
     std::shared_ptr<unsigned char> buf1;
     std::shared_ptr<unsigned char> buf2;
-    size_t pos;
-    size_t incoming;
+    size_t pos{0};
+    size_t incoming{0};
 };
 
 #endif // PL_PNGFILTER_HH
