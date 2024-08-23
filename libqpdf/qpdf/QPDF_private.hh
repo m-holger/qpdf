@@ -358,7 +358,11 @@ class QPDF::Xref_table
     // Linearization data
     bool uncompressed_after_compressed_{false};
     qpdf_offset_t first_item_offset_{0}; // actual value from file
-};
+}; // Xref_table
+
+class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
+{
+}; // Objects
 
 // The Resolver class is restricted to QPDFObject so that only it can resolve indirect
 // references.
@@ -751,7 +755,7 @@ class QPDF::Members
     std::shared_ptr<EncryptionParameters> encp;
     std::string pdf_version;
     Xref_table xref_table;
-    std::map<QPDFObjGen, ObjCache> obj_cache;
+    Objects obj_cache;
     std::set<QPDFObjGen> resolving;
     std::vector<QPDFObjectHandle> all_pages;
     bool invalid_page_found{false};

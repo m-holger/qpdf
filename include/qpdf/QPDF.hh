@@ -734,6 +734,7 @@ class QPDF
     class Pipe;
     class JobSetter;
     class Xref_table;
+    class Objects;
 
     // For testing only -- do not add to DLL
     static bool test_json_validators();
