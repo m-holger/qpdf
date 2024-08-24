@@ -765,13 +765,6 @@ class QPDF
         std::shared_ptr<InputSource> input, QPDFObjGen const& og, qpdf_offset_t stream_offset);
     QPDFTokenizer::Token readToken(InputSource&, size_t max_len = 0);
 
-    QPDFObjectHandle readObjectAtOffset(
-        bool attempt_recovery,
-        qpdf_offset_t offset,
-        std::string const& description,
-        QPDFObjGen exp_og,
-        QPDFObjGen& og,
-        bool skip_cache_if_in_xref);
     void stopOnError(std::string const& message);
     QPDFObjectHandle newIndirect(QPDFObjGen const&, std::shared_ptr<QPDFObject> const&);
     static QPDFExc damagedPDF(

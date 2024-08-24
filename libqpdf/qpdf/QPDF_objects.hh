@@ -478,9 +478,15 @@ class QPDF::Objects
 
     void swap(QPDFObjGen og1, QPDFObjGen og2);
 
-    void update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& object);
-
     std::shared_ptr<QPDFObject> make_indirect(std::shared_ptr<QPDFObject> const& obj);
+
+    QPDFObjectHandle read(
+        bool try_recovery,
+        qpdf_offset_t offset,
+        std::string const& description,
+        QPDFObjGen exp_og,
+        QPDFObjGen& og,
+        bool skip_cache_if_in_xref);
 
     int
     next_id()
@@ -530,6 +536,7 @@ class QPDF::Objects
     }; // Entry
 
     void initialize();
+    void update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& object);
 
     QPDF& qpdf;
     InputSource* const& file;
