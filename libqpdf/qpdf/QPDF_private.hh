@@ -429,6 +429,23 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
         return obj;
     }
 
+    std::shared_ptr<QPDFObject>
+    get_for_parser(int id, int gen, bool parse_pdf)
+    {
+        // This method is called by the parser and therefore must not resolve any objects.
+        auto og = QPDFObjGen(id, gen);
+        if (auto iter = find(og); iter != end()) {
+            return iter->second.object;
+        }
+        if (xref.type(og) || !xref.initialized()) {
+            return insert({og, QPDF_Unresolved::create(&qpdf, og)}).first->second.object;
+        }
+        if (parse_pdf) {
+            return QPDF_Null::create();
+        }
+        return insert({og, QPDF_Null::create(&qpdf, og)}).first->second.object;
+    }
+
     void erase(QPDFObjGen og);
 
     void replace(QPDFObjGen og, QPDFObjectHandle oh);
@@ -466,36 +483,6 @@ class QPDF::StreamCopier
     {
         qpdf->copyStreamData(dest, src);
     }
-};
-
-// The ParseGuard class allows QPDFParser to detect re-entrant parsing. It also provides
-// special access to allow the parser to create unresolved objects and dangling references.
-class QPDF::ParseGuard
-{
-    friend class QPDFParser;
-
-  private:
-    ParseGuard(QPDF* qpdf) :
-        qpdf(qpdf)
-    {
-        if (qpdf) {
-            qpdf->inParse(true);
-        }
-    }
-
-    static std::shared_ptr<QPDFObject>
-    getObject(QPDF* qpdf, int id, int gen, bool parse_pdf)
-    {
-        return qpdf->getObjectForParser(id, gen, parse_pdf);
-    }
-
-    ~ParseGuard()
-    {
-        if (qpdf) {
-            qpdf->inParse(false);
-        }
-    }
-    QPDF* qpdf;
 };
 
 // Pipe class is restricted to QPDF_Stream.
@@ -963,6 +950,36 @@ class QPDF::Writer
     {
         return qpdf.tableSize();
     }
+};
+
+// The ParseGuard class allows QPDFParser to detect re-entrant parsing. It also provides
+// special access to allow the parser to create unresolved objects and dangling references.
+class QPDF::ParseGuard
+{
+    friend class QPDFParser;
+
+  private:
+    ParseGuard(QPDF* qpdf) :
+        qpdf(qpdf)
+    {
+        if (qpdf) {
+            qpdf->inParse(true);
+        }
+    }
+
+    static QPDF::Objects&
+    get_obj_table(QPDF& qpdf)
+    {
+        return qpdf.m->obj_cache;
+    }
+
+    ~ParseGuard()
+    {
+        if (qpdf) {
+            qpdf->inParse(false);
+        }
+    }
+    QPDF* qpdf;
 };
 
 #endif // QPDF_PRIVATE_HH

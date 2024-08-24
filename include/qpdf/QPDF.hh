@@ -782,7 +782,6 @@ class QPDF
     QPDFObjGen nextObjGen();
     QPDFObjectHandle newIndirect(QPDFObjGen const&, std::shared_ptr<QPDFObject> const&);
     QPDFObjectHandle makeIndirectFromQPDFObject(std::shared_ptr<QPDFObject> const& obj);
-    std::shared_ptr<QPDFObject> getObjectForParser(int id, int gen, bool parse_pdf);
     void removeObject(QPDFObjGen og);
     static QPDFExc damagedPDF(
         InputSource& input,

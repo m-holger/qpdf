@@ -3,6 +3,7 @@
 
 #include <qpdf/QPDFObjectHandle.hh>
 #include <qpdf/QPDFValue.hh>
+#include <qpdf/QPDF_private.hh>
 
 #include <memory>
 #include <string>
@@ -23,6 +24,7 @@ class QPDFParser
         tokenizer(tokenizer),
         decrypter(decrypter),
         context(context),
+        obj_table(context ? &QPDF::ParseGuard::get_obj_table(*context) : nullptr),
         description(std::make_shared<QPDFValue::Description>(
             std::string(input.getName() + ", " + object_description + " at offset $PO"))),
         parse_pdf(parse_pdf)
@@ -72,11 +74,13 @@ class QPDFParser
     // NB the offset includes any leading whitespace.
     QPDFObjectHandle withDescription(Args&&... args);
     void setDescription(std::shared_ptr<QPDFObject>& obj, qpdf_offset_t parsed_offset);
+
     InputSource& input;
     std::string const& object_description;
     QPDFTokenizer& tokenizer;
     QPDFObjectHandle::StringDecrypter* decrypter;
     QPDF* context;
+    QPDF::Objects* obj_table;
     std::shared_ptr<QPDFValue::Description> description;
     bool parse_pdf;
 

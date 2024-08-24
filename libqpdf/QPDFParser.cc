@@ -158,7 +158,7 @@ QPDFParser::parseRemainder(bool content_stream)
             } else if (
                 int_count >= 2 && tokenizer.getType() == QPDFTokenizer::tt_word &&
                 tokenizer.getValue() == "R") {
-                if (context == nullptr) {
+                if (obj_table == nullptr) {
                     QTC::TC("qpdf", "QPDFParser indirect without context");
                     throw std::logic_error("QPDFParser::parse called without context on an object "
                                            "with indirect references");
@@ -166,7 +166,7 @@ QPDFParser::parseRemainder(bool content_stream)
                 auto id = QIntC::to_int(int_buffer[(int_count - 1) % 2]);
                 auto gen = QIntC::to_int(int_buffer[(int_count) % 2]);
                 if (!(id < 1 || gen < 0 || gen >= 65535)) {
-                    add(QPDF::ParseGuard::getObject(context, id, gen, parse_pdf));
+                    add(obj_table->get_for_parser(id, gen, parse_pdf));
                 } else {
                     QTC::TC("qpdf", "QPDFParser invalid objgen");
                     addNull();

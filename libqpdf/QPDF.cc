@@ -2198,23 +2198,6 @@ QPDF::newStream(std::string const& data)
     return result;
 }
 
-std::shared_ptr<QPDFObject>
-QPDF::getObjectForParser(int id, int gen, bool parse_pdf)
-{
-    // This method is called by the parser and therefore must not resolve any objects.
-    auto og = QPDFObjGen(id, gen);
-    if (auto iter = m->obj_cache.find(og); iter != m->obj_cache.end()) {
-        return iter->second.object;
-    }
-    if (m->xref_table.type(og) || !m->xref_table.initialized()) {
-        return m->obj_cache.insert({og, QPDF_Unresolved::create(this, og)}).first->second.object;
-    }
-    if (parse_pdf) {
-        return QPDF_Null::create();
-    }
-    return m->obj_cache.insert({og, QPDF_Null::create(this, og)}).first->second.object;
-}
-
 QPDFObjectHandle
 QPDF::getObject(QPDFObjGen const& og)
 {
