@@ -749,7 +749,7 @@ class QPDF
 
     static std::string const qpdf_version;
 
-    class ObjCache;
+    struct ObjCache;
     class ObjCopier;
     class EncryptionParameters;
     class ForeignStreamData;
@@ -782,12 +782,9 @@ class QPDF
     QPDFObjGen nextObjGen();
     QPDFObjectHandle newIndirect(QPDFObjGen const&, std::shared_ptr<QPDFObject> const&);
     QPDFObjectHandle makeIndirectFromQPDFObject(std::shared_ptr<QPDFObject> const& obj);
-    bool isCached(QPDFObjGen const& og);
-    bool isUnresolved(QPDFObjGen const& og);
     std::shared_ptr<QPDFObject> getObjectForParser(int id, int gen, bool parse_pdf);
     std::shared_ptr<QPDFObject> getObjectForJSON(int id, int gen);
     void removeObject(QPDFObjGen og);
-    void updateCache(QPDFObjGen const& og, std::shared_ptr<QPDFObject> const& object);
     static QPDFExc damagedPDF(
         InputSource& input,
         std::string const& object,

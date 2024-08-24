@@ -360,8 +360,44 @@ class QPDF::Xref_table
     qpdf_offset_t first_item_offset_{0}; // actual value from file
 }; // Xref_table
 
+struct QPDF::ObjCache
+{
+    ObjCache() = default;
+
+    ObjCache(std::shared_ptr<QPDFObject>&& object) :
+        object(std::move(object))
+    {
+    }
+
+    ObjCache(std::shared_ptr<QPDFObject> const& object) :
+        object(std::move(object))
+    {
+    }
+
+    std::shared_ptr<QPDFObject> object;
+}; // ObjCache
+
 class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
 {
+  public:
+    Objects(QPDF& qpdf) :
+        qpdf(qpdf)
+    {
+    }
+
+    bool
+    contains(QPDFObjGen og) const noexcept
+    {
+        return count(og);
+    }
+
+    bool unresolved(QPDFObjGen og) const noexcept;
+
+    void update(QPDFObjGen og, std::shared_ptr<QPDFObject> const& object);
+
+  private:
+    QPDF& qpdf;
+
 }; // Objects
 
 // The Resolver class is restricted to QPDFObject so that only it can resolve indirect
@@ -442,19 +478,6 @@ class QPDF::Pipe
         return qpdf->pipeStreamData(
             og, offset, length, dict, pipeline, suppress_warnings, will_retry);
     }
-};
-
-class QPDF::ObjCache
-{
-  public:
-    ObjCache() = default;
-
-    ObjCache(std::shared_ptr<QPDFObject> object) :
-        object(object)
-    {
-    }
-
-    std::shared_ptr<QPDFObject> object;
 };
 
 class QPDF::ObjCopier
