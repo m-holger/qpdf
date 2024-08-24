@@ -1967,7 +1967,7 @@ QPDF::Objects::Xref_table::resolve(int id, int gen)
             return;
 
         case 2:
-            qpdf.resolveObjectsInStream(e.stream_number());
+            resolve_stream(e.stream_number());
             return;
 
         default:
@@ -1988,28 +1988,31 @@ QPDF::Objects::Xref_table::resolve(int id, int gen)
 }
 
 void
-QPDF::resolveObjectsInStream(int obj_stream_number)
+QPDF::Objects::Xref_table::resolve_stream(int obj_stream_number)
 {
-    if (m->resolved_object_streams.count(obj_stream_number)) {
+    auto& e = entry(toS(obj_stream_number));
+
+    if (e.resolved_stream) {
         return;
     }
-    m->resolved_object_streams.insert(obj_stream_number);
+    e.resolved_stream = true;
+
     // Force resolution of object stream
-    QPDFObjectHandle obj_stream = getObjectByID(obj_stream_number, 0);
+    auto obj_stream = objects.get(obj_stream_number, 0);
     if (!obj_stream.isStream()) {
-        throw damagedPDF(
+        throw qpdf.damagedPDF(
             "supposed object stream " + std::to_string(obj_stream_number) + " is not a stream");
     }
 
-    QPDFObjectHandle dict = obj_stream.getDict();
+    auto dict = obj_stream.getDict();
     if (!dict.isDictionaryOfType("/ObjStm")) {
         QTC::TC("qpdf", "QPDF ERR object stream with wrong type");
-        warn(damagedPDF(
+        qpdf.warn(qpdf.damagedPDF(
             "supposed object stream " + std::to_string(obj_stream_number) + " has wrong type"));
     }
 
     if (!(dict.getKey("/N").isInteger() && dict.getKey("/First").isInteger())) {
-        throw damagedPDF(
+        throw qpdf.damagedPDF(
             ("object stream " + std::to_string(obj_stream_number) + " has incorrect keys"));
     }
 
@@ -2022,30 +2025,29 @@ QPDF::resolveObjectsInStream(int obj_stream_number)
     auto input = std::shared_ptr<InputSource>(
         // line-break
         new BufferInputSource(
-            (m->file->getName() + " object stream " + std::to_string(obj_stream_number)),
-            bp.get()));
+            (file->getName() + " object stream " + std::to_string(obj_stream_number)), bp.get()));
 
     for (int i = 0; i < n; ++i) {
-        QPDFTokenizer::Token tnum = readToken(*input);
-        QPDFTokenizer::Token toffset = readToken(*input);
+        QPDFTokenizer::Token tnum = read_token(*input);
+        QPDFTokenizer::Token toffset = read_token(*input);
         if (!(tnum.isInteger() && toffset.isInteger())) {
-            throw damagedPDF(
+            throw qpdf.damagedPDF(
                 *input,
-                m->last_object_description,
+                qpdf.m->last_object_description,
                 input->getLastOffset(),
                 "expected integer in object stream header");
         }
 
         int num = QUtil::string_to_int(tnum.getValue().c_str());
         long long offset = QUtil::string_to_int(toffset.getValue().c_str());
-        if (num > m->objects.xref_table().max_id()) {
+        if (num > max_id()) {
             continue;
         }
         if (num == obj_stream_number) {
             QTC::TC("qpdf", "QPDF ignore self-referential object stream");
-            warn(damagedPDF(
+            qpdf.warn(qpdf.damagedPDF(
                 *input,
-                m->last_object_description,
+                qpdf.m->last_object_description,
                 input->getLastOffset(),
                 "object stream claims to contain itself"));
             continue;
@@ -2057,16 +2059,13 @@ QPDF::resolveObjectsInStream(int obj_stream_number)
     // found here in the cache.  Remember that some objects stored here might have been overridden
     // by new objects appended to the file, so it is necessary to recheck the xref table and only
     // cache what would actually be resolved here.
-    m->last_object_description.clear();
-    m->last_object_description += "object ";
-    for (auto const& iter: offsets) {
-        QPDFObjGen og(iter.first, 0);
-        if (m->objects.xref_table().type(og) == 2 &&
-            m->objects.xref_table().stream_number(og.getObj()) == obj_stream_number) {
-            int offset = iter.second;
+    qpdf.m->last_object_description.clear();
+    qpdf.m->last_object_description += "object ";
+    for (auto const& [id, offset]: offsets) {
+        if (type(toS(id)) == 2 && stream_number(id) == obj_stream_number) {
             input->seek(offset, SEEK_SET);
-            QPDFObjectHandle oh = readObjectInStream(input, iter.first);
-            m->objects.update_table(og, oh.getObj());
+            auto oh = qpdf.readObjectInStream(input, id);
+            objects.update_table(QPDFObjGen(id, 0), oh.getObj());
         } else {
             QTC::TC("qpdf", "QPDF not caching overridden objstm object");
         }

@@ -355,7 +355,6 @@ class QPDF::Members
     CopiedStreamDataProvider* copied_stream_data_provider{nullptr};
     bool immediate_copy_from{false};
     bool in_parse{false};
-    std::set<int> resolved_object_streams;
 
     // Linearization data
     bool linearization_warnings{false};

@@ -284,6 +284,7 @@ class QPDF::Objects
 
             int gen_{0};
             bool resolved{false};
+            bool resolved_stream{false};
             Xref entry;
             qpdf_offset_t end_before_space_{0};
             qpdf_offset_t end_after_space_{0};
@@ -326,12 +327,20 @@ class QPDF::Objects
             int max_num_entries,
             std::function<QPDFExc(std::string_view)> damaged);
 
+        void resolve_stream(int obj_stream_number);
+
         QPDFObjectHandle read_trailer();
 
         QPDFTokenizer::Token
         read_token(size_t max_len = 0)
         {
             return objects.tokenizer.readToken(*file, "", true, max_len);
+        }
+
+        QPDFTokenizer::Token
+        read_token(InputSource& input)
+        {
+            return objects.tokenizer.readToken(input, "", true);
         }
 
         // Methods to insert table entries
