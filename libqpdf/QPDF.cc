@@ -2215,20 +2215,6 @@ QPDF::getObjectForParser(int id, int gen, bool parse_pdf)
     return m->obj_cache.insert({og, QPDF_Null::create(this, og)}).first->second.object;
 }
 
-std::shared_ptr<QPDFObject>
-QPDF::getObjectForJSON(int id, int gen)
-{
-    auto og = QPDFObjGen(id, gen);
-    auto [it, inserted] = m->obj_cache.try_emplace(og);
-    auto& obj = it->second.object;
-    if (inserted) {
-        obj = (m->xref_table.initialized() && !m->xref_table.type(og))
-            ? QPDF_Null::create(this, og)
-            : QPDF_Unresolved::create(this, og);
-    }
-    return obj;
-}
-
 QPDFObjectHandle
 QPDF::getObject(QPDFObjGen const& og)
 {

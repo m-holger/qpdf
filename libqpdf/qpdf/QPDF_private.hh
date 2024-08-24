@@ -416,6 +416,19 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
         }
     }
 
+    std::shared_ptr<QPDFObject>
+    get_for_json(int id, int gen)
+    {
+        auto og = QPDFObjGen(id, gen);
+        auto [it, inserted] = try_emplace(og);
+        auto& obj = it->second.object;
+        if (inserted) {
+            obj = (xref.initialized() && !xref.type(og)) ? QPDF_Null::create(&qpdf, og)
+                                                         : QPDF_Unresolved::create(&qpdf, og);
+        }
+        return obj;
+    }
+
     void erase(QPDFObjGen og);
 
     void replace(QPDFObjGen og, QPDFObjectHandle oh);
