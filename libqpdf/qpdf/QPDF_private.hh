@@ -458,6 +458,8 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
 
     void replace(QPDFObjGen og, QPDFObjectHandle oh);
 
+    void swap(QPDFObjGen og1, QPDFObjGen og2);
+
     void update(QPDFObjGen og, std::shared_ptr<QPDFObject> const& object);
 
     std::shared_ptr<QPDFObject> make_indirect(std::shared_ptr<QPDFObject> const& obj);

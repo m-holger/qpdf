@@ -2537,16 +2537,22 @@ QPDF::copyStreamData(QPDFObjectHandle result, QPDFObjectHandle foreign)
 void
 QPDF::swapObjects(int objid1, int generation1, int objid2, int generation2)
 {
-    swapObjects(QPDFObjGen(objid1, generation1), QPDFObjGen(objid2, generation2));
+    m->obj_cache.swap(QPDFObjGen(objid1, generation1), QPDFObjGen(objid2, generation2));
 }
 
 void
 QPDF::swapObjects(QPDFObjGen const& og1, QPDFObjGen const& og2)
 {
+    m->obj_cache.swap(og1, og2);
+}
+
+void
+QPDF::Objects::swap(QPDFObjGen og1, QPDFObjGen og2)
+{
     // Force objects to be read from the input source if needed, then swap them in the cache.
     resolve(og1);
     resolve(og2);
-    m->obj_cache[og1].object->swapWith(m->obj_cache[og2].object);
+    (*this)[og1].object->swapWith((*this)[og2].object);
 }
 
 unsigned long long
