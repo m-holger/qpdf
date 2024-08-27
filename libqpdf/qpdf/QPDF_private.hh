@@ -389,6 +389,8 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
     {
     }
 
+    ~Objects();
+
     bool
     contains(QPDFObjGen og) const noexcept
     {
