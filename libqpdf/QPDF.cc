@@ -549,7 +549,6 @@ QPDF::Xref_table::reconstruct(QPDFExc& e)
 
     reconstructed_ = true;
     // We may find more objects, which may contain dangling references.
-    qpdf.m->fixed_dangling_refs = false;
 
     warn_damaged("file is damaged");
     qpdf.warn(e);
@@ -1492,9 +1491,7 @@ QPDF::Xref_table::show()
     }
 }
 
-// Resolve all objects in the xref table. If this triggers a xref table reconstruction abort and
-// return false. Otherwise return true.
-bool
+void
 QPDF::Xref_table::resolve()
 {
     bool may_change = !reconstructed_;
@@ -1505,12 +1502,12 @@ QPDF::Xref_table::resolve()
             if (qpdf.m->obj_cache.unresolved(QPDFObjGen(i, item.gen()))) {
                 qpdf.resolve(QPDFObjGen(i, item.gen()));
                 if (may_change && reconstructed_) {
-                    return false;
+                    QTC::TC("qpdf", "QPDF fix dangling triggered xref reconstruction");
+                    return resolve();
                 }
             }
         }
     }
-    return true;
 }
 
 // Ensure all objects in the pdf file, including those in indirect references, appear in the object
@@ -1518,40 +1515,32 @@ QPDF::Xref_table::resolve()
 void
 QPDF::fixDanglingReferences(bool force)
 {
-    if (m->fixed_dangling_refs) {
-        return;
-    }
-    if (!m->xref_table.resolve()) {
-        QTC::TC("qpdf", "QPDF fix dangling triggered xref reconstruction");
-        m->xref_table.resolve();
-    }
-    m->fixed_dangling_refs = true;
+    (void)m->obj_cache.next_id();
 }
 
 size_t
 QPDF::getObjectCount()
 {
-    // This method returns the next available indirect object number. makeIndirectObject uses it for
-    // this purpose. After fixDanglingReferences is called, all objects in the xref table will also
-    // be in obj_cache.
-    fixDanglingReferences();
-    QPDFObjGen og;
-    if (!m->obj_cache.empty()) {
-        og = (*(m->obj_cache.rbegin())).first;
+    // This method returns the highest id in use.
+    return toS(m->obj_cache.next_id() - 1);
+}
+
+std::vector<QPDFObjectHandle>
+QPDF::Objects::all()
+{
+    // After next_id is called, all objects are in the object cache.
+    next_id();
+    std::vector<QPDFObjectHandle> result;
+    for (auto const& iter: *this) {
+        result.push_back({iter.second.object});
     }
-    return toS(og.getObj());
+    return result;
 }
 
 std::vector<QPDFObjectHandle>
 QPDF::getAllObjects()
 {
-    // After fixDanglingReferences is called, all objects are in the object cache.
-    fixDanglingReferences();
-    std::vector<QPDFObjectHandle> result;
-    for (auto const& iter: m->obj_cache) {
-        result.push_back(newIndirect(iter.first, iter.second.object));
-    }
-    return result;
+    return m->obj_cache.all();
 }
 
 void
@@ -2141,25 +2130,30 @@ QPDF::Objects::unresolved(QPDFObjGen og) const noexcept
 std::shared_ptr<QPDFObject>
 QPDF::Objects::make_indirect(std::shared_ptr<QPDFObject> const& obj)
 {
-    QPDFObjGen next{nextObjGen()};
+    QPDFObjGen next{next_id(), 0};
     (*this)[next] = ObjCache(obj);
+    ++next_id_;
     return qpdf.newIndirect(next, (*this)[next].object).getObj();
 }
 
-QPDFObjGen
-QPDF::Objects::nextObjGen()
+void
+QPDF::Objects::initialize()
 {
-    int max_objid = toI(qpdf.getObjectCount());
-    if (max_objid == std::numeric_limits<int>::max()) {
-        throw std::range_error("max object id is too high to create new objects");
+    if (initialized) {
+        throw std::logic_error("Obj_table::initialize called twice");
     }
-    return QPDFObjGen(max_objid + 1, 0);
-}
+    // Does it really make sense to allow the creation of objects if the xref table wasn't
+    // successfully read?
+    initialized = true;
+    // We need to resolve the xref table because during recovery the size of the xref table may
+    // increase. Arguably, if we read the xref table cleanly initially, then we should stick with
+    // /Size.
+    xref.resolve();
 
-QPDFObjectHandle
-QPDF::makeIndirectFromQPDFObject(std::shared_ptr<QPDFObject> const& obj)
-{
-    return m->obj_cache.make_indirect(obj);
+    auto xref_size = toI(xref.size());
+    if (next_id_ < xref_size) {
+        next_id_ = toI(xref.size());
+    }
 }
 
 QPDFObjectHandle
@@ -2187,7 +2181,7 @@ QPDFObjectHandle
 QPDF::newStream()
 {
     return m->obj_cache.make_indirect(QPDF_Stream::create(
-        this, m->obj_cache.nextObjGen(), QPDFObjectHandle::newDictionary(), 0, 0));
+        this, QPDFObjGen(m->obj_cache.next_id(), 1), QPDFObjectHandle::newDictionary(), 0, 0));
 }
 
 QPDFObjectHandle

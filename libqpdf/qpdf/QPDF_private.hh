@@ -24,7 +24,8 @@ class QPDF::Xref_table
     void initialize_json();
     void reconstruct(QPDFExc& e);
     void show();
-    bool resolve();
+    // Resolve all object in the xref table.
+    void resolve();
 
     QPDFObjectHandle
     trailer() const
@@ -425,6 +426,9 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
         auto [it, inserted] = try_emplace(og);
         auto& obj = it->second.object;
         if (inserted) {
+            if (id >= next_id_) {
+                next_id_ = id + 1;
+            }
             obj = (xref.initialized() && !xref.type(og)) ? QPDF_Null::create(&qpdf, og)
                                                          : QPDF_Unresolved::create(&qpdf, og);
         }
@@ -448,6 +452,8 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
         return insert({og, QPDF_Null::create(&qpdf, og)}).first->second.object;
     }
 
+    std::vector<QPDFObjectHandle> all();
+
     void erase(QPDFObjGen og);
 
     void replace(QPDFObjGen og, QPDFObjectHandle oh);
@@ -456,11 +462,23 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
 
     std::shared_ptr<QPDFObject> make_indirect(std::shared_ptr<QPDFObject> const& obj);
 
-    QPDFObjGen nextObjGen();
+    int
+    next_id()
+    {
+        if (!initialized) {
+            initialize();
+        }
+        return next_id_;
+    }
 
   private:
+    void initialize();
+
     QPDF& qpdf;
     Xref_table& xref;
+
+    int next_id_{1};
+    bool initialized{false};
 
 }; // Objects
 
@@ -824,7 +842,6 @@ class QPDF::Members
     std::shared_ptr<QPDFObjectHandle::StreamDataProvider> copied_streams;
     // copied_stream_data_provider is owned by copied_streams
     CopiedStreamDataProvider* copied_stream_data_provider{nullptr};
-    bool fixed_dangling_refs{false};
     bool immediate_copy_from{false};
     bool in_parse{false};
     std::set<int> resolved_object_streams;

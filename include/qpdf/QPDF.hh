@@ -645,7 +645,7 @@ class QPDF
     QPDF_DLL
     void fixDanglingReferences(bool force = false);
 
-    // Return the approximate number of indirect objects. It is/ approximate because not all objects
+    // Return the approximate number of indirect objects. It is approximate because not all objects
     // in the file are preserved in all cases, and gaps in object numbering are not preserved.
     QPDF_DLL
     size_t getObjectCount();
@@ -780,7 +780,6 @@ class QPDF
     void resolveObjectsInStream(int obj_stream_number);
     void stopOnError(std::string const& message);
     QPDFObjectHandle newIndirect(QPDFObjGen const&, std::shared_ptr<QPDFObject> const&);
-    QPDFObjectHandle makeIndirectFromQPDFObject(std::shared_ptr<QPDFObject> const& obj);
     void removeObject(QPDFObjGen og);
     static QPDFExc damagedPDF(
         InputSource& input,
