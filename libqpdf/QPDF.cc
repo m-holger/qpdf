@@ -2136,10 +2136,18 @@ QPDF::Objects::unresolved(QPDFObjGen og) const noexcept
     return it == end() || it->second.object->isUnresolved();
 }
 
-QPDFObjGen
-QPDF::nextObjGen()
+std::shared_ptr<QPDFObject>
+QPDF::Objects::make_indirect(std::shared_ptr<QPDFObject> const& obj)
 {
-    int max_objid = toI(getObjectCount());
+    QPDFObjGen next{nextObjGen()};
+    (*this)[next] = ObjCache(obj);
+    return qpdf.newIndirect(next, (*this)[next].object).getObj();
+}
+
+QPDFObjGen
+QPDF::Objects::nextObjGen()
+{
+    int max_objid = toI(qpdf.getObjectCount());
     if (max_objid == std::numeric_limits<int>::max()) {
         throw std::range_error("max object id is too high to create new objects");
     }
@@ -2149,9 +2157,7 @@ QPDF::nextObjGen()
 QPDFObjectHandle
 QPDF::makeIndirectFromQPDFObject(std::shared_ptr<QPDFObject> const& obj)
 {
-    QPDFObjGen next{nextObjGen()};
-    m->obj_cache[next] = ObjCache(obj);
-    return newIndirect(next, m->obj_cache[next].object);
+    return m->obj_cache.make_indirect(obj);
 }
 
 QPDFObjectHandle
@@ -2160,26 +2166,26 @@ QPDF::makeIndirectObject(QPDFObjectHandle oh)
     if (!oh) {
         throw std::logic_error("attempted to make an uninitialized QPDFObjectHandle indirect");
     }
-    return makeIndirectFromQPDFObject(oh.getObj());
+    return m->obj_cache.make_indirect(oh.getObj());
 }
 
 QPDFObjectHandle
 QPDF::newReserved()
 {
-    return makeIndirectFromQPDFObject(QPDF_Reserved::create());
+    return m->obj_cache.make_indirect(QPDF_Reserved::create());
 }
 
 QPDFObjectHandle
 QPDF::newIndirectNull()
 {
-    return makeIndirectFromQPDFObject(QPDF_Null::create());
+    return m->obj_cache.make_indirect(QPDF_Null::create());
 }
 
 QPDFObjectHandle
 QPDF::newStream()
 {
-    return makeIndirectFromQPDFObject(
-        QPDF_Stream::create(this, nextObjGen(), QPDFObjectHandle::newDictionary(), 0, 0));
+    return m->obj_cache.make_indirect(QPDF_Stream::create(
+        this, m->obj_cache.nextObjGen(), QPDFObjectHandle::newDictionary(), 0, 0));
 }
 
 QPDFObjectHandle
