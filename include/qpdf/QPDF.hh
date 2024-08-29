@@ -826,7 +826,6 @@ class QPDF
         QPDFWriter::ObjTable const& obj,
         std::function<int(QPDFObjectHandle&)> skip_stream_parameters);
     void optimize(Xref_table const& obj);
-    size_t tableSize();
 
     // Get lists of all objects in order according to the part of a linearized file that they belong
     // to.

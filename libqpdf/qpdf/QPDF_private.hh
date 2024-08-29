@@ -471,6 +471,9 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
         return next_id_;
     }
 
+    // QPDFWriter 'normal' ObjTable size (i.e. part of the ObjTables implemented as std::vector).
+    size_t table_size();
+
   private:
     void initialize();
 
@@ -971,7 +974,7 @@ class QPDF::Writer
     static size_t
     tableSize(QPDF& qpdf)
     {
-        return qpdf.tableSize();
+        return qpdf.m->obj_cache.table_size();
     }
 };
 

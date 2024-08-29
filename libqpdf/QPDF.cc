@@ -2636,26 +2636,17 @@ QPDF::getXRefTable()
 }
 
 size_t
-QPDF::tableSize()
+QPDF::Objects::table_size()
 {
-    // If obj_cache is dense, accommodate all object in tables,else accommodate only original
+    // If obj_cache is dense, accommodate all object in tables, else accommodate only original
     // objects.
-    auto max_xref = toI(m->xref_table.size());
-    if (max_xref > 0) {
-        --max_xref;
-    }
-    auto max_obj = m->obj_cache.size() ? m->obj_cache.crbegin()->first.getObj() : 0;
-    auto max_id = std::numeric_limits<int>::max() - 1;
-    if (max_obj >= max_id || max_xref >= max_id) {
+    if (next_id() >= std::numeric_limits<int>::max() - 1) {
         // Temporary fix. Long-term solution is
         // - QPDFObjGen to enforce objgens are valid and sensible
         // - xref table and obj cache to protect against insertion of impossibly large obj ids
-        stopOnError("Impossibly large object id encountered.");
+        qpdf.stopOnError("Impossibly large object id encountered.");
     }
-    if (max_obj < 1.1 * std::max(toI(m->obj_cache.size()), max_xref)) {
-        return toS(++max_obj);
-    }
-    return toS(++max_xref);
+    return next_id_ < 1.1 * toI(size()) ? toS(++next_id_) : size();
 }
 
 std::vector<QPDFObjGen>
