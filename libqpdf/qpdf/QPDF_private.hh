@@ -364,25 +364,7 @@ class QPDF::Xref_table
     qpdf_offset_t first_item_offset_{0}; // actual value from file
 }; // Xref_table
 
-struct QPDF::ObjCache
-{
-    ObjCache() = default;
-
-    ObjCache(std::shared_ptr<QPDFObject>&& object) :
-        object(std::move(object))
-    {
-    }
-
-    ObjCache(std::shared_ptr<QPDFObject> const& object) :
-        object(std::move(object))
-    {
-    }
-
-    bool resolving{false};
-    std::shared_ptr<QPDFObject> object;
-}; // ObjCache
-
-class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
+class QPDF::Objects
 {
   public:
     Objects(QPDF& qpdf, Xref_table& xref) :
@@ -396,9 +378,8 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
     bool
     contains(QPDFObjGen og) const noexcept
     {
-        return count(og);
+        return table.count(og);
     }
-
     bool unresolved(QPDFObjGen og) const noexcept;
 
     QPDFObjectHandle
@@ -410,13 +391,13 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
     QPDFObjectHandle
     get(QPDFObjGen og)
     {
-        auto it = find(og);
-        if (it != end()) {
+        auto it = table.find(og);
+        if (it != table.end()) {
             return {it->second.object};
         } else if (xref.initialized() && !xref.type(og)) {
             return {QPDF_Null::create()};
         } else {
-            return {try_emplace(og, QPDF_Unresolved::create(&qpdf, og)).first->second.object};
+            return {table.try_emplace(og, QPDF_Unresolved::create(&qpdf, og)).first->second.object};
         }
     }
 
@@ -424,7 +405,7 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
     get_for_json(int id, int gen)
     {
         auto og = QPDFObjGen(id, gen);
-        auto [it, inserted] = try_emplace(og);
+        auto [it, inserted] = table.try_emplace(og);
         auto& obj = it->second.object;
         if (inserted) {
             if (id >= next_id_) {
@@ -441,16 +422,16 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
     {
         // This method is called by the parser and therefore must not resolve any objects.
         auto og = QPDFObjGen(id, gen);
-        if (auto iter = find(og); iter != end()) {
+        if (auto iter = table.find(og); iter != table.end()) {
             return iter->second.object;
         }
         if (xref.type(og) || !xref.initialized()) {
-            return insert({og, QPDF_Unresolved::create(&qpdf, og)}).first->second.object;
+            return table.insert({og, QPDF_Unresolved::create(&qpdf, og)}).first->second.object;
         }
         if (parse_pdf) {
             return QPDF_Null::create();
         }
-        return insert({og, QPDF_Null::create(&qpdf, og)}).first->second.object;
+        return table.insert({og, QPDF_Null::create(&qpdf, og)}).first->second.object;
     }
 
     std::vector<QPDFObjectHandle> all();
@@ -461,7 +442,7 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
 
     void swap(QPDFObjGen og1, QPDFObjGen og2);
 
-    void update(QPDFObjGen og, std::shared_ptr<QPDFObject> const& object);
+    void update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& object);
 
     std::shared_ptr<QPDFObject> make_indirect(std::shared_ptr<QPDFObject> const& obj);
 
@@ -484,14 +465,30 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
     std::vector<T> compressible();
 
   private:
+    struct Entry
+    {
+        Entry() = default;
+
+        Entry(std::shared_ptr<QPDFObject>&& object) :
+            object(std::move(object))
+        {
+        }
+
+        Entry(std::shared_ptr<QPDFObject> const& object) :
+            object(std::move(object))
+        {
+        }
+
+        std::shared_ptr<QPDFObject> object;
+    }; // Entry
+
     void initialize();
 
     QPDF& qpdf;
     Xref_table& xref;
-
+    std::map<QPDFObjGen, Entry> table;
     int next_id_{1};
     bool initialized{false};
-
 }; // Objects
 
 // StreamCopier class is restricted to QPDFObjectHandle so it can copy stream data.

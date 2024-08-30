@@ -1531,7 +1531,7 @@ QPDF::Objects::all()
     // After next_id is called, all objects are in the object cache.
     next_id();
     std::vector<QPDFObjectHandle> result;
-    for (auto const& iter: *this) {
+    for (auto const& iter: table) {
         result.push_back({iter.second.object});
     }
     return result;
@@ -1932,7 +1932,7 @@ QPDF::readObjectAtOffset(
         } else {
             m->xref_table.linearization_offsets(
                 toS(og.getObj()), end_before_space, end_after_space);
-            m->obj_cache.update(og, oh.getObj());
+            m->obj_cache.update_table(og, oh.getObj());
         }
     }
 
@@ -2059,7 +2059,7 @@ QPDF::resolveObjectsInStream(int obj_stream_number)
             int offset = iter.second;
             input->seek(offset, SEEK_SET);
             QPDFObjectHandle oh = readObjectInStream(input, iter.first);
-            m->obj_cache.update(og, oh.getObj());
+            m->obj_cache.update_table(og, oh.getObj());
         } else {
             QTC::TC("qpdf", "QPDF not caching overridden objstm object");
         }
@@ -2085,7 +2085,7 @@ QPDF::Objects::~Objects()
     // are reachable from this object to release their association with this QPDF. Direct objects
     // are not destroyed since they can be moved to other QPDF objects safely.
 
-    for (auto const& iter: *this) {
+    for (auto const& iter: table) {
         iter.second.object->disconnect();
         if (iter.second.object->getTypeCode() != ::ot_null) {
             iter.second.object->destroy();
@@ -2097,7 +2097,7 @@ QPDFObject*
 QPDF::Objects::resolve(QPDFObjGen og)
 {
     if (!unresolved(og)) {
-        return (*this)[og].object.get();
+        return table[og].object.get();
     }
 
     qpdf.resolve(og);
@@ -2105,40 +2105,40 @@ QPDF::Objects::resolve(QPDFObjGen og)
     if (unresolved(og)) {
         // PDF spec says unknown objects resolve to the null object.
         QTC::TC("qpdf", "QPDF resolve failure to null");
-        update(og, QPDF_Null::create());
+        update_table(og, QPDF_Null::create());
     }
 
-    auto& result = (*this)[og].object;
+    auto& result = table[og].object;
     result->setDefaultDescription(&qpdf, og);
     return result.get();
 }
 
 void
-QPDF::Objects::update(QPDFObjGen og, std::shared_ptr<QPDFObject> const& object)
+QPDF::Objects::update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& object)
 {
     object->setObjGen(&qpdf, og);
     if (contains(og)) {
-        auto& cache = (*this)[og];
+        auto& cache = table[og];
         cache.object->assign(object);
     } else {
-        (*this)[og] = ObjCache(object);
+        table[og] = Entry(object);
     }
 }
 
 bool
 QPDF::Objects::unresolved(QPDFObjGen og) const noexcept
 {
-    auto it = find(og);
-    return it == end() || it->second.object->isUnresolved();
+    auto it = table.find(og);
+    return it == table.end() || it->second.object->isUnresolved();
 }
 
 std::shared_ptr<QPDFObject>
 QPDF::Objects::make_indirect(std::shared_ptr<QPDFObject> const& obj)
 {
     QPDFObjGen next{next_id(), 0};
-    (*this)[next] = ObjCache(obj);
+    table[next] = Entry(obj);
     ++next_id_;
-    return qpdf.newIndirect(next, (*this)[next].object).getObj();
+    return qpdf.newIndirect(next, table[next].object).getObj();
 }
 
 void
@@ -2242,7 +2242,7 @@ QPDF::Objects::replace(QPDFObjGen og, QPDFObjectHandle oh)
         QTC::TC("qpdf", "QPDF replaceObject called with indirect object");
         throw std::logic_error("QPDF::replaceObject called with indirect object handle");
     }
-    update(og, oh.getObj());
+    update_table(og, oh.getObj());
 }
 
 void
@@ -2254,11 +2254,11 @@ QPDF::replaceObject(QPDFObjGen const& og, QPDFObjectHandle oh)
 void
 QPDF::Objects::erase(QPDFObjGen og)
 {
-    if (auto cached = find(og); cached != end()) {
+    if (auto cached = table.find(og); cached != table.end()) {
         // Take care of any object handles that may be floating around.
         cached->second.object->assign(QPDF_Null::create());
         cached->second.object->setObjGen(nullptr, QPDFObjGen());
-        std::map<QPDFObjGen, QPDF::ObjCache>::erase(cached);
+        table.erase(cached);
     }
 }
 
@@ -2551,7 +2551,7 @@ QPDF::Objects::swap(QPDFObjGen og1, QPDFObjGen og2)
     // Force objects to be read from the input source if needed, then swap them in the cache.
     resolve(og1);
     resolve(og2);
-    (*this)[og1].object->swapWith((*this)[og2].object);
+    table[og1].object->swapWith(table[og2].object);
 }
 
 unsigned long long
@@ -2651,7 +2651,7 @@ QPDF::Objects::table_size()
         // - xref table and obj cache to protect against insertion of impossibly large obj ids
         qpdf.stopOnError("Impossibly large object id encountered.");
     }
-    return next_id_ < 1.1 * toI(size()) ? toS(++next_id_) : size();
+    return next_id_ < 1.1 * toI(table.size()) ? toS(++next_id_) : table.size();
 }
 
 std::vector<QPDFObjGen>
@@ -2687,7 +2687,7 @@ QPDF::Objects::compressible()
     queue.push_back(xref.trailer());
     std::vector<T> result;
     if constexpr (std::is_same_v<T, QPDFObjGen>) {
-        result.reserve(size());
+        result.reserve(table.size());
     } else if constexpr (std::is_same_v<T, bool>) {
         result.resize(max_obj + 1U, false);
     } else {
@@ -2711,8 +2711,8 @@ QPDF::Objects::compressible()
             // Check whether this is the current object. If not, remove it (which changes it into a
             // direct null and therefore stops us from revisiting it) and move on to the next object
             // in the queue.
-            auto upper = upper_bound(og);
-            if (upper != end() && upper->first.getObj() == og.getObj()) {
+            auto upper = table.upper_bound(og);
+            if (upper != table.end() && upper->first.getObj() == og.getObj()) {
                 erase(og);
                 continue;
             }

@@ -749,7 +749,6 @@ class QPDF
 
     static std::string const qpdf_version;
 
-    struct ObjCache;
     class ObjCopier;
     class EncryptionParameters;
     class ForeignStreamData;
