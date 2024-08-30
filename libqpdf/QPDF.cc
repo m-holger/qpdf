@@ -188,7 +188,7 @@ QPDF::Members::Members(QPDF& qpdf) :
     file(file_sp.get()),
     encp(new EncryptionParameters),
     xref_table(qpdf, file),
-    obj_cache(qpdf)
+    obj_cache(qpdf, xref_table)
 {
 }
 
@@ -2232,59 +2232,64 @@ QPDF::getObjectForJSON(int id, int gen)
 QPDFObjectHandle
 QPDF::getObject(QPDFObjGen const& og)
 {
-    if (auto it = m->obj_cache.find(og); it != m->obj_cache.end()) {
-        return {it->second.object};
-    } else if (m->xref_table.initialized() && !m->xref_table.type(og)) {
-        return QPDF_Null::create();
-    } else {
-        auto result = m->obj_cache.try_emplace(og, QPDF_Unresolved::create(this, og));
-        return {result.first->second.object};
-    }
+    return m->obj_cache.get(og);
 }
 
 QPDFObjectHandle
 QPDF::getObject(int objid, int generation)
 {
-    return getObject(QPDFObjGen(objid, generation));
+    return m->obj_cache.get(objid, generation);
 }
 
 QPDFObjectHandle
 QPDF::getObjectByObjGen(QPDFObjGen const& og)
 {
-    return getObject(og);
+    return m->obj_cache.get(og);
 }
 
 QPDFObjectHandle
 QPDF::getObjectByID(int objid, int generation)
 {
-    return getObject(QPDFObjGen(objid, generation));
+    return m->obj_cache.get(objid, generation);
 }
 
 void
 QPDF::replaceObject(int objid, int generation, QPDFObjectHandle oh)
 {
-    replaceObject(QPDFObjGen(objid, generation), oh);
+    m->obj_cache.replace(QPDFObjGen(objid, generation), oh);
 }
 
 void
-QPDF::replaceObject(QPDFObjGen const& og, QPDFObjectHandle oh)
+QPDF::Objects::replace(QPDFObjGen og, QPDFObjectHandle oh)
 {
     if (!oh || (oh.isIndirect() && !(oh.isStream() && oh.getObjGen() == og))) {
         QTC::TC("qpdf", "QPDF replaceObject called with indirect object");
         throw std::logic_error("QPDF::replaceObject called with indirect object handle");
     }
-    m->obj_cache.update(og, oh.getObj());
+    update(og, oh.getObj());
+}
+
+void
+QPDF::replaceObject(QPDFObjGen const& og, QPDFObjectHandle oh)
+{
+    m->obj_cache.replace(og, oh);
+}
+
+void
+QPDF::Objects::erase(QPDFObjGen og)
+{
+    if (auto cached = find(og); cached != end()) {
+        // Take care of any object handles that may be floating around.
+        cached->second.object->assign(QPDF_Null::create());
+        cached->second.object->setObjGen(nullptr, QPDFObjGen());
+        std::map<QPDFObjGen, QPDF::ObjCache>::erase(cached);
+    }
 }
 
 void
 QPDF::removeObject(QPDFObjGen og)
 {
-    if (auto cached = m->obj_cache.find(og); cached != m->obj_cache.end()) {
-        // Take care of any object handles that may be floating around.
-        cached->second.object->assign(QPDF_Null::create());
-        cached->second.object->setObjGen(nullptr, QPDFObjGen());
-        m->obj_cache.erase(cached);
-    }
+    m->obj_cache.erase(og);
 }
 
 void
@@ -2295,7 +2300,7 @@ QPDF::replaceReserved(QPDFObjectHandle reserved, QPDFObjectHandle replacement)
     if (!(tc == ::ot_reserved || tc == ::ot_null)) {
         throw std::logic_error("replaceReserved called with non-reserved object");
     }
-    replaceObject(reserved.getObjGen(), replacement);
+    m->obj_cache.replace(reserved.getObjGen(), replacement);
 }
 
 QPDFObjectHandle

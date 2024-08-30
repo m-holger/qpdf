@@ -3,6 +3,9 @@
 
 #include <qpdf/QPDF.hh>
 
+#include <qpdf/QPDF_Null.hh>
+#include <qpdf/QPDF_Unresolved.hh>
+
 #include <variant>
 
 // Xref_table encapsulates the pdf's xref table and trailer.
@@ -380,8 +383,9 @@ struct QPDF::ObjCache
 class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
 {
   public:
-    Objects(QPDF& qpdf) :
-        qpdf(qpdf)
+    Objects(QPDF& qpdf, Xref_table& xref) :
+        qpdf(qpdf),
+        xref(xref)
     {
     }
 
@@ -393,15 +397,38 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
 
     bool unresolved(QPDFObjGen og) const noexcept;
 
+    QPDFObjectHandle
+    get(int id, int gen)
+    {
+        return get(QPDFObjGen(id, gen));
+    }
+
+    QPDFObjectHandle
+    get(QPDFObjGen og)
+    {
+        auto it = find(og);
+        if (it != end()) {
+            return {it->second.object};
+        } else if (xref.initialized() && !xref.type(og)) {
+            return {QPDF_Null::create()};
+        } else {
+            return {try_emplace(og, QPDF_Unresolved::create(&qpdf, og)).first->second.object};
+        }
+    }
+
+    void erase(QPDFObjGen og);
+
+    void replace(QPDFObjGen og, QPDFObjectHandle oh);
+
     void update(QPDFObjGen og, std::shared_ptr<QPDFObject> const& object);
 
   private:
     QPDF& qpdf;
+    Xref_table& xref;
 
 }; // Objects
 
-// The Resolver class is restricted to QPDFObject so that only it can resolve indirect
-// references.
+// The Resolver class is restricted to QPDFObject so that only it can resolve indirect references.
 class QPDF::Resolver
 {
     friend class QPDFObject;
