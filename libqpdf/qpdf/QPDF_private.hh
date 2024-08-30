@@ -824,7 +824,7 @@ class QPDF::Members
     std::shared_ptr<EncryptionParameters> encp;
     std::string pdf_version;
     Xref_table xref_table;
-    Objects obj_cache;
+    Objects objects;
     std::set<QPDFObjGen> resolving;
     std::vector<QPDFObjectHandle> all_pages;
     bool invalid_page_found{false};
@@ -966,7 +966,7 @@ class QPDF::Writer
     static size_t
     tableSize(QPDF& qpdf)
     {
-        return qpdf.m->obj_cache.table_size();
+        return qpdf.m->objects.table_size();
     }
 };
 
@@ -988,7 +988,7 @@ class QPDF::ParseGuard
     static QPDF::Objects&
     get_obj_table(QPDF& qpdf)
     {
-        return qpdf.m->obj_cache;
+        return qpdf.m->objects;
     }
 
     ~ParseGuard()
@@ -1011,7 +1011,7 @@ class QPDF::Resolver
     static QPDFObject*
     resolved(QPDF* qpdf, QPDFObjGen og)
     {
-        return qpdf->m->obj_cache.resolve(og);
+        return qpdf->m->objects.resolve(og);
     }
 };
 
