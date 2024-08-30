@@ -378,6 +378,7 @@ struct QPDF::ObjCache
     {
     }
 
+    bool resolving{false};
     std::shared_ptr<QPDFObject> object;
 }; // ObjCache
 
@@ -476,6 +477,8 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
     // QPDFWriter 'normal' ObjTable size (i.e. part of the ObjTables implemented as std::vector).
     size_t table_size();
 
+    QPDFObject* resolve(QPDFObjGen og);
+
   private:
     void initialize();
 
@@ -486,20 +489,6 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
     bool initialized{false};
 
 }; // Objects
-
-// The Resolver class is restricted to QPDFObject so that only it can resolve indirect references.
-class QPDF::Resolver
-{
-    friend class QPDFObject;
-    friend class QPDF_Unresolved;
-
-  private:
-    static QPDFObject*
-    resolved(QPDF* qpdf, QPDFObjGen og)
-    {
-        return qpdf->resolve(og);
-    }
-};
 
 // StreamCopier class is restricted to QPDFObjectHandle so it can copy stream data.
 class QPDF::StreamCopier
@@ -1008,6 +997,21 @@ class QPDF::ParseGuard
         }
     }
     QPDF* qpdf;
+};
+
+// The Resolver class is restricted to QPDFObject so that only it can resolve indirect
+// references.
+class QPDF::Resolver
+{
+    friend class QPDFObject;
+    friend class QPDF_Unresolved;
+
+  private:
+    static QPDFObject*
+    resolved(QPDF* qpdf, QPDFObjGen og)
+    {
+        return qpdf->m->obj_cache.resolve(og);
+    }
 };
 
 #endif // QPDF_PRIVATE_HH

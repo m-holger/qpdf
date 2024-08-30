@@ -1500,7 +1500,7 @@ QPDF::Xref_table::resolve()
         ++i;
         if (item.type()) {
             if (qpdf.m->obj_cache.unresolved(QPDFObjGen(i, item.gen()))) {
-                qpdf.resolve(QPDFObjGen(i, item.gen()));
+                qpdf.m->obj_cache.resolve(QPDFObjGen(i, item.gen()));
                 if (may_change && reconstructed_) {
                     QTC::TC("qpdf", "QPDF fix dangling triggered xref reconstruction");
                     return resolve();
@@ -1939,20 +1939,15 @@ QPDF::readObjectAtOffset(
     return oh;
 }
 
-QPDFObject*
+void
 QPDF::resolve(QPDFObjGen og)
 {
-    if (!m->obj_cache.unresolved(og)) {
-        return m->obj_cache[og].object.get();
-    }
-
     if (m->resolving.count(og)) {
         // This can happen if an object references itself directly or indirectly in some key that
         // has to be resolved during object parsing, such as stream length.
         QTC::TC("qpdf", "QPDF recursion loop in resolve");
         warn(damagedPDF("", "loop detected resolving object " + og.unparse(' ')));
-        m->obj_cache.update(og, QPDF_Null::create());
-        return m->obj_cache[og].object.get();
+        return;
     }
     ResolveRecorder rr(this, og);
 
@@ -1983,16 +1978,6 @@ QPDF::resolve(QPDFObjGen og)
         warn(damagedPDF(
             "", 0, ("object " + og.unparse('/') + ": error reading object: " + e.what())));
     }
-
-    if (m->obj_cache.unresolved(og)) {
-        // PDF spec says unknown objects resolve to the null object.
-        QTC::TC("qpdf", "QPDF resolve failure to null");
-        m->obj_cache.update(og, QPDF_Null::create());
-    }
-
-    auto result(m->obj_cache[og].object);
-    result->setDefaultDescription(this, og);
-    return result.get();
 }
 
 void
@@ -2106,6 +2091,26 @@ QPDF::Objects::~Objects()
             iter.second.object->destroy();
         }
     }
+}
+
+QPDFObject*
+QPDF::Objects::resolve(QPDFObjGen og)
+{
+    if (!unresolved(og)) {
+        return (*this)[og].object.get();
+    }
+
+    qpdf.resolve(og);
+
+    if (unresolved(og)) {
+        // PDF spec says unknown objects resolve to the null object.
+        QTC::TC("qpdf", "QPDF resolve failure to null");
+        update(og, QPDF_Null::create());
+    }
+
+    auto& result = (*this)[og].object;
+    result->setDefaultDescription(&qpdf, og);
+    return result.get();
 }
 
 void
