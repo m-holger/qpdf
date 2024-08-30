@@ -479,6 +479,10 @@ class QPDF::Objects: public std::map<QPDFObjGen, QPDF::ObjCache>
 
     QPDFObject* resolve(QPDFObjGen og);
 
+    // Get a list of objects that would be permitted in an object stream.
+    template <typename T>
+    std::vector<T> compressible();
+
   private:
     void initialize();
 

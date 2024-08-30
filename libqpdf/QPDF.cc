@@ -2263,12 +2263,6 @@ QPDF::Objects::erase(QPDFObjGen og)
 }
 
 void
-QPDF::removeObject(QPDFObjGen og)
-{
-    m->obj_cache.erase(og);
-}
-
-void
 QPDF::replaceReserved(QPDFObjectHandle reserved, QPDFObjectHandle replacement)
 {
     QTC::TC("qpdf", "QPDF replaceReserved");
@@ -2663,18 +2657,18 @@ QPDF::Objects::table_size()
 std::vector<QPDFObjGen>
 QPDF::getCompressibleObjVector()
 {
-    return getCompressibleObjGens<QPDFObjGen>();
+    return m->obj_cache.compressible<QPDFObjGen>();
 }
 
 std::vector<bool>
 QPDF::getCompressibleObjSet()
 {
-    return getCompressibleObjGens<bool>();
+    return m->obj_cache.compressible<bool>();
 }
 
 template <typename T>
 std::vector<T>
-QPDF::getCompressibleObjGens()
+QPDF::Objects::compressible()
 {
     // Return a list of objects that are allowed to be in object streams.  Walk through the objects
     // by traversing the document from the root, including a traversal of the pages tree.  This
@@ -2683,17 +2677,17 @@ QPDF::getCompressibleObjGens()
     // iterating through the xref table since it avoids preserving orphaned items.
 
     // Exclude encryption dictionary, if any
-    QPDFObjectHandle encryption_dict = m->xref_table.trailer().getKey("/Encrypt");
+    QPDFObjectHandle encryption_dict = xref.trailer().getKey("/Encrypt");
     QPDFObjGen encryption_dict_og = encryption_dict.getObjGen();
 
-    const size_t max_obj = getObjectCount();
+    const size_t max_obj = toS(next_id());
     std::vector<bool> visited(max_obj, false);
     std::vector<QPDFObjectHandle> queue;
     queue.reserve(512);
-    queue.push_back(m->xref_table.trailer());
+    queue.push_back(xref.trailer());
     std::vector<T> result;
     if constexpr (std::is_same_v<T, QPDFObjGen>) {
-        result.reserve(m->obj_cache.size());
+        result.reserve(size());
     } else if constexpr (std::is_same_v<T, bool>) {
         result.resize(max_obj + 1U, false);
     } else {
@@ -2717,9 +2711,9 @@ QPDF::getCompressibleObjGens()
             // Check whether this is the current object. If not, remove it (which changes it into a
             // direct null and therefore stops us from revisiting it) and move on to the next object
             // in the queue.
-            auto upper = m->obj_cache.upper_bound(og);
-            if (upper != m->obj_cache.end() && upper->first.getObj() == og.getObj()) {
-                removeObject(og);
+            auto upper = upper_bound(og);
+            if (upper != end() && upper->first.getObj() == og.getObj()) {
+                erase(og);
                 continue;
             }
 

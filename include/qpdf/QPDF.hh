@@ -780,7 +780,6 @@ class QPDF
     void resolveObjectsInStream(int obj_stream_number);
     void stopOnError(std::string const& message);
     QPDFObjectHandle newIndirect(QPDFObjGen const&, std::shared_ptr<QPDFObject> const&);
-    void removeObject(QPDFObjGen og);
     static QPDFExc damagedPDF(
         InputSource& input,
         std::string const& object,
@@ -845,9 +844,6 @@ class QPDF
         int& O,
         bool compressed);
 
-    // Get a list of objects that would be permitted in an object stream.
-    template <typename T>
-    std::vector<T> getCompressibleObjGens();
     std::vector<QPDFObjGen> getCompressibleObjVector();
     std::vector<bool> getCompressibleObjSet();
 
