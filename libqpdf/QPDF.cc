@@ -1697,19 +1697,17 @@ QPDF::validateStreamLineEnd(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset
 }
 
 QPDFObjectHandle
-QPDF::readObjectInStream(std::shared_ptr<InputSource>& input, int obj)
+QPDF::Objects::Xref_table::read_compressed_object(InputSource& input, int obj)
 {
-    m->last_object_description.erase(7); // last_object_description starts with "object "
-    m->last_object_description += std::to_string(obj);
-    m->last_object_description += " 0";
+    qpdf.m->last_object_description.erase(7); // last_object_description starts with "object "
+    qpdf.m->last_object_description += std::to_string(obj);
+    qpdf.m->last_object_description += " 0";
 
-    bool empty = false;
-    auto object = QPDFParser(*input, m->last_object_description, m->tokenizer, nullptr, this, true)
-                      .parse(empty, false);
+    auto [object, empty] = objects.parse(input, qpdf.m->last_object_description);
     if (empty) {
         // Nothing in the PDF spec appears to allow empty objects, but they have been encountered in
         // actual PDF files and Adobe Reader appears to ignore them.
-        warn(damagedPDF(*input, input->getLastOffset(), "empty object treated as null"));
+        qpdf.warn(qpdf.damagedPDF(input, input.getLastOffset(), "empty object treated as null"));
     }
     return object;
 }
@@ -1774,6 +1772,18 @@ QPDFTokenizer::Token
 QPDF::readToken(InputSource& input, size_t max_len)
 {
     return m->tokenizer.readToken(input, m->last_object_description, true, max_len);
+}
+
+std::pair<QPDFObjectHandle, bool>
+QPDF::Objects::parse(
+    InputSource& input,
+    std::string const& description,
+    QPDFObjectHandle::StringDecrypter* decrypter_ptr)
+{
+    bool empty = false;
+    auto oh =
+        QPDFParser(input, description, tokenizer, decrypter_ptr, &qpdf, true).parse(empty, false);
+    return {oh, empty};
 }
 
 QPDFObjectHandle
@@ -2021,20 +2031,18 @@ QPDF::Objects::Xref_table::resolve_stream(int obj_stream_number)
 
     std::map<int, int> offsets;
 
-    std::shared_ptr<Buffer> bp = obj_stream.getStreamData(qpdf_dl_specialized);
-    auto input = std::shared_ptr<InputSource>(
-        // line-break
-        new BufferInputSource(
-            (file->getName() + " object stream " + std::to_string(obj_stream_number)), bp.get()));
+    auto bp = obj_stream.getStreamData(qpdf_dl_specialized);
+    auto input = BufferInputSource(
+        (file->getName() + " object stream " + std::to_string(obj_stream_number)), bp.get());
 
     for (int i = 0; i < n; ++i) {
-        QPDFTokenizer::Token tnum = read_token(*input);
-        QPDFTokenizer::Token toffset = read_token(*input);
+        auto tnum = read_token(input);
+        auto toffset = read_token(input);
         if (!(tnum.isInteger() && toffset.isInteger())) {
             throw qpdf.damagedPDF(
-                *input,
+                input,
                 qpdf.m->last_object_description,
-                input->getLastOffset(),
+                input.getLastOffset(),
                 "expected integer in object stream header");
         }
 
@@ -2046,9 +2054,9 @@ QPDF::Objects::Xref_table::resolve_stream(int obj_stream_number)
         if (num == obj_stream_number) {
             QTC::TC("qpdf", "QPDF ignore self-referential object stream");
             qpdf.warn(qpdf.damagedPDF(
-                *input,
+                input,
                 qpdf.m->last_object_description,
-                input->getLastOffset(),
+                input.getLastOffset(),
                 "object stream claims to contain itself"));
             continue;
         }
@@ -2063,8 +2071,8 @@ QPDF::Objects::Xref_table::resolve_stream(int obj_stream_number)
     qpdf.m->last_object_description += "object ";
     for (auto const& [id, offset]: offsets) {
         if (type(toS(id)) == 2 && stream_number(id) == obj_stream_number) {
-            input->seek(offset, SEEK_SET);
-            auto oh = qpdf.readObjectInStream(input, id);
+            input.seek(offset, SEEK_SET);
+            auto oh = read_compressed_object(input, id);
             objects.update_table(QPDFObjGen(id, 0), oh.getObj());
         } else {
             QTC::TC("qpdf", "QPDF not caching overridden objstm object");

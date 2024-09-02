@@ -328,6 +328,7 @@ class QPDF::Objects
             std::function<QPDFExc(std::string_view)> damaged);
 
         void resolve_stream(int obj_stream_number);
+        QPDFObjectHandle read_compressed_object(InputSource& input, int obj);
 
         QPDFObjectHandle read_trailer();
 
@@ -504,6 +505,11 @@ class QPDF::Objects
     {
         return tokenizer.readToken(*file, "", true, max_len);
     }
+
+    std::pair<QPDFObjectHandle, bool> parse(
+        InputSource& input,
+        std::string const& description,
+        QPDFObjectHandle::StringDecrypter* decrypter_ptr = nullptr);
 
   private:
     struct Entry
