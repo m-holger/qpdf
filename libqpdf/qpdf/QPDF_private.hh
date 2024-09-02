@@ -316,7 +316,6 @@ class QPDF::PatternFinder: public InputSource::Finder
 class QPDF::Members
 {
     friend class QPDF;
-    friend class ResolveRecorder;
 
   public:
     QPDF_DLL
@@ -343,7 +342,6 @@ class QPDF::Members
     std::shared_ptr<EncryptionParameters> encp;
     std::string pdf_version;
     Objects objects;
-    std::set<QPDFObjGen> resolving;
     std::vector<QPDFObjectHandle> all_pages;
     bool invalid_page_found{false};
     std::map<QPDFObjGen, int> pageobj_to_pages_pos;
@@ -402,24 +400,6 @@ class QPDF::JobSetter
     {
         qpdf.m->check_mode = val;
     }
-};
-
-class QPDF::ResolveRecorder
-{
-  public:
-    ResolveRecorder(QPDF* qpdf, QPDFObjGen const& og) :
-        qpdf(qpdf),
-        iter(qpdf->m->resolving.insert(og).first)
-    {
-    }
-    virtual ~ResolveRecorder()
-    {
-        this->qpdf->m->resolving.erase(iter);
-    }
-
-  private:
-    QPDF* qpdf;
-    std::set<QPDFObjGen>::const_iterator iter;
 };
 
 // Writer class is restricted to QPDFWriter so that only it can call certain methods.

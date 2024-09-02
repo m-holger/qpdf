@@ -156,6 +156,8 @@ class QPDF::Objects
             return max_id_;
         }
 
+        void resolve(int id, int gen);
+
         // For Linearization
 
         qpdf_offset_t
@@ -281,6 +283,7 @@ class QPDF::Objects
             }
 
             int gen_{0};
+            bool resolved{false};
             Xref entry;
             qpdf_offset_t end_before_space_{0};
             qpdf_offset_t end_after_space_{0};
@@ -290,6 +293,13 @@ class QPDF::Objects
         entry(size_t id)
         {
             return id < table.size() ? table[id] : table[0];
+        }
+
+        Entry&
+        entry(int id, int gen)
+        {
+            auto& e = entry(toS(id));
+            return e.gen_ == gen ? e : table[0];
         }
 
         void read(qpdf_offset_t offset);

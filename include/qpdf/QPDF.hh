@@ -733,7 +733,6 @@ class QPDF
     class ParseGuard;
     class Pipe;
     class JobSetter;
-    class Xref_table;
     class Objects;
 
     // For testing only -- do not add to DLL
@@ -754,7 +753,6 @@ class QPDF
     class ForeignStreamData;
     class CopiedStreamDataProvider;
     class StringDecrypter;
-    class ResolveRecorder;
     class JSONReactor;
 
     void parse(char const* password);
@@ -775,7 +773,6 @@ class QPDF
         QPDFObjGen exp_og,
         QPDFObjGen& og,
         bool skip_cache_if_in_xref);
-    void resolve(QPDFObjGen og);
     void resolveObjectsInStream(int obj_stream_number);
     void stopOnError(std::string const& message);
     QPDFObjectHandle newIndirect(QPDFObjGen const&, std::shared_ptr<QPDFObject> const&);

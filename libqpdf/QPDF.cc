@@ -1938,43 +1938,52 @@ QPDF::readObjectAtOffset(
 }
 
 void
-QPDF::resolve(QPDFObjGen og)
+QPDF::Objects::Xref_table::resolve(int id, int gen)
 {
-    if (m->resolving.count(og)) {
+    auto& e = entry(id, gen);
+
+    if (e.resolved) {
         // This can happen if an object references itself directly or indirectly in some key that
         // has to be resolved during object parsing, such as stream length.
         QTC::TC("qpdf", "QPDF recursion loop in resolve");
-        warn(damagedPDF("", "loop detected resolving object " + og.unparse(' ')));
+        qpdf.warn(qpdf.damagedPDF(
+            "",
+            "loop detected resolving object " + std::to_string(id) + ' ' + std::to_string(gen)));
         return;
     }
-    ResolveRecorder rr(this, og);
+    e.resolved = true;
 
     try {
-        switch (m->objects.xref_table().type(og)) {
+        switch (e.type()) {
         case 0:
-            break;
+            return;
         case 1:
             {
-                // Object stored in cache by readObjectAtOffset
+                // Object will be stored in object table by readObjectAtOffset
                 QPDFObjGen a_og;
-                QPDFObjectHandle oh = readObjectAtOffset(
-                    true, m->objects.xref_table().offset(og), "", og, a_og, false);
+                auto oh =
+                    qpdf.readObjectAtOffset(true, e.offset(), "", QPDFObjGen(id, gen), a_og, false);
             }
-            break;
+            return;
 
         case 2:
-            resolveObjectsInStream(m->objects.xref_table().stream_number(og.getObj()));
-            break;
+            qpdf.resolveObjectsInStream(e.stream_number());
+            return;
 
         default:
-            throw damagedPDF(
-                "", 0, ("object " + og.unparse('/') + " has unexpected xref entry type"));
+            throw qpdf.damagedPDF(
+                "", 0, ("object " + std::to_string(id) + " has unexpected xref entry type"));
         }
-    } catch (QPDFExc& e) {
-        warn(e);
-    } catch (std::exception& e) {
-        warn(damagedPDF(
-            "", 0, ("object " + og.unparse('/') + ": error reading object: " + e.what())));
+    } catch (QPDFExc& ex) {
+        e.resolved = false;
+        qpdf.warn(ex);
+    } catch (std::exception& ex) {
+        e.resolved = false;
+        qpdf.warn(qpdf.damagedPDF(
+            "",
+            0,
+            ("object " + QPDFObjGen(id, gen).unparse('/') +
+             ": error reading object: " + ex.what())));
     }
 }
 
@@ -2098,7 +2107,7 @@ QPDF::Objects::resolve(QPDFObjGen og)
         return table[og].object.get();
     }
 
-    qpdf.resolve(og);
+    xref.resolve(og.getObj(), og.getGen());
 
     if (unresolved(og)) {
         // PDF spec says unknown objects resolve to the null object.
