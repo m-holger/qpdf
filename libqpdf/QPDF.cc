@@ -1590,7 +1590,7 @@ QPDF::Objects::read_object(QPDFObjGen og)
     }
     auto token = read_token();
     if (object.isDictionary() && token.isWord("stream")) {
-        qpdf.readStream(object, og, offset);
+        read_stream(object, og, offset);
         token = read_token();
     }
     if (!token.isWord("endobj")) {
@@ -1602,13 +1602,13 @@ QPDF::Objects::read_object(QPDFObjGen og)
 
 // After reading stream dictionary and stream keyword, read rest of stream.
 void
-QPDF::readStream(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset_t offset)
+QPDF::Objects::read_stream(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset_t offset)
 {
-    validateStreamLineEnd(object, og, offset);
+    validate_stream_line_end(object, og, offset);
 
     // Must get offset before accessing any additional objects since resolving a previously
     // unresolved indirect object will change file position.
-    qpdf_offset_t stream_offset = m->file->tell();
+    qpdf_offset_t stream_offset = file->tell();
     size_t length = 0;
 
     try {
@@ -1617,33 +1617,34 @@ QPDF::readStream(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset_t offset)
         if (!length_obj.isInteger()) {
             if (length_obj.isNull()) {
                 QTC::TC("qpdf", "QPDF stream without length");
-                throw damagedPDF(offset, "stream dictionary lacks /Length key");
+                throw qpdf.damagedPDF(offset, "stream dictionary lacks /Length key");
             }
             QTC::TC("qpdf", "QPDF stream length not integer");
-            throw damagedPDF(offset, "/Length key in stream dictionary is not an integer");
+            throw qpdf.damagedPDF(offset, "/Length key in stream dictionary is not an integer");
         }
 
         length = toS(length_obj.getUIntValue());
         // Seek in two steps to avoid potential integer overflow
-        m->file->seek(stream_offset, SEEK_SET);
-        m->file->seek(toO(length), SEEK_CUR);
-        if (!readToken(*m->file).isWord("endstream")) {
+        file->seek(stream_offset, SEEK_SET);
+        file->seek(toO(length), SEEK_CUR);
+        if (!read_token().isWord("endstream")) {
             QTC::TC("qpdf", "QPDF missing endstream");
-            throw damagedPDF("expected endstream");
+            throw qpdf.damagedPDF("expected endstream");
         }
     } catch (QPDFExc& e) {
-        if (m->attempt_recovery) {
-            warn(e);
-            length = recoverStreamLength(m->file_sp, og, stream_offset);
+        if (qpdf.m->attempt_recovery) {
+            qpdf.warn(e);
+            length = recover_stream_length(*file, og, stream_offset);
         } else {
             throw;
         }
     }
-    object = {QPDF_Stream::create(this, og, object, stream_offset, length)};
+    object = {QPDF_Stream::create(&qpdf, og, object, stream_offset, length)};
 }
 
 void
-QPDF::validateStreamLineEnd(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset_t offset)
+QPDF::Objects::validate_stream_line_end(
+    QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset_t offset)
 {
     // The PDF specification states that the word "stream" should be followed by either a carriage
     // return and a newline or by a newline alone.  It specifically disallowed following it by a
@@ -1654,7 +1655,7 @@ QPDF::validateStreamLineEnd(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset
     // keyword and the newline.
     while (true) {
         char ch;
-        if (m->file->read(&ch, 1) == 0) {
+        if (file->read(&ch, 1) == 0) {
             // A premature EOF here will result in some other problem that will get reported at
             // another time.
             return;
@@ -1666,7 +1667,7 @@ QPDF::validateStreamLineEnd(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset
         }
         if (ch == '\r') {
             // Read another character
-            if (m->file->read(&ch, 1) != 0) {
+            if (file->read(&ch, 1) != 0) {
                 if (ch == '\n') {
                     // Ready to read stream data
                     QTC::TC("qpdf", "QPDF stream with CRNL");
@@ -1674,21 +1675,22 @@ QPDF::validateStreamLineEnd(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset
                     // Treat the \r by itself as the whitespace after endstream and start reading
                     // stream data in spite of not having seen a newline.
                     QTC::TC("qpdf", "QPDF stream with CR only");
-                    m->file->unreadCh(ch);
-                    warn(damagedPDF(
-                        m->file->tell(), "stream keyword followed by carriage return only"));
+                    file->unreadCh(ch);
+                    qpdf.warn(qpdf.damagedPDF(
+                        file->tell(), "stream keyword followed by carriage return only"));
                 }
             }
             return;
         }
         if (!QUtil::is_space(ch)) {
             QTC::TC("qpdf", "QPDF stream without newline");
-            m->file->unreadCh(ch);
-            warn(damagedPDF(
-                m->file->tell(), "stream keyword not followed by proper line terminator"));
+            file->unreadCh(ch);
+            qpdf.warn(qpdf.damagedPDF(
+                file->tell(), "stream keyword not followed by proper line terminator"));
             return;
         }
-        warn(damagedPDF(m->file->tell(), "stream keyword followed by extraneous whitespace"));
+        qpdf.warn(
+            qpdf.damagedPDF(file->tell(), "stream keyword followed by extraneous whitespace"));
     }
 }
 
@@ -1721,26 +1723,25 @@ QPDF::findEndstream()
 }
 
 size_t
-QPDF::recoverStreamLength(
-    std::shared_ptr<InputSource> input, QPDFObjGen const& og, qpdf_offset_t stream_offset)
+QPDF::Objects::recover_stream_length(InputSource& input, QPDFObjGen og, qpdf_offset_t stream_offset)
 {
     // Try to reconstruct stream length by looking for endstream or endobj
-    warn(damagedPDF(*input, stream_offset, "attempting to recover stream length"));
+    qpdf.warn(qpdf.damagedPDF(input, stream_offset, "attempting to recover stream length"));
 
-    PatternFinder ef(*this, &QPDF::findEndstream);
+    QPDF::PatternFinder ef(qpdf, &QPDF::findEndstream);
     size_t length = 0;
-    if (m->file->findFirst("end", stream_offset, 0, ef)) {
-        length = toS(m->file->tell() - stream_offset);
+    if (file->findFirst("end", stream_offset, 0, ef)) {
+        length = toS(file->tell() - stream_offset);
         // Reread endstream but, if it was endobj, don't skip that.
-        QPDFTokenizer::Token t = readToken(*m->file);
+        auto t = read_token();
         if (t.getValue() == "endobj") {
-            m->file->seek(m->file->getLastOffset(), SEEK_SET);
+            file->seek(file->getLastOffset(), SEEK_SET);
         }
     }
 
     if (length) {
         // Make sure this is inside this object
-        auto found = m->objects.xref_table().at_offset(stream_offset + toO(length));
+        auto found = xref.at_offset(stream_offset + toO(length));
         if (found == QPDFObjGen() || found == og) {
             // If we are trying to recover an XRef stream the xref table will not contain and
             // won't contain any entries, therefore we cannot check the found length. Otherwise we
@@ -1753,11 +1754,11 @@ QPDF::recoverStreamLength(
     }
 
     if (length == 0) {
-        warn(damagedPDF(
-            *input, stream_offset, "unable to recover stream data; treating stream as empty"));
+        qpdf.warn(qpdf.damagedPDF(
+            input, stream_offset, "unable to recover stream data; treating stream as empty"));
     } else {
-        warn(damagedPDF(
-            *input, stream_offset, "recovered stream length: " + std::to_string(length)));
+        qpdf.warn(qpdf.damagedPDF(
+            input, stream_offset, "recovered stream length: " + std::to_string(length)));
     }
 
     QTC::TC("qpdf", "QPDF recovered stream length");
