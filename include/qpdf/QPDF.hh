@@ -761,7 +761,6 @@ class QPDF
     QPDFTokenizer::Token readToken(InputSource&, size_t max_len = 0);
 
     void stopOnError(std::string const& message);
-    QPDFObjectHandle newIndirect(QPDFObjGen const&, std::shared_ptr<QPDFObject> const&);
     static QPDFExc damagedPDF(
         InputSource& input,
         std::string const& object,

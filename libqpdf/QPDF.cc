@@ -2075,13 +2075,6 @@ QPDF::Objects::Xref_table::resolve_stream(int obj_stream_number)
     }
 }
 
-QPDFObjectHandle
-QPDF::newIndirect(QPDFObjGen const& og, std::shared_ptr<QPDFObject> const& obj)
-{
-    obj->setDefaultDescription(this, og);
-    return {obj};
-}
-
 QPDF::Objects::~Objects()
 {
     // If two objects are mutually referential (through each object having an array or dictionary
@@ -2145,9 +2138,10 @@ std::shared_ptr<QPDFObject>
 QPDF::Objects::make_indirect(std::shared_ptr<QPDFObject> const& obj)
 {
     QPDFObjGen next{next_id(), 0};
+    obj->setDefaultDescription(&qpdf, next);
     table[next] = Entry(obj);
     ++next_id_;
-    return qpdf.newIndirect(next, table[next].object).getObj();
+    return {obj};
 }
 
 void
