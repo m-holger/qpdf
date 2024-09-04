@@ -1575,31 +1575,28 @@ QPDF::Objects::Xref_table::read_trailer()
 }
 
 QPDFObjectHandle
-QPDF::readObject(std::string const& description, QPDFObjGen og)
+QPDF::Objects::read_object(std::string const& description, QPDFObjGen og)
 {
-    setLastObjectDescription(description, og);
-    qpdf_offset_t offset = m->file->tell();
-    bool empty = false;
+    qpdf.setLastObjectDescription(description, og);
+    qpdf_offset_t offset = file->tell();
 
-    StringDecrypter decrypter{this, og};
-    StringDecrypter* decrypter_ptr = m->encp->encrypted ? &decrypter : nullptr;
-    auto object =
-        QPDFParser(*m->file, m->last_object_description, m->tokenizer, decrypter_ptr, this, true)
-            .parse(empty, false);
+    StringDecrypter decrypter{&qpdf, og};
+    StringDecrypter* decrypter_ptr = qpdf.m->encp->encrypted ? &decrypter : nullptr;
+    auto [object, empty] = parse(*file, qpdf.m->last_object_description, decrypter_ptr);
     if (empty) {
         // Nothing in the PDF spec appears to allow empty objects, but they have been encountered in
         // actual PDF files and Adobe Reader appears to ignore them.
-        warn(damagedPDF(*m->file, m->file->getLastOffset(), "empty object treated as null"));
+        qpdf.warn(qpdf.damagedPDF("empty object treated as null"));
         return object;
     }
-    auto token = readToken(*m->file);
+    auto token = read_token();
     if (object.isDictionary() && token.isWord("stream")) {
-        readStream(object, og, offset);
-        token = readToken(*m->file);
+        qpdf.readStream(object, og, offset);
+        token = read_token();
     }
     if (!token.isWord("endobj")) {
         QTC::TC("qpdf", "QPDF err expected endobj");
-        warn(damagedPDF("expected endobj"));
+        qpdf.warn(qpdf.damagedPDF("expected endobj"));
     }
     return object;
 }
@@ -1884,7 +1881,7 @@ QPDF::Objects::read(
         }
     }
 
-    QPDFObjectHandle oh = qpdf.readObject(description, og);
+    auto oh = read_object(description, og);
 
     if (unresolved(og)) {
         // Store the object in the cache here so it gets cached whether we first know the offset or
