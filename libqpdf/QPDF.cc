@@ -1575,9 +1575,8 @@ QPDF::Objects::Xref_table::read_trailer()
 }
 
 QPDFObjectHandle
-QPDF::Objects::read_object(std::string const& description, QPDFObjGen og)
+QPDF::Objects::read_object(QPDFObjGen og)
 {
-    qpdf.setLastObjectDescription(description, og);
     qpdf_offset_t offset = file->tell();
 
     StringDecrypter decrypter{&qpdf, og};
@@ -1881,7 +1880,8 @@ QPDF::Objects::read(
         }
     }
 
-    auto oh = read_object(description, og);
+    qpdf.setLastObjectDescription(description, og);
+    auto oh = read_object(og);
 
     if (unresolved(og)) {
         // Store the object in the cache here so it gets cached whether we first know the offset or
