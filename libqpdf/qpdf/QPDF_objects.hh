@@ -541,7 +541,7 @@ class QPDF::Objects
     QPDFObjectHandle read_object(QPDFObjGen og);
     void read_stream(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset_t offset);
     void validate_stream_line_end(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset_t offset);
-    size_t recover_stream_length(InputSource& input, QPDFObjGen og, qpdf_offset_t stream_offset);
+    size_t recover_stream_length(QPDFObjGen og, qpdf_offset_t stream_offset);
 
     QPDF& qpdf;
     InputSource* const& file;

@@ -1634,7 +1634,7 @@ QPDF::Objects::read_stream(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset_
     } catch (QPDFExc& e) {
         if (qpdf.m->attempt_recovery) {
             qpdf.warn(e);
-            length = recover_stream_length(*file, og, stream_offset);
+            length = recover_stream_length(og, stream_offset);
         } else {
             throw;
         }
@@ -1723,10 +1723,10 @@ QPDF::findEndstream()
 }
 
 size_t
-QPDF::Objects::recover_stream_length(InputSource& input, QPDFObjGen og, qpdf_offset_t stream_offset)
+QPDF::Objects::recover_stream_length(QPDFObjGen og, qpdf_offset_t stream_offset)
 {
     // Try to reconstruct stream length by looking for endstream or endobj
-    qpdf.warn(qpdf.damagedPDF(input, stream_offset, "attempting to recover stream length"));
+    qpdf.warn(qpdf.damagedPDF(stream_offset, "attempting to recover stream length"));
 
     QPDF::PatternFinder ef(qpdf, &QPDF::findEndstream);
     size_t length = 0;
@@ -1743,10 +1743,10 @@ QPDF::Objects::recover_stream_length(InputSource& input, QPDFObjGen og, qpdf_off
         // Make sure this is inside this object
         auto found = xref.at_offset(stream_offset + toO(length));
         if (found == QPDFObjGen() || found == og) {
-            // If we are trying to recover an XRef stream the xref table will not contain and
-            // won't contain any entries, therefore we cannot check the found length. Otherwise we
-            // found endstream\nendobj within the space allowed for this object, so we're probably
-            // in good shape.
+            // If we are trying to recover an XRef stream the xref table may not contain any entries
+            // or may be missing an entry for the stream, therefore we cannot check the found
+            // length. Otherwise we found endstream\endobj within the space allowed for this object,
+            // so we're probably in good shape.
         } else {
             QTC::TC("qpdf", "QPDF found wrong endstream in recovery");
             length = 0;
@@ -1755,10 +1755,10 @@ QPDF::Objects::recover_stream_length(InputSource& input, QPDFObjGen og, qpdf_off
 
     if (length == 0) {
         qpdf.warn(qpdf.damagedPDF(
-            input, stream_offset, "unable to recover stream data; treating stream as empty"));
+            stream_offset, "unable to recover stream data; treating stream as empty"));
     } else {
-        qpdf.warn(qpdf.damagedPDF(
-            input, stream_offset, "recovered stream length: " + std::to_string(length)));
+        qpdf.warn(
+            qpdf.damagedPDF(stream_offset, "recovered stream length: " + std::to_string(length)));
     }
 
     QTC::TC("qpdf", "QPDF recovered stream length");
