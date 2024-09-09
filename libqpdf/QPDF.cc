@@ -1541,17 +1541,17 @@ QPDF::getAllObjects()
 }
 
 void
-QPDF::setLastObjectDescription(std::string const& description, QPDFObjGen const& og)
+QPDF::Objects::current_object(std::string const& description, QPDFObjGen og)
 {
-    m->last_object_description.clear();
+    qpdf.m->last_object_description.clear();
     if (!description.empty()) {
-        m->last_object_description += description;
+        qpdf.m->last_object_description += description;
         if (og.isIndirect()) {
-            m->last_object_description += ": ";
+            qpdf.m->last_object_description += ": ";
         }
     }
     if (og.isIndirect()) {
-        m->last_object_description += "object " + og.unparse(' ');
+        qpdf.m->last_object_description += "object " + og.unparse(' ');
     }
 }
 
@@ -1803,7 +1803,7 @@ QPDF::Objects::read(
         check_og = false;
         try_recovery = false;
     }
-    qpdf.setLastObjectDescription(description, exp_og);
+    current_object(description, exp_og);
 
     if (!qpdf.m->attempt_recovery) {
         try_recovery = false;
@@ -1881,7 +1881,7 @@ QPDF::Objects::read(
         }
     }
 
-    qpdf.setLastObjectDescription(description, og);
+    current_object(description, og);
     auto oh = read_object(og);
 
     if (unresolved(og)) {

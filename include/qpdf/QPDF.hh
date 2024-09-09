@@ -757,7 +757,6 @@ class QPDF
 
     void parse(char const* password);
     void inParse(bool);
-    void setLastObjectDescription(std::string const& description, QPDFObjGen const& og);
     QPDFTokenizer::Token readToken(InputSource&, size_t max_len = 0);
 
     void stopOnError(std::string const& message);

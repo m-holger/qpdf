@@ -543,6 +543,8 @@ class QPDF::Objects
     void validate_stream_line_end(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset_t offset);
     size_t recover_stream_length(QPDFObjGen og, qpdf_offset_t stream_offset);
 
+    void current_object(std::string const& description, QPDFObjGen og);
+
     QPDF& qpdf;
     InputSource* const& file;
 
