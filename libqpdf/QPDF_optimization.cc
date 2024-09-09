@@ -238,10 +238,9 @@ QPDF::pushInheritedAttributesToPageInternal(
             // set), as we don't change these; but flattening removes intermediate /Pages nodes.
             if ((warn_skipped_keys) && (cur_pages.hasKey("/Parent"))) {
                 QTC::TC("qpdf", "QPDF unknown key not inherited");
-                setLastObjectDescription("Pages object", cur_pages.getObjGen());
                 warn(
                     qpdf_e_pages,
-                    m->last_object_description,
+                    "Pages object: object " + cur_pages.getObjGen().unparse(' '),
                     0,
                     ("Unknown key " + key +
                      " in /Pages object is being discarded as a result of flattening the /Pages "
