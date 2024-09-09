@@ -209,11 +209,10 @@ QPDF::insertPageobjToPage(QPDFObjectHandle const& obj, int pos, bool check_dupli
     if (check_duplicate) {
         if (!m->pageobj_to_pages_pos.insert(std::make_pair(og, pos)).second) {
             // The library never calls insertPageobjToPage in a way that causes this to happen.
-            setLastObjectDescription("page " + std::to_string(pos) + " (numbered from zero)", og);
             throw QPDFExc(
                 qpdf_e_pages,
                 m->file->getName(),
-                m->last_object_description,
+                "page " + std::to_string(pos) + " (numbered from zero): object " + og.unparse(' '),
                 0,
                 "duplicate page reference found; this would cause loss of data");
         }
@@ -328,11 +327,10 @@ QPDF::findPage(QPDFObjGen const& og)
     auto it = m->pageobj_to_pages_pos.find(og);
     if (it == m->pageobj_to_pages_pos.end()) {
         QTC::TC("qpdf", "QPDF_pages findPage not found");
-        setLastObjectDescription("page object", og);
         throw QPDFExc(
             qpdf_e_pages,
             m->file->getName(),
-            m->last_object_description,
+            "page object: object " + og.unparse(' '),
             0,
             "page object not referenced in /Pages tree");
     }
