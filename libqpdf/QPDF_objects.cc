@@ -1726,7 +1726,7 @@ QPDF::Objects::update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& ob
         auto& cache = table[og];
         cache.object->assign(object);
     } else {
-        table[og] = Entry(object);
+        table[og] = Entry(og.getGen(), object);
     }
 }
 

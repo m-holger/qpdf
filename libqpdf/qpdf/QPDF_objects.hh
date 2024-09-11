@@ -414,7 +414,8 @@ class QPDF::Objects
     bool
     contains(QPDFObjGen og) const noexcept
     {
-        return table.count(og);
+        auto it = table.find(og);
+        return it != table.end() && it->second.gen == og.getGen();
     }
     bool unresolved(QPDFObjGen og) const noexcept;
 
@@ -428,13 +429,17 @@ class QPDF::Objects
     get(QPDFObjGen og)
     {
         auto it = table.find(og);
-        if (it != table.end()) {
+        if (it != table.end() && it->second.gen == og.getGen()) {
             return {it->second.object};
-        } else if (xref.initialized() && !xref.type(og)) {
-            return {QPDF_Null::create()};
-        } else {
-            return {table.try_emplace(og, QPDF_Unresolved::create(&qpdf, og)).first->second.object};
         }
+        if (it != table.end()) {
+            return {QPDF_Null::create()};
+        }
+        if (xref.initialized() && !xref.type(og)) {
+            return {QPDF_Null::create()};
+        }
+        return {table.try_emplace(og, og.getGen(), QPDF_Unresolved::create(&qpdf, og))
+                    .first->second.object};
     }
 
     std::shared_ptr<QPDFObject>
@@ -444,11 +449,16 @@ class QPDF::Objects
         auto [it, inserted] = table.try_emplace(og);
         auto& obj = it->second.object;
         if (inserted) {
+            it->second.gen = gen;
             if (id >= next_id_) {
                 next_id_ = id + 1;
             }
-            obj = (xref.initialized() && !xref.type(og)) ? QPDF_Null::create(&qpdf, og)
-                                                         : QPDF_Unresolved::create(&qpdf, og);
+            obj =
+                !xref.type(og) ? QPDF_Null::create(&qpdf, og) : QPDF_Unresolved::create(&qpdf, og);
+        } else {
+            if (it->second.gen != gen) {
+                return QPDF_Null::create();
+            }
         }
         return obj;
     }
@@ -458,16 +468,21 @@ class QPDF::Objects
     {
         // This method is called by the parser and therefore must not resolve any objects.
         auto og = QPDFObjGen(id, gen);
-        if (auto iter = table.find(og); iter != table.end()) {
+        auto iter = table.find(og);
+        if (iter != table.end() && iter->second.gen == gen) {
             return iter->second.object;
         }
+        if (iter != table.end()) {
+            return QPDF_Null::create();
+        }
         if (xref.type(og) || !xref.initialized()) {
-            return table.insert({og, QPDF_Unresolved::create(&qpdf, og)}).first->second.object;
+            return table.insert({og, {gen, QPDF_Unresolved::create(&qpdf, og)}})
+                .first->second.object;
         }
         if (parse_pdf) {
             return QPDF_Null::create();
         }
-        return table.insert({og, QPDF_Null::create(&qpdf, og)}).first->second.object;
+        return table.insert({og, {gen, QPDF_Null::create(&qpdf, og)}}).first->second.object;
     }
 
     std::vector<QPDFObjectHandle> all();
@@ -522,16 +537,19 @@ class QPDF::Objects
     {
         Entry() = default;
 
-        Entry(std::shared_ptr<QPDFObject>&& object) :
+        Entry(int gen, std::shared_ptr<QPDFObject>&& object) :
+            gen(gen),
             object(std::move(object))
         {
         }
 
-        Entry(std::shared_ptr<QPDFObject> const& object) :
-            object(std::move(object))
+        Entry(int gen, std::shared_ptr<QPDFObject> const& object) :
+            gen(gen),
+            object(object)
         {
         }
 
+        int gen{0};
         std::shared_ptr<QPDFObject> object;
     }; // Entry
 
