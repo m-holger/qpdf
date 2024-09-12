@@ -1676,7 +1676,7 @@ QPDF::Objects::Xref_table::resolve_stream(int obj_stream_number)
         if (type(toS(id)) == 2 && stream_number(id) == obj_stream_number) {
             input.seek(offset, SEEK_SET);
             auto oh = read_compressed_object(input, id);
-            objects.update_table(QPDFObjGen(id, 0), oh.getObj());
+            objects.update_table(id, 0, oh.getObj());
         } else {
             QTC::TC("qpdf", "QPDF not caching overridden objstm object");
         }
@@ -1735,6 +1735,12 @@ QPDF::Objects::update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& ob
     }
 }
 
+void
+QPDF::Objects::update_table(int id, int gen, std::shared_ptr<QPDFObject> const& a_object)
+{
+    update_table(QPDFObjGen(id, gen), a_object);
+}
+
 bool
 QPDF::Objects::unresolved(QPDFObjGen og) const noexcept
 {
@@ -1745,9 +1751,7 @@ QPDF::Objects::unresolved(QPDFObjGen og) const noexcept
 std::shared_ptr<QPDFObject>
 QPDF::Objects::make_indirect(std::shared_ptr<QPDFObject> const& obj)
 {
-    QPDFObjGen next{next_id(), 0};
-    obj->setDefaultDescription(&qpdf, next);
-    table[next] = Entry(obj);
+    update_table(next_id(), 0, obj);
     ++next_id_;
     return {obj};
 }

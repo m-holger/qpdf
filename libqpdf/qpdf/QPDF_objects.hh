@@ -537,6 +537,7 @@ class QPDF::Objects
 
     void initialize();
     void update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& object);
+    void update_table(int id, int gen, std::shared_ptr<QPDFObject> const& a_object);
 
     QPDFObjectHandle read_object(QPDFObjGen og);
     void read_stream(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset_t offset);
