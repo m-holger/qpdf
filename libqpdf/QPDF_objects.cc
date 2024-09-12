@@ -1800,10 +1800,16 @@ QPDF::Objects::erase(QPDFObjGen og)
 void
 QPDF::Objects::swap(QPDFObjGen og1, QPDFObjGen og2)
 {
-    // Force objects to be read from the input source if needed, then swap them in the cache.
-    resolve(og1);
-    resolve(og2);
-    table[og1].object->swapWith(table[og2].object);
+    auto oh1 = get(og1);
+    auto oh2 = get(og2);
+    // Force objects to be read from the input source if needed, then swap them in the cache. We
+    // can't call resolve here as this could add an invalid entry to the object table.
+    (void)oh1.isNull();
+    (void)oh2.isNull();
+    if (!oh1.isIndirect() || !oh2.isIndirect()) {
+        throw std::logic_error("QPDF::swap called with invalid objgens");
+    }
+    oh1.getObj()->swapWith((oh2.getObj()));
 }
 
 size_t
