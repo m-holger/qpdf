@@ -44,14 +44,20 @@ class QPDF::Objects
 
         // Returns 0 if og is not in table.
         size_t
-        type(QPDFObjGen og) const
+        type(int id, int gen) const
         {
-            int id = og.getObj();
             if (id < 1 || static_cast<size_t>(id) >= table.size()) {
                 return 0;
             }
             auto& e = table[static_cast<size_t>(id)];
-            return e.gen() == og.getGen() ? e.type() : 0;
+            return e.gen() == gen ? e.type() : 0;
+        }
+
+        // Returns 0 if og is not in table.
+        size_t
+        type(QPDFObjGen og) const
+        {
+            return type(og.getObj(), og.getGen());
         }
 
         // Returns 0 if og is not in table.
@@ -303,6 +309,7 @@ class QPDF::Objects
             return e.gen_ == gen ? e : table[0];
         }
 
+        void prepare_obj_table();
         void read(qpdf_offset_t offset);
 
         // Methods to parse tables
