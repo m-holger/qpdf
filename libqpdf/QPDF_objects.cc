@@ -1707,20 +1707,15 @@ QPDFObject*
 QPDF::Objects::resolve(QPDFObjGen og)
 {
     if (!unresolved(og)) {
-        return table[og].object.get();
+        throw std::logic_error("Internal error in Objects::resolve");
     }
-
     xref.resolve(og.getObj(), og.getGen());
-
     if (unresolved(og)) {
         // PDF spec says unknown objects resolve to the null object.
         QTC::TC("qpdf", "QPDF resolve failure to null");
         update_table(og, QPDF_Null::create());
     }
-
-    auto& result = table[og].object;
-    result->setDefaultDescription(&qpdf, og);
-    return result.get();
+    return table[og].object.get();
 }
 
 void
