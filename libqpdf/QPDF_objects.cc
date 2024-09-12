@@ -177,7 +177,7 @@ QPDF::Objects::Xref_table::prepare_obj_table()
     auto it = objects.table.begin();
     auto end = objects.table.end();
     while (it != end) {
-        if (!type(it->first.getObj(), it->second.gen)) {
+        if (!type(it->first, it->second.gen)) {
             it->second.object->assign(QPDF_Null::create());
             it->second.object->setObjGen(nullptr, QPDFObjGen());
             it = objects.table.erase(it);
@@ -1733,7 +1733,7 @@ QPDF::Objects::resolve(QPDFObjGen og)
         QTC::TC("qpdf", "QPDF resolve failure to null");
         update_table(og, QPDF_Null::create());
     }
-    return table[og].object.get();
+    return table[og.getObj()].object.get();
 }
 
 void
@@ -1741,10 +1741,13 @@ QPDF::Objects::update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& ob
 {
     object->setObjGen(&qpdf, og);
     if (contains(og)) {
-        auto& cache = table[og];
+        auto& cache = table[og.getObj()];
+        if (cache.gen != og.getGen()) {
+            throw std::logic_error("Internal eror in Objects::update_table");
+        }
         cache.object->assign(object);
     } else {
-        table[og] = Entry(og.getGen(), object);
+        table[og.getObj()] = Entry(og.getGen(), object);
     }
 }
 
@@ -1757,8 +1760,9 @@ QPDF::Objects::update_table(int id, int gen, std::shared_ptr<QPDFObject> const& 
 bool
 QPDF::Objects::unresolved(QPDFObjGen og) const noexcept
 {
-    auto it = table.find(og);
-    return it == table.end() || it->second.object->isUnresolved();
+    auto it = table.find(og.getObj());
+    return it == table.end() ||
+        (it->second.gen == og.getGen() && it->second.object->isUnresolved());
 }
 
 std::shared_ptr<QPDFObject>
@@ -1767,6 +1771,23 @@ QPDF::Objects::make_indirect(std::shared_ptr<QPDFObject> const& obj)
     update_table(next_id(), 0, obj);
     ++next_id_;
     return {obj};
+}
+
+// Remove any dangling reference picked up while parsing the xref table.
+void
+QPDF::Objects::clean()
+{
+    auto it = table.begin();
+    auto end = table.end();
+    while (it != end) {
+        if (!xref.type(QPDFObjGen(it->first, it->second.gen))) {
+            it->second.object->assign(QPDF_Null::create());
+            it->second.object->setObjGen(nullptr, QPDFObjGen());
+            it = table.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
 void
@@ -1802,7 +1823,10 @@ QPDF::Objects::replace(QPDFObjGen og, QPDFObjectHandle oh)
 void
 QPDF::Objects::erase(QPDFObjGen og)
 {
-    if (auto cached = table.find(og); cached != table.end()) {
+    if (auto cached = table.find(og.getObj()); cached != table.end()) {
+        if (cached->second.gen != og.getGen()) {
+            return;
+        }
         // Take care of any object handles that may be floating around.
         cached->second.object->assign(QPDF_Null::create());
         cached->second.object->setObjGen(nullptr, QPDFObjGen());
@@ -1893,14 +1917,8 @@ QPDF::Objects::compressible()
                 continue;
             }
 
-            // Check whether this is the current object. If not, remove it (which changes it into a
-            // direct null and therefore stops us from revisiting it) and move on to the next object
-            // in the queue.
-            auto upper = table.upper_bound(og);
-            if (upper != table.end() && upper->first.getObj() == og.getObj()) {
-                erase(og);
-                continue;
-            }
+            // Check whether this is the current object. This is no longer needed as the object
+            // table holds at most one object per id.
 
             visited[id] = true;
 
