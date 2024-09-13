@@ -310,6 +310,7 @@ class QPDF::Objects
         }
 
         void prepare_obj_table();
+        void create_unresolveds();
         void read(qpdf_offset_t offset);
 
         // Methods to parse tables
@@ -422,7 +423,7 @@ class QPDF::Objects
     contains(QPDFObjGen og) const noexcept
     {
         auto it = table.find(og.getObj());
-        return it != table.end() && it->second.gen == og.getGen();
+        return it != table.end() && it->second.object && it->second.gen == og.getGen();
     }
     bool unresolved(QPDFObjGen og) const noexcept;
 
@@ -436,10 +437,10 @@ class QPDF::Objects
     get(QPDFObjGen og)
     {
         auto it = table.find(og.getObj());
-        if (it != table.end() && it->second.gen == og.getGen()) {
+        if (it != table.end() && it->second.object && it->second.gen == og.getGen()) {
             return {it->second.object};
         }
-        if (it != table.end()) {
+        if (it != table.end() && it->second.object) {
             return {QPDF_Null::create()};
         }
         if (xref.initialized() && !xref.type(og)) {
@@ -455,7 +456,7 @@ class QPDF::Objects
         auto og = QPDFObjGen(id, gen);
         auto [it, inserted] = table.try_emplace(id);
         auto& obj = it->second.object;
-        if (inserted) {
+        if (inserted || !it->second.object) {
             it->second.gen = gen;
             if (id >= next_id_) {
                 next_id_ = id + 1;
@@ -476,13 +477,13 @@ class QPDF::Objects
         // This method is called by the parser and therefore must not resolve any objects.
         auto og = QPDFObjGen(id, gen);
         auto iter = table.find(id);
-        if (iter != table.end() && iter->second.gen == gen) {
+        if (iter != table.end() && iter->second.object && iter->second.gen == gen) {
             return iter->second.object;
         }
-        if (iter != table.end()) {
+        if (iter != table.end() && iter->second.object) {
             return QPDF_Null::create();
         }
-        if (xref.type(og) || !xref.initialized()) {
+        if (!xref.initialized()) {
             return table.insert({id, {gen, QPDF_Unresolved::create(&qpdf, og)}})
                 .first->second.object;
         }
@@ -556,11 +557,18 @@ class QPDF::Objects
         {
         }
 
+        Entry(bool deleted, QPDF* qpdf, int id, int gen) :
+            gen(gen),
+            deleted(deleted),
+            object(deleted ? nullptr : QPDF_Unresolved::create(qpdf, QPDFObjGen(id, gen)))
+        {
+        }
+
         int gen{0};
+        bool deleted{false};
         std::shared_ptr<QPDFObject> object;
     }; // Entry
 
-    void clean();
     void initialize();
     void update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& object);
     void update_table(int id, int gen, std::shared_ptr<QPDFObject> const& a_object);

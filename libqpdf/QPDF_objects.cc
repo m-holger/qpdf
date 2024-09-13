@@ -9,6 +9,7 @@
 #include <map>
 #include <regex>
 #include <sstream>
+#include <tuple>
 #include <vector>
 
 #include <qpdf/BufferInputSource.hh>
@@ -177,13 +178,24 @@ QPDF::Objects::Xref_table::prepare_obj_table()
     auto it = objects.table.begin();
     auto end = objects.table.end();
     while (it != end) {
-        if (!type(it->first, it->second.gen)) {
+        if (!type(it->first, it->second.gen) && it->second.object) {
             it->second.object->assign(QPDF_Null::create());
             it->second.object->setObjGen(nullptr, QPDFObjGen());
             it = objects.table.erase(it);
         } else {
             ++it;
         }
+    }
+    create_unresolveds();
+}
+
+void
+QPDF::Objects::Xref_table::create_unresolveds()
+{
+    int i = 0;
+    for (auto const& e: table) {
+        (void)objects.table.try_emplace(i, !e.type(), &qpdf, i, e.gen());
+        ++i;
     }
 }
 
@@ -206,6 +218,7 @@ QPDF::Objects::Xref_table::reconstruct(QPDFExc& e)
     };
 
     reconstructed_ = true;
+    initialized_ = false;
     // We may find more objects, which may contain dangling references.
 
     warn_damaged("file is damaged");
@@ -219,7 +232,7 @@ QPDF::Objects::Xref_table::reconstruct(QPDFExc& e)
         }
     }
 
-    std::vector<std::tuple<int, int, qpdf_offset_t>> objects;
+    std::vector<std::tuple<int, int, qpdf_offset_t>> found_objects;
     std::vector<qpdf_offset_t> trailers;
     int max_found = 0;
 
@@ -238,7 +251,7 @@ QPDF::Objects::Xref_table::reconstruct(QPDFExc& e)
                 int obj = QUtil::string_to_int(t1.getValue().c_str());
                 int gen = QUtil::string_to_int(t2.getValue().c_str());
                 if (obj <= max_id_) {
-                    objects.emplace_back(obj, gen, token_start);
+                    found_objects.emplace_back(obj, gen, token_start);
                     if (obj > max_found) {
                         max_found = obj;
                     }
@@ -267,8 +280,8 @@ QPDF::Objects::Xref_table::reconstruct(QPDFExc& e)
         check_warnings();
     }
 
-    auto rend = objects.rend();
-    for (auto it = objects.rbegin(); it != rend; it++) {
+    auto rend = found_objects.rend();
+    for (auto it = found_objects.rbegin(); it != rend; it++) {
         auto [obj, gen, token_start] = *it;
         insert(obj, 1, token_start, gen);
         check_warnings();
@@ -283,7 +296,7 @@ QPDF::Objects::Xref_table::reconstruct(QPDFExc& e)
             if (item.type() != 1) {
                 continue;
             }
-            auto oh = qpdf.getObject(i, item.gen());
+            auto oh = QPDFObjectHandle(objects.get_for_parser(i, item.gen(), true));
             try {
                 if (!oh.isStreamOfType("/XRef")) {
                     continue;
@@ -322,6 +335,7 @@ QPDF::Objects::Xref_table::reconstruct(QPDFExc& e)
         throw damaged_pdf("unable to find objects while recovering damaged file");
     }
     check_warnings();
+    create_unresolveds();
     if (!initialized_) {
         initialized_ = true;
         qpdf.getAllPages();
@@ -1167,7 +1181,9 @@ QPDF::Objects::all()
     next_id();
     std::vector<QPDFObjectHandle> result;
     for (auto const& iter: table) {
-        result.push_back({iter.second.object});
+        if (iter.second.object) {
+            result.push_back({iter.second.object});
+        }
     }
     return result;
 }
@@ -1714,9 +1730,11 @@ QPDF::Objects::~Objects()
     // are not destroyed since they can be moved to other QPDF objects safely.
 
     for (auto const& iter: table) {
-        iter.second.object->disconnect();
-        if (iter.second.object->getTypeCode() != ::ot_null) {
-            iter.second.object->destroy();
+        if (auto& obj = iter.second.object) {
+            obj->disconnect();
+            if (obj->getTypeCode() != ::ot_null) {
+                obj->destroy();
+            }
         }
     }
 }
@@ -1761,7 +1779,7 @@ bool
 QPDF::Objects::unresolved(QPDFObjGen og) const noexcept
 {
     auto it = table.find(og.getObj());
-    return it == table.end() ||
+    return it == table.end() || !it->second.object ||
         (it->second.gen == og.getGen() && it->second.object->isUnresolved());
 }
 
@@ -1771,23 +1789,6 @@ QPDF::Objects::make_indirect(std::shared_ptr<QPDFObject> const& obj)
     update_table(next_id(), 0, obj);
     ++next_id_;
     return {obj};
-}
-
-// Remove any dangling reference picked up while parsing the xref table.
-void
-QPDF::Objects::clean()
-{
-    auto it = table.begin();
-    auto end = table.end();
-    while (it != end) {
-        if (!xref.type(QPDFObjGen(it->first, it->second.gen))) {
-            it->second.object->assign(QPDF_Null::create());
-            it->second.object->setObjGen(nullptr, QPDFObjGen());
-            it = table.erase(it);
-        } else {
-            ++it;
-        }
-    }
 }
 
 void
@@ -1824,7 +1825,7 @@ void
 QPDF::Objects::erase(QPDFObjGen og)
 {
     if (auto cached = table.find(og.getObj()); cached != table.end()) {
-        if (cached->second.gen != og.getGen()) {
+        if (cached->second.gen != og.getGen() || !cached->second.object) {
             return;
         }
         // Take care of any object handles that may be floating around.
