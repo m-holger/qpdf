@@ -119,12 +119,13 @@ QPDF::Objects::Xref_table::initialize_empty()
 }
 
 void
-QPDF::Objects::Xref_table::initialize_json()
+QPDF::Objects::Xref_table::initialize_json(qpdf_offset_t length)
 {
     initialized_ = true;
     table.resize(1);
     trailer_ = QPDFObjectHandle::newDictionary();
     trailer_.replaceKey("/Size", QPDFObjectHandle::newInteger(1));
+    objects.table.resize(toS(length / 40));
 }
 
 void
@@ -175,17 +176,15 @@ QPDF::Objects::Xref_table::initialize()
 void
 QPDF::Objects::Xref_table::prepare_obj_table()
 {
-    auto it = objects.table.begin();
-    auto end = objects.table.end();
-    while (it != end) {
-        if (!type(it->first, it->second.gen) && it->second.object) {
-            it->second.object->assign(QPDF_Null::create());
-            it->second.object->setObjGen(nullptr, QPDFObjGen());
-            it = objects.table.erase(it);
-        } else {
-            ++it;
+    objects.table.reserve(size());
+    objects.table.forEach2([this](int id, Objects::Entry& entry) -> void {
+        if (!type(id, entry.gen) && entry.object) {
+            entry.object->assign(QPDF_Null::create());
+            entry.object->setObjGen(nullptr, QPDFObjGen());
+            entry = Objects::Entry();
         }
-    }
+    });
+
     create_unresolveds();
 }
 
@@ -194,7 +193,7 @@ QPDF::Objects::Xref_table::create_unresolveds()
 {
     int i = 0;
     for (auto const& e: table) {
-        (void)objects.table.try_emplace(i, !e.type(), &qpdf, i, e.gen());
+        (void)objects.table.try_emplace_back(Objects::Entry(!e.type(), &qpdf, i, e.gen()));
         ++i;
     }
 }
@@ -1180,11 +1179,11 @@ QPDF::Objects::all()
     // After next_id is called, all objects are in the object cache.
     next_id();
     std::vector<QPDFObjectHandle> result;
-    for (auto& iter: table) {
-        if (iter.second) {
-            result.emplace_back(iter.second.valid_object(qpdf, iter.first));
+    table.forEach([&result, qpdf](int id, Entry const& entry) -> void {
+        if (entry.object) {
+            result.emplace_back(entry.valid_object(qpdf, id));
         }
-    }
+    });
     return result;
 }
 
@@ -1729,14 +1728,14 @@ QPDF::Objects::~Objects()
     // are reachable from this object to release their association with this QPDF. Direct objects
     // are not destroyed since they can be moved to other QPDF objects safely.
 
-    for (auto const& iter: table) {
-        if (auto& obj = iter.second.object) {
+    table.forEach2([](int id, Entry& entry) -> void {
+        if (auto& obj = entry.object) {
             obj->disconnect();
             if (obj->getTypeCode() != ::ot_null) {
                 obj->destroy();
             }
         }
-    }
+    });
 }
 
 QPDFObject*

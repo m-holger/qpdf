@@ -423,7 +423,7 @@ QPDF::JSONReactor::replaceObject(QPDFObjectHandle&& replacement, JSON const& val
         return;
     }
     pdf.replaceObject(og, replacement);
-    next_obj = pdf.getObject(og);
+    next_obj = pdf.m->objects.get_for_json(og.getObj(), og.getGen());
     setObjectDescription(tos.object, value);
 }
 
@@ -776,7 +776,10 @@ QPDF::createFromJSON(std::shared_ptr<InputSource> is)
 {
     m->pdf_version = "1.3";
     m->no_input_name = is->getName();
-    m->objects.xref_table().initialize_json();
+    is->seek(0, SEEK_END);
+    auto len = is->tell();
+    is->seek(0, SEEK_SET);
+    m->objects.xref_table().initialize_json(len);
     importJSON(is, true);
 }
 

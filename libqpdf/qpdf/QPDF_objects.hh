@@ -3,6 +3,7 @@
 
 #include <qpdf/QPDF.hh>
 
+#include <qpdf/ObjTable.hh>
 #include <qpdf/QPDF_Null.hh>
 #include <qpdf/QPDF_Unresolved.hh>
 
@@ -24,7 +25,7 @@ class QPDF::Objects
 
         void initialize();
         void initialize_empty();
-        void initialize_json();
+        void initialize_json(qpdf_offset_t size);
         void reconstruct(QPDFExc& e);
         void show();
         // Resolve all object in the xref table.
@@ -395,7 +396,7 @@ class QPDF::Objects
         // Linearization data
         bool uncompressed_after_compressed_{false};
         qpdf_offset_t first_item_offset_{0}; // actual value from file
-    };                                       // Xref_table
+    }; // Xref_table
 
     Objects(QPDF& qpdf, InputSource* const& file) :
         qpdf(qpdf),
@@ -595,6 +596,12 @@ class QPDF::Objects
         std::shared_ptr<QPDFObject> object;
     }; // Entry
 
+
+    class Table: public ObjTable<Entry>
+    {
+        friend class Objects;
+    };
+
     void initialize();
     void update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& object);
     void update_table(int id, int gen, std::shared_ptr<QPDFObject> const& a_object);
@@ -611,7 +618,7 @@ class QPDF::Objects
 
     QPDFTokenizer tokenizer;
     Xref_table xref;
-    std::map<int, Entry> table;
+    Table table;
     int next_id_{1};
     bool initialized{false};
 
