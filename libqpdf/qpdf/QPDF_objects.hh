@@ -441,20 +441,19 @@ class QPDF::Objects
     bool unresolved(QPDFObjGen og) const noexcept;
 
     QPDFObjectHandle
-    get(int id, int gen)
+    get(QPDFObjGen og)
     {
-        return get(QPDFObjGen(id, gen));
+        return get(og.getObj(), og.getGen());
     }
 
     QPDFObjectHandle
-    get(QPDFObjGen og)
+    get(int id, int gen)
     {
         // This is not called during xref table parsing.
-        auto it = table.find(og.getObj());
-        if (it != table.end() && it->second.object && it->second.gen == og.getGen()) {
-            return {it->second.object};
+        if (!contains(id, gen)) {
+            return {QPDF_Null::create()};
         }
-        return {QPDF_Null::create()};
+        return table[id].object;
     }
 
     std::shared_ptr<QPDFObject>
