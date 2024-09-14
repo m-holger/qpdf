@@ -571,7 +571,7 @@ class QPDF::Objects
         {
         }
 
-        Entry(bool deleted, QPDF* qpdf, int id, int gen) :
+        Entry(bool deleted, int gen) :
             gen(gen),
             deleted(deleted),
             unresolved(!deleted)

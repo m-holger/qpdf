@@ -177,7 +177,7 @@ void
 QPDF::Objects::Xref_table::prepare_obj_table()
 {
     objects.table.reserve(size());
-    objects.table.forEach2([this](int id, Objects::Entry& entry) -> void {
+    objects.table.forEach([this](int id, Objects::Entry& entry) -> void {
         if (!type(id, entry.gen) && entry.object) {
             entry.object->assign(QPDF_Null::create());
             entry.object->setObjGen(nullptr, QPDFObjGen());
@@ -191,13 +191,10 @@ QPDF::Objects::Xref_table::prepare_obj_table()
 void
 QPDF::Objects::Xref_table::create_unresolveds()
 {
-    int i = 0;
     for (auto const& e: table) {
-        (void)objects.table.try_emplace_back(Objects::Entry(!e.type(), &qpdf, i, e.gen()));
-        ++i;
+        (void)objects.table.try_emplace_back(Objects::Entry(!e.type(), e.gen()));
     }
 }
-
 
 void
 QPDF::Objects::Xref_table::create_recovered_unresolveds()
@@ -205,7 +202,7 @@ QPDF::Objects::Xref_table::create_recovered_unresolveds()
     int i = 0;
     for (auto const& e: table) {
         if (e.type() && !objects.table[i]) {
-            objects.table[i] = Objects::Entry(!e.type(), &qpdf, i, e.gen());
+            objects.table[i] = Objects::Entry(!e.type(), e.gen());
         }
         ++i;
     }
@@ -1192,7 +1189,7 @@ QPDF::Objects::all()
     // After next_id is called, all objects are in the object cache.
     next_id();
     std::vector<QPDFObjectHandle> result;
-    table.forEach2([&result, this](int id, Entry& entry) -> void {
+    table.forEach([&result, this](int id, Entry& entry) -> void {
         if (entry.object) {
             result.emplace_back(entry.valid_object(qpdf, id));
         }
@@ -1741,7 +1738,7 @@ QPDF::Objects::~Objects()
     // are reachable from this object to release their association with this QPDF. Direct objects
     // are not destroyed since they can be moved to other QPDF objects safely.
 
-    table.forEach2([](int id, Entry& entry) -> void {
+    table.forEach([](int id, Entry& entry) -> void {
         if (auto& obj = entry.object) {
             obj->disconnect();
             if (obj->getTypeCode() != ::ot_null) {
