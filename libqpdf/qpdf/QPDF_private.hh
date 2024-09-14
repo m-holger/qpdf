@@ -508,7 +508,7 @@ class QPDF::Resolver
     static QPDFObject*
     resolved(QPDF* qpdf, QPDFObjGen og)
     {
-        return qpdf->m->objects.resolve(og);
+        return qpdf->m->objects.resolve(og.getObj(), og.getGen());
     }
 };
 

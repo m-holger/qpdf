@@ -1163,8 +1163,8 @@ QPDF::Objects::Xref_table::resolve()
     for (auto& item: table) {
         ++i;
         if (item.type()) {
-            if (objects.unresolved(QPDFObjGen(i, item.gen()))) {
-                objects.resolve(QPDFObjGen(i, item.gen()));
+            if (objects.unresolved(i, item.gen())) {
+                objects.resolve(i, item.gen());
                 if (may_change && reconstructed_) {
                     QTC::TC("qpdf", "QPDF fix dangling triggered xref reconstruction");
                     return resolve();
@@ -1526,7 +1526,7 @@ QPDF::Objects::read(
     current_object(description, og);
     auto oh = read_object(og);
 
-    if (unresolved(og)) {
+    if (unresolved(og.getObj(), og.getGen())) {
         // Store the object in the cache here so it gets cached whether we first know the offset or
         // whether we first know the object ID and generation (in which we case we would get here
         // through resolve).
@@ -1740,18 +1740,18 @@ QPDF::Objects::~Objects()
 }
 
 QPDFObject*
-QPDF::Objects::resolve(QPDFObjGen og)
+QPDF::Objects::resolve(int id, int gen)
 {
-    if (!unresolved(og)) {
+    if (!unresolved(id, gen)) {
         throw std::logic_error("Internal error in Objects::resolve");
     }
-    xref.resolve(og.getObj(), og.getGen());
-    if (unresolved(og)) {
+    auto& entry = table[id];
+    xref.resolve(id, gen);
+    if (!entry.object || entry.object->isUnresolved()) {
         // PDF spec says unknown objects resolve to the null object.
         QTC::TC("qpdf", "QPDF resolve failure to null");
-        update_table(og, QPDF_Null::create());
+        update_table(id, gen, QPDF_Null::create());
     }
-    auto& entry = table[og.getObj()];
     entry.unresolved = false;
     return entry.object.get();
 }
@@ -1779,15 +1779,15 @@ QPDF::Objects::update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& a_
 }
 
 bool
-QPDF::Objects::unresolved(QPDFObjGen og) const noexcept
+QPDF::Objects::unresolved(int id, int gen) const noexcept
 {
-    if (contains(og)) {
-        return table.at(og.getObj()).unresolved || table.at(og.getObj()).object->isUnresolved();
+    if (contains(id, gen)) {
+        return table.at(id).unresolved || table.at(id).object->isUnresolved();
     }
     if (xref.initialized()) {
         return false;
     }
-    return !table.count(og.getObj());
+    return !table.count(id);
 }
 
 std::shared_ptr<QPDFObject>

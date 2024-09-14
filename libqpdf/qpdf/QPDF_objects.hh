@@ -438,7 +438,7 @@ class QPDF::Objects
     {
         return contains(og.getObj(), og.getGen());
     }
-    bool unresolved(QPDFObjGen og) const noexcept;
+    bool unresolved(int id, int gen) const noexcept;
 
     QPDFObjectHandle
     get(QPDFObjGen og)
@@ -534,7 +534,7 @@ class QPDF::Objects
     // QPDFWriter 'normal' ObjTable size (i.e. part of the ObjTables implemented as std::vector).
     size_t table_size();
 
-    QPDFObject* resolve(QPDFObjGen og);
+    QPDFObject* resolve(int id, int gen);
 
     // Get a list of objects that would be permitted in an object stream.
     template <typename T>
