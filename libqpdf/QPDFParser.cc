@@ -376,6 +376,10 @@ QPDFParser::parseRemainder(bool content_stream)
 void
 QPDFParser::add(std::shared_ptr<QPDFObject>&& obj)
 {
+    if (!obj) {
+        addNull();
+        return;
+    }
     if (frame->state != st_dictionary_value) {
         // If state is st_dictionary_key then there is a missing key. Push onto olist for
         // processing once the tt_dict_close token has been found.

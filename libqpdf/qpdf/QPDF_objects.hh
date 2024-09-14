@@ -484,7 +484,7 @@ class QPDF::Objects
             return table[id].object;
         }
         if (xref.initialized()) {
-            return QPDF_Null::create();
+            return {};
         }
         return get_for_xref(id, gen);
     }
@@ -502,7 +502,7 @@ class QPDF::Objects
             entry = {gen, QPDF_Unresolved::create(&qpdf, QPDFObjGen(id, gen))};
             return entry.object;
         }
-        return QPDF_Null::create();
+        return {};
     }
 
     std::vector<QPDFObjectHandle> all();
