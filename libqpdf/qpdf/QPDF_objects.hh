@@ -476,10 +476,10 @@ class QPDF::Objects
     }
 
     std::shared_ptr<QPDFObject>
-    get_for_parser(int id, int gen, bool parse_pdf=true)
+    get_for_parser(int id, int gen, bool parse_pdf = true)
     {
-        // This method is called by the parser and therefore must not resolve any objects. It is used
-        // both before and after the xref table has been parsed.
+        // This method is called by the parser and therefore must not resolve any objects. It is
+        // used both before and after the xref table has been parsed.
         if (contains(id, gen)) {
             return table[id].object;
         }
@@ -490,27 +490,19 @@ class QPDF::Objects
     }
 
     std::shared_ptr<QPDFObject>
-    get_for_xref(int id, int gen, bool parse_pdf=true)
+    get_for_xref(int id, int gen, bool parse_pdf = true)
     {
-        // This method is called by the parser and therefore must not resolve any objects. It is only used
-        // during xref table parsing and reconstruction.
-        auto og = QPDFObjGen(id, gen);
-        auto iter = table.find(id);
-        if (iter != table.end() && iter->second.object) {
-            if (iter->second.gen == gen) {
-                return iter->second.object;
-            }
-            return QPDF_Null::create();
+        // This method is called by the parser and therefore must not resolve any objects. It is
+        // only used during xref table parsing and reconstruction.
+        auto& entry = table[id];
+        if (entry && entry.gen == gen) {
+            return entry.object;
         }
-        if (!xref.initialized()) {
-            return table.insert_or_assign(id, Entry(gen, QPDF_Unresolved::create(&qpdf, og)))
-                .first->second.object;
+        if (!entry && (!entry.deleted || entry.gen <= gen)) {
+            entry = {gen, QPDF_Unresolved::create(&qpdf, QPDFObjGen(id, gen))};
+            return entry.object;
         }
-        if (parse_pdf) {
-            return QPDF_Null::create();
-        }
-        return table.insert_or_assign(id, Entry(gen, QPDF_Null::create(&qpdf, og)))
-            .first->second.object;
+        return QPDF_Null::create();
     }
 
     std::vector<QPDFObjectHandle> all();
