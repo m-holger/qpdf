@@ -1755,24 +1755,24 @@ QPDF::Objects::resolve(QPDFObjGen og)
 }
 
 void
-QPDF::Objects::update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& object)
+QPDF::Objects::update_table(int id, int gen, std::shared_ptr<QPDFObject> const& object)
 {
-    object->setObjGen(&qpdf, og);
-    if (contains(og)) {
-        auto& cache = table[og.getObj()];
-        if (cache.gen != og.getGen()) {
+    object->setObjGen(&qpdf, QPDFObjGen(id, gen));
+    auto& entry = table[id];
+    if (entry) {
+        if (entry.gen != gen) {
             throw std::logic_error("Internal eror in Objects::update_table");
         }
-        cache.object->assign(object);
+        entry.object->assign(object);
     } else {
-        table[og.getObj()] = Entry(og.getGen(), object);
+        entry = Entry(gen, object);
     }
 }
 
 void
-QPDF::Objects::update_table(int id, int gen, std::shared_ptr<QPDFObject> const& a_object)
+QPDF::Objects::update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& a_object)
 {
-    update_table(QPDFObjGen(id, gen), a_object);
+    update_table(og.getObj(), og.getGen(), a_object);
 }
 
 bool
