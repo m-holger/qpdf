@@ -425,10 +425,10 @@ class QPDF::Objects
     bool
     contains(int id, int gen) const noexcept
     {
-        if (!table.count(id)) {
+        if (!table.contains(static_cast<size_t>(id))) {
             return false;
         }
-        auto& entry = table.at(id);
+        auto& entry = table.at(static_cast<size_t>(id));
         return entry && entry.gen == gen;
     }
 
@@ -500,7 +500,8 @@ class QPDF::Objects
         }
         if (!entry && (!entry.deleted || entry.gen <= gen)) {
             entry = {gen, QPDF_Unresolved::create(&qpdf, QPDFObjGen(id, gen))};
-            return entry.valid_object(qpdf, id);
+            entry.unresolved = true;
+            return entry.object;
         }
         return {};
     }

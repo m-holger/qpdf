@@ -1179,7 +1179,7 @@ QPDF::Objects::all()
     // After next_id is called, all objects are in the object cache.
     next_id();
     std::vector<QPDFObjectHandle> result;
-    table.forEach([&result, qpdf](int id, Entry const& entry) -> void {
+    table.forEach2([&result, this](int id, Entry& entry) -> void {
         if (entry.object) {
             result.emplace_back(entry.valid_object(qpdf, id));
         }
@@ -1744,8 +1744,9 @@ QPDF::Objects::resolve(int id, int gen)
     if (!unresolved(id, gen)) {
         throw std::logic_error("Internal error in Objects::resolve");
     }
-    auto& entry = table[id];
     xref.resolve(id, gen);
+    auto& entry = table[id];
+
     if (!entry.object || entry.object->isUnresolved()) {
         // PDF spec says unknown objects resolve to the null object.
         QTC::TC("qpdf", "QPDF resolve failure to null");
@@ -1778,15 +1779,16 @@ QPDF::Objects::update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& a_
 }
 
 bool
-QPDF::Objects::unresolved(int id, int gen) const noexcept
+QPDF::Objects::unresolved(int a_id, int gen) const noexcept
 {
-    if (contains(id, gen)) {
+    auto id = static_cast<size_t>(a_id);
+    if (contains(a_id, gen)) {
         return table.at(id).unresolved || table.at(id).object->isUnresolved();
     }
     if (xref.initialized()) {
         return false;
     }
-    return !table.count(id);
+    return !table.contains(id);
 }
 
 std::shared_ptr<QPDFObject>
@@ -1833,13 +1835,13 @@ QPDF::Objects::erase(QPDFObjGen og)
     if (!contains(og)) {
         return;
     }
-    auto cached = table.find(og.getObj());
-    if (cached->second.object) {
+    auto& cached = table[og.getObj()];
+    if (cached.object) {
         // Take care of any object handles that may be floating around.
-        cached->second.object->assign(QPDF_Null::create());
-        cached->second.object->setObjGen(nullptr, QPDFObjGen());
+        cached.object->assign(QPDF_Null::create());
+        cached.object->setObjGen(nullptr, QPDFObjGen());
     }
-    table.erase(cached);
+    cached = Entry();
 }
 
 void
