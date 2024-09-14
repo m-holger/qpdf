@@ -1828,15 +1828,16 @@ QPDF::Objects::replace(QPDFObjGen og, QPDFObjectHandle oh)
 void
 QPDF::Objects::erase(QPDFObjGen og)
 {
-    if (auto cached = table.find(og.getObj()); cached != table.end()) {
-        if (cached->second.gen != og.getGen() || !cached->second.object) {
-            return;
-        }
+    if (!contains(og)) {
+        return;
+    }
+    auto cached = table.find(og.getObj());
+    if (cached->second.object) {
         // Take care of any object handles that may be floating around.
         cached->second.object->assign(QPDF_Null::create());
         cached->second.object->setObjGen(nullptr, QPDFObjGen());
-        table.erase(cached);
     }
+    table.erase(cached);
 }
 
 void
