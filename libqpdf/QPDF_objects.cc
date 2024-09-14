@@ -1180,9 +1180,9 @@ QPDF::Objects::all()
     // After next_id is called, all objects are in the object cache.
     next_id();
     std::vector<QPDFObjectHandle> result;
-    for (auto const& iter: table) {
-        if (iter.second.object) {
-            result.push_back({iter.second.object});
+    for (auto& iter: table) {
+        if (iter.second) {
+            result.emplace_back(iter.second.valid_object(qpdf, iter.first));
         }
     }
     return result;
@@ -1751,21 +1751,24 @@ QPDF::Objects::resolve(QPDFObjGen og)
         QTC::TC("qpdf", "QPDF resolve failure to null");
         update_table(og, QPDF_Null::create());
     }
-    return table[og.getObj()].object.get();
+    auto& entry = table[og.getObj()];
+    entry.unresolved = false;
+    return entry.object.get();
 }
 
 void
-QPDF::Objects::update_table(int id, int gen, std::shared_ptr<QPDFObject> const& object)
+QPDF::Objects::update_table(int id, int gen, std::shared_ptr<QPDFObject> const& obj)
 {
-    object->setObjGen(&qpdf, QPDFObjGen(id, gen));
+    obj->setObjGen(&qpdf, QPDFObjGen(id, gen));
     auto& entry = table[id];
-    if (entry) {
+    if (entry.object) {
         if (entry.gen != gen) {
             throw std::logic_error("Internal eror in Objects::update_table");
         }
-        entry.object->assign(object);
+        entry.object->assign(obj);
+        entry.unresolved = false;
     } else {
-        entry = Entry(gen, object);
+        entry = Entry(gen, obj);
     }
 }
 
@@ -1779,7 +1782,7 @@ bool
 QPDF::Objects::unresolved(QPDFObjGen og) const noexcept
 {
     if (contains(og)) {
-        return table.at(og.getObj()).object->isUnresolved();
+        return table.at(og.getObj()).unresolved || table.at(og.getObj()).object->isUnresolved();
     }
     if (xref.initialized()) {
         return false;

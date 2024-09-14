@@ -453,7 +453,7 @@ class QPDF::Objects
         if (!contains(id, gen)) {
             return {QPDF_Null::create()};
         }
-        return table[id].object;
+        return table[id].valid_object(qpdf, id);
     }
 
     std::shared_ptr<QPDFObject>
@@ -471,7 +471,7 @@ class QPDF::Objects
                 return QPDF_Null::create();
             }
         }
-        return entry.object;
+        return entry.valid_object(qpdf, id);
     }
 
     std::shared_ptr<QPDFObject>
@@ -480,7 +480,7 @@ class QPDF::Objects
         // This method is called by the parser and therefore must not resolve any objects. It is
         // used both before and after the xref table has been parsed.
         if (contains(id, gen)) {
-            return table[id].object;
+            return table[id].valid_object(qpdf, id);
         }
         if (xref.initialized()) {
             return {};
@@ -495,11 +495,11 @@ class QPDF::Objects
         // only used during xref table parsing and reconstruction.
         auto& entry = table[id];
         if (entry && entry.gen == gen) {
-            return entry.object;
+            return entry.valid_object(qpdf, id);
         }
         if (!entry && (!entry.deleted || entry.gen <= gen)) {
             entry = {gen, QPDF_Unresolved::create(&qpdf, QPDFObjGen(id, gen))};
-            return entry.object;
+            return entry.valid_object(qpdf, id);
         }
         return {};
     }
@@ -571,17 +571,27 @@ class QPDF::Objects
         Entry(bool deleted, QPDF* qpdf, int id, int gen) :
             gen(gen),
             deleted(deleted),
-            object(deleted ? nullptr : QPDF_Unresolved::create(qpdf, QPDFObjGen(id, gen)))
+            unresolved(!deleted)
         {
         }
 
         operator bool() const noexcept
         {
-            return static_cast<bool>(object);
+            return static_cast<bool>(object) || unresolved;
+        }
+
+        std::shared_ptr<QPDFObject> const&
+        valid_object(QPDF& a_qpdf, int id)
+        {
+            if (!object && unresolved) {
+                object = QPDF_Unresolved::create(&a_qpdf, QPDFObjGen(id, gen));
+            }
+            return object;
         }
 
         int gen{0};
         bool deleted{false};
+        bool unresolved{false};
         std::shared_ptr<QPDFObject> object;
     }; // Entry
 
