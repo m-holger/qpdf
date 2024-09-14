@@ -428,7 +428,7 @@ class QPDF::Objects
         if (!table.contains(static_cast<size_t>(id))) {
             return false;
         }
-        auto& entry = table.at(static_cast<size_t>(id));
+        auto& entry = table[id];
         return entry && entry.gen == gen;
     }
 
@@ -596,7 +596,6 @@ class QPDF::Objects
         bool unresolved{false};
         std::shared_ptr<QPDFObject> object;
     }; // Entry
-
 
     class Table: public ObjTable<Entry>
     {

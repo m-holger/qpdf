@@ -175,9 +175,9 @@ class ObjTable
         return {elements.emplace_back(std::forward<Args&&...>(args...)), true};
     }
 
-    // Try to emplace an element to the end of the vector. If there is a conflicting (non-default) sparse element,
-    // emplace it to the end of the vector instead. Return a reference to the emplaced element and
-    // true if a new element has been inserted.
+    // Try to emplace an element to the end of the vector. If there is a conflicting (non-default)
+    // sparse element, emplace it to the end of the vector instead. Return a reference to the
+    // emplaced element and true if a new element has been inserted.
     template <class... Args>
     inline std::pair<T&, bool>
     try_emplace_back(Args&&... args)
@@ -185,9 +185,9 @@ class ObjTable
         if (min_sparse == std::vector<T>::size()) {
             auto it = sparse_elements.begin();
 
-            bool insert = it->second;
-            auto& result = !insert ? std::vector<T>::emplace_back(std::move(it->second)) :
-                               std::vector<T>::emplace_back(std::forward<Args&&...>(args...));
+            bool insert = it->second == T();
+            auto& result = !insert ? std::vector<T>::emplace_back(std::move(it->second))
+                                   : std::vector<T>::emplace_back(std::forward<Args&&...>(args...));
             it = sparse_elements.erase(it);
             min_sparse =
                 it == sparse_elements.end() ? std::numeric_limits<size_t>::max() : it->first;
