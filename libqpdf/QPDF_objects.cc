@@ -1778,9 +1778,13 @@ QPDF::Objects::update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& a_
 bool
 QPDF::Objects::unresolved(QPDFObjGen og) const noexcept
 {
-    auto it = table.find(og.getObj());
-    return it == table.end() || !it->second.object ||
-        (it->second.gen == og.getGen() && it->second.object->isUnresolved());
+    if (contains(og)) {
+        return table.at(og.getObj()).object->isUnresolved();
+    }
+    if (xref.initialized()) {
+        return false;
+    }
+    return !table.count(og.getObj());
 }
 
 std::shared_ptr<QPDFObject>
