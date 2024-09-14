@@ -296,7 +296,7 @@ QPDF::Objects::Xref_table::reconstruct(QPDFExc& e)
             if (item.type() != 1) {
                 continue;
             }
-            auto oh = QPDFObjectHandle(objects.get_for_parser(i, item.gen(), true));
+            auto oh = QPDFObjectHandle(objects.get_for_xref(i, item.gen()));
             try {
                 if (!oh.isStreamOfType("/XRef")) {
                     continue;

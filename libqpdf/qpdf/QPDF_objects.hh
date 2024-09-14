@@ -480,6 +480,20 @@ class QPDF::Objects
     {
         // This method is called by the parser and therefore must not resolve any objects. It is used
         // both before and after the xref table has been parsed.
+        if (contains(id, gen)) {
+            return table[id].object;
+        }
+        if (xref.initialized()) {
+            return QPDF_Null::create();
+        }
+        return get_for_xref(id, gen);
+    }
+
+    std::shared_ptr<QPDFObject>
+    get_for_xref(int id, int gen, bool parse_pdf=true)
+    {
+        // This method is called by the parser and therefore must not resolve any objects. It is only used
+        // during xref table parsing and reconstruction.
         auto og = QPDFObjGen(id, gen);
         auto iter = table.find(id);
         if (iter != table.end() && iter->second.object) {
