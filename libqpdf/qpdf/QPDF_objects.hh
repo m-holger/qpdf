@@ -312,6 +312,7 @@ class QPDF::Objects
 
         void prepare_obj_table();
         void create_unresolveds();
+        void create_recovered_unresolveds();
         void read(qpdf_offset_t offset);
 
         // Methods to parse tables

@@ -198,6 +198,19 @@ QPDF::Objects::Xref_table::create_unresolveds()
     }
 }
 
+
+void
+QPDF::Objects::Xref_table::create_recovered_unresolveds()
+{
+    int i = 0;
+    for (auto const& e: table) {
+        if (e.type() && !objects.table[i]) {
+            objects.table[i] = Objects::Entry(!e.type(), &qpdf, i, e.gen());
+        }
+        ++i;
+    }
+}
+
 void
 QPDF::Objects::Xref_table::reconstruct(QPDFExc& e)
 {
@@ -334,7 +347,7 @@ QPDF::Objects::Xref_table::reconstruct(QPDFExc& e)
         throw damaged_pdf("unable to find objects while recovering damaged file");
     }
     check_warnings();
-    create_unresolveds();
+    create_recovered_unresolveds();
     if (!initialized_) {
         initialized_ = true;
         qpdf.getAllPages();
@@ -1779,16 +1792,15 @@ QPDF::Objects::update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& a_
 }
 
 bool
-QPDF::Objects::unresolved(int a_id, int gen) const noexcept
+QPDF::Objects::unresolved(int id, int gen) const noexcept
 {
-    auto id = static_cast<size_t>(a_id);
-    if (contains(a_id, gen)) {
-        return table.at(id).unresolved || table.at(id).object->isUnresolved();
+    if (contains(id, gen)) {
+        return table[id].unresolved || table[id].object->isUnresolved();
     }
     if (xref.initialized()) {
         return false;
     }
-    return !table.contains(id);
+    return !table.contains(static_cast<size_t>(id));
 }
 
 std::shared_ptr<QPDFObject>
