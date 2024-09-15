@@ -426,11 +426,7 @@ class QPDF::Objects
     bool
     contains(int id, int gen) const noexcept
     {
-        if (!table.contains(static_cast<size_t>(id))) {
-            return false;
-        }
-        auto& entry = table[id];
-        return entry && entry.gen == gen;
+        return table.find(id, gen);
     }
 
     // Return true if Objects contains an object with the (id, gen) combination. The object may be
@@ -452,10 +448,10 @@ class QPDF::Objects
     get(int id, int gen)
     {
         // This is not called during xref table parsing.
-        if (!contains(id, gen)) {
-            return {QPDF_Null::create()};
+        if (auto ptr = table.find(id, gen)) {
+            return ptr->valid_object(qpdf, id);
         }
-        return table[id].valid_object(qpdf, id);
+        return {QPDF_Null::create()};
     }
 
     std::shared_ptr<QPDFObject>
@@ -601,6 +597,31 @@ class QPDF::Objects
     class Table: public ObjTable<Entry>
     {
         friend class Objects;
+
+      public:
+        Entry const*
+        find(int id, int gen) const
+        {
+            auto idx = static_cast<size_t>(id);
+            if (auto ptr = ObjTable<Entry>::find(idx)) {
+                if (ptr->gen == gen && *ptr) {
+                    return ptr;
+                }
+            }
+            return nullptr;
+        }
+
+        Entry*
+        find(int id, int gen)
+        {
+            auto idx = static_cast<size_t>(id);
+            if (auto ptr = ObjTable<Entry>::find(idx)) {
+                if (ptr->gen == gen && *ptr) {
+                    return ptr;
+                }
+            }
+            return nullptr;
+        }
     };
 
     void initialize();
