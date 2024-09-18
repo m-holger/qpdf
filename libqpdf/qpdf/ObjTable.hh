@@ -155,13 +155,25 @@ class ObjTable: public std::vector<T>
     }
 
     inline void
-    forEach(std::function<void(int, const T&)> fn)
+    forEach(std::function<void(int, T const&)> fn) const
     {
         int i = 0;
         for (auto const& item: *this) {
             fn(i++, item);
         }
         for (auto const& [id, item]: sparse_elements) {
+            fn(QIntC::to_int(id), item);
+        }
+    }
+
+    inline void
+    forEach(std::function<void(int, T&)> fn)
+    {
+        int i = 0;
+        for (auto& item: *this) {
+            fn(i++, item);
+        }
+        for (auto& [id, item]: sparse_elements) {
             fn(QIntC::to_int(id), item);
         }
     }

@@ -51,6 +51,12 @@ class Table: public ObjTable<Test>
             assert((j.value < 20) == inserted);
         }
 
+        forEach([](auto i, auto& item) -> void {
+            if (i == 1 || i == 200 || i == 1009) {
+                item.value += 50;
+            }
+        });
+
         forEach([](auto i, auto const& item) -> void {
             if (item.value) {
                 std::cout << std::to_string(i) << " : " << std::to_string(item.value) << "\n";
