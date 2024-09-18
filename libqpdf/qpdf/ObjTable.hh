@@ -106,6 +106,37 @@ class ObjTable: public std::vector<T>
         return element(id);
     }
 
+    // Return pointer to element id. If not found, return a nullptr.
+    // NB The element pointed to may not be valid (i.e. default constructed).
+    inline T const*
+    find(size_t id) const noexcept
+    {
+        if (id < std::vector<T>::size()) {
+            return &std::vector<T>::operator[](id);
+        }
+        auto it = sparse_elements.find(id);
+        if (it == sparse_elements.end()) {
+            return nullptr;
+        }
+        return &it->second;
+    }
+
+    // Return pointer to element id. If not found, return a nullptr.
+    // NB The element pointed to may not be valid (i.e. default constructed).
+    inline T*
+    find(size_t id) noexcept
+    {
+        if (id < std::vector<T>::size()) {
+            return &std::vector<T>::operator[](id);
+        }
+        auto it = sparse_elements.find(id);
+        if (it == sparse_elements.end()) {
+            return nullptr;
+        }
+        return &it->second;
+    }
+
+
     // emplace_back to the end of the vector. If there are any conflicting sparse elements, emplace
     // them to the back of the vector before adding the current element.
     template <class... Args>

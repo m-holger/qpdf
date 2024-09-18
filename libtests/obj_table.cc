@@ -57,6 +57,11 @@ class Table: public ObjTable<Test>
             }
         });
 
+        assert(find(10)->value == 0);
+        assert(!find(224));
+        assert(find(1000)->value == 2000);
+        find(50)->value += 42;
+
         forEach([](auto i, auto const& item) -> void {
             if (item.value) {
                 std::cout << std::to_string(i) << " : " << std::to_string(item.value) << "\n";
