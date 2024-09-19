@@ -13,7 +13,6 @@
 #include <qpdf/Pl_StdioFile.hh>
 #include <qpdf/Pl_String.hh>
 #include <qpdf/QIntC.hh>
-#include <qpdf/QPDF.hh>
 #include <qpdf/QPDFAcroFormDocumentHelper.hh>
 #include <qpdf/QPDFCryptoProvider.hh>
 #include <qpdf/QPDFEmbeddedFileDocumentHelper.hh>
@@ -26,6 +25,7 @@
 #include <qpdf/QPDFSystemError.hh>
 #include <qpdf/QPDFUsage.hh>
 #include <qpdf/QPDFWriter.hh>
+#include <qpdf/QPDF_private.hh>
 #include <qpdf/QTC.hh>
 #include <qpdf/QUtil.hh>
 
@@ -471,6 +471,21 @@ QPDFJob::createQPDF()
     }
     handleUnderOverlay(pdf);
     handleTransformations(pdf);
+    if (m->remove_info) {
+        auto trailer = pdf.getTrailer();
+        auto mod_date = trailer.getKey("/Info").getKeyIfDict("/ModDate");
+        if (mod_date.isNull()) {
+            trailer.removeKey("/Info");
+        } else {
+            auto info = trailer.replaceKeyAndGetNew(
+                "/Info", pdf.makeIndirectObject(QPDFObjectHandle::newDictionary()));
+            info.replaceKey("/ModDate", mod_date);
+        }
+        pdf.getRoot().removeKey("/Metadata");
+    }
+    if (m->remove_metadata) {
+        pdf.getRoot().removeKey("/Metadata");
+    }
 
     for (auto& foreign: page_heap) {
         if (foreign->anyWarnings()) {

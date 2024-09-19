@@ -905,7 +905,7 @@ qpdf_oh
 qpdf_get_object_by_id(qpdf_data qpdf, int objid, int generation)
 {
     QTC::TC("qpdf", "qpdf-c called qpdf_get_object_by_id");
-    return new_object(qpdf, qpdf->qpdf->getObjectByID(objid, generation));
+    return new_object(qpdf, qpdf->qpdf->getObject(objid, generation));
 }
 
 template <class RET>
@@ -1769,6 +1769,16 @@ qpdf_oh_get_page_content_data(qpdf_data qpdf, qpdf_oh page_oh, unsigned char** b
         o.pipePageContents(&buf);
         buf.getMallocBuffer(bufp, len);
     });
+}
+
+void
+qpdf_oh_free_buffer(unsigned char** bufp)
+{
+    QTC::TC("qpdf", "qpdf-c called qpdf_oh_free_buffer");
+    if (bufp && *bufp) {
+        free(*bufp);
+        *bufp = nullptr;
+    }
 }
 
 void
