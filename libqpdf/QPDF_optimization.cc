@@ -79,9 +79,9 @@ QPDF::optimize(
 }
 
 void
-QPDF::optimize(QPDF::Xref_table const& xref)
+QPDF::optimize(QPDF::Objects const& objects)
 {
-    optimize_internal(xref, false, nullptr);
+    optimize_internal(objects, false, nullptr);
 }
 
 template <typename T>
@@ -121,13 +121,13 @@ QPDF::optimize_internal(
     }
 
     // Traverse document-level items
-    for (auto const& key: m->xref_table.trailer().getKeys()) {
+    for (auto const& key: m->objects.xref_table().trailer().getKeys()) {
         if (key == "/Root") {
             // handled separately
         } else {
             updateObjectMaps(
                 ObjUser(ObjUser::ou_trailer_key, key),
-                m->xref_table.trailer().getKey(key),
+                m->objects.xref_table().trailer().getKey(key),
                 skip_stream_parameters);
         }
     }
@@ -175,7 +175,7 @@ QPDF::pushInheritedAttributesToPage(bool allow_changes, bool warn_skipped_keys)
     // values for them.
     std::map<std::string, std::vector<QPDFObjectHandle>> key_ancestors;
     pushInheritedAttributesToPageInternal(
-        m->xref_table.trailer().getKey("/Root").getKey("/Pages"),
+        m->objects.xref_table().trailer().getKey("/Root").getKey("/Pages"),
         key_ancestors,
         allow_changes,
         warn_skipped_keys);
@@ -238,10 +238,9 @@ QPDF::pushInheritedAttributesToPageInternal(
             // set), as we don't change these; but flattening removes intermediate /Pages nodes.
             if ((warn_skipped_keys) && (cur_pages.hasKey("/Parent"))) {
                 QTC::TC("qpdf", "QPDF unknown key not inherited");
-                setLastObjectDescription("Pages object", cur_pages.getObjGen());
                 warn(
                     qpdf_e_pages,
-                    m->last_object_description,
+                    "Pages object: object " + cur_pages.getObjGen().unparse(' '),
                     0,
                     ("Unknown key " + key +
                      " in /Pages object is being discarded as a result of flattening the /Pages "
@@ -450,8 +449,9 @@ QPDF::filterCompressedObjects(QPDFWriter::ObjTable const& obj)
 }
 
 void
-QPDF::filterCompressedObjects(QPDF::Xref_table const& xref)
+QPDF::filterCompressedObjects(QPDF::Objects const& objects)
 {
+    auto xref = objects.xref_table();
     if (!xref.object_streams()) {
         return;
     }

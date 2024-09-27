@@ -1,0 +1,649 @@
+#ifndef QPDF_OBJECTS_HH
+#define QPDF_OBJECTS_HH
+
+#include <qpdf/QPDF.hh>
+
+#include <qpdf/ObjTable.hh>
+#include <qpdf/QPDF_Null.hh>
+#include <qpdf/QPDF_Unresolved.hh>
+
+#include <variant>
+
+class QPDF::Objects
+{
+  public:
+    // Xref_table encapsulates the pdf's xref table and trailer.
+    class Xref_table
+    {
+      public:
+        Xref_table(Objects& objects) :
+            qpdf(objects.qpdf),
+            objects(objects),
+            file(objects.file)
+        {
+        }
+
+        void initialize();
+        void initialize_empty();
+        void initialize_json(qpdf_offset_t size);
+        void reconstruct(QPDFExc& e);
+        void show();
+        // Resolve all object in the xref table.
+        void resolve();
+
+        QPDFObjectHandle
+        trailer() const
+        {
+            return trailer_;
+        }
+
+        void
+        trailer(QPDFObjectHandle&& oh)
+        {
+            trailer_ = std::move(oh);
+        }
+
+        // Returns 0 if og is not in table.
+        size_t
+        type(int id, int gen) const
+        {
+            if (id < 1 || static_cast<size_t>(id) >= table.size()) {
+                return 0;
+            }
+            auto& e = table[static_cast<size_t>(id)];
+            return e.gen() == gen ? e.type() : 0;
+        }
+
+        // Returns 0 if og is not in table.
+        size_t
+        type(QPDFObjGen og) const
+        {
+            return type(og.getObj(), og.getGen());
+        }
+
+        // Returns 0 if og is not in table.
+        size_t
+        type(size_t id) const noexcept
+        {
+            if (id >= table.size()) {
+                return 0;
+            }
+            return table[id].type();
+        }
+
+        // Returns 0 if og is not in table.
+        qpdf_offset_t
+        offset(QPDFObjGen og) const noexcept
+        {
+            int id = og.getObj();
+            if (id < 1 || static_cast<size_t>(id) >= table.size()) {
+                return 0;
+            }
+            return table[static_cast<size_t>(id)].offset();
+        }
+
+        // Returns 0 if id is not in table.
+        int
+        stream_number(int id) const noexcept
+        {
+            if (id < 1 || static_cast<size_t>(id) >= table.size()) {
+                return 0;
+            }
+            return table[static_cast<size_t>(id)].stream_number();
+        }
+
+        int
+        stream_index(int id) const noexcept
+        {
+            if (id < 1 || static_cast<size_t>(id) >= table.size()) {
+                return 0;
+            }
+            return table[static_cast<size_t>(id)].stream_index();
+        }
+
+        QPDFObjGen at_offset(qpdf_offset_t offset) const noexcept;
+
+        std::map<QPDFObjGen, QPDFXRefEntry> as_map() const;
+
+        bool
+        object_streams() const noexcept
+        {
+            return object_streams_;
+        }
+
+        // Return a vector of object id and stream number for each compressed object.
+        std::vector<std::pair<unsigned int, int>>
+        compressed_objects() const
+        {
+            if (!initialized()) {
+                throw std::logic_error("Xref_table::compressed_objects called before parsing.");
+            }
+
+            std::vector<std::pair<unsigned int, int>> result;
+            result.reserve(table.size());
+
+            unsigned int i{0};
+            for (auto const& item: table) {
+                if (item.type() == 2) {
+                    result.emplace_back(i, item.stream_number());
+                }
+                ++i;
+            }
+            return result;
+        }
+
+        // Temporary access to underlying table size
+        size_t
+        size() const noexcept
+        {
+            return table.size();
+        }
+
+        void
+        ignore_streams(bool val) noexcept
+        {
+            ignore_streams_ = val;
+        }
+
+        bool
+        initialized() const noexcept
+        {
+            return initialized_;
+        }
+
+        void
+        attempt_recovery(bool val) noexcept
+        {
+            attempt_recovery_ = val;
+        }
+
+        int
+        max_id() const noexcept
+        {
+            return max_id_;
+        }
+
+        void resolve(int id, int gen);
+
+        // For Linearization
+
+        qpdf_offset_t
+        end_after_space(QPDFObjGen og)
+        {
+            auto& e = entry(toS(og.getObj()));
+            switch (e.type()) {
+            case 1:
+                return e.end_after_space_;
+            case 2:
+                {
+                    auto es = entry(toS(e.stream_number()));
+                    return es.type() == 1 ? es.end_after_space_ : 0;
+                }
+            default:
+                return 0;
+            }
+        }
+
+        qpdf_offset_t
+        end_before_space(QPDFObjGen og)
+        {
+            auto& e = entry(toS(og.getObj()));
+            switch (e.type()) {
+            case 1:
+                return e.end_before_space_;
+            case 2:
+                {
+                    auto es = entry(toS(e.stream_number()));
+                    return es.type() == 1 ? es.end_before_space_ : 0;
+                }
+            default:
+                return 0;
+            }
+        }
+
+        void
+        linearization_offsets(size_t id, qpdf_offset_t before, qpdf_offset_t after)
+        {
+            if (type(id)) {
+                table[id].end_before_space_ = before;
+                table[id].end_after_space_ = after;
+            }
+        }
+
+        bool
+        uncompressed_after_compressed() const noexcept
+        {
+            return uncompressed_after_compressed_;
+        }
+
+        // Actual value from file
+        qpdf_offset_t
+        first_item_offset() const noexcept
+        {
+            return first_item_offset_;
+        }
+
+      private:
+        // Object, count, offset of first entry
+        typedef std::tuple<int, int, qpdf_offset_t> Subsection;
+
+        struct Uncompressed
+        {
+            Uncompressed(qpdf_offset_t offset) :
+                offset(offset)
+            {
+            }
+            qpdf_offset_t offset;
+        };
+
+        struct Compressed
+        {
+            Compressed(int stream_number, int stream_index) :
+                stream_number(stream_number),
+                stream_index(stream_index)
+            {
+            }
+            int stream_number{0};
+            int stream_index{0};
+        };
+
+        typedef std::variant<std::monostate, Uncompressed, Compressed> Xref;
+
+        struct Entry
+        {
+            Entry() = default;
+
+            Entry(int gen, Xref entry) :
+                gen_(gen),
+                entry(entry)
+            {
+            }
+
+            int
+            gen() const noexcept
+            {
+                return gen_;
+            }
+
+            size_t
+            type() const noexcept
+            {
+                return entry.index();
+            }
+
+            qpdf_offset_t
+            offset() const noexcept
+            {
+                return type() == 1 ? std::get<1>(entry).offset : 0;
+            }
+
+            int
+            stream_number() const noexcept
+            {
+                return type() == 2 ? std::get<2>(entry).stream_number : 0;
+            }
+
+            int
+            stream_index() const noexcept
+            {
+                return type() == 2 ? std::get<2>(entry).stream_index : 0;
+            }
+
+            int gen_{0};
+            bool resolved{false};
+            bool resolved_stream{false};
+            Xref entry;
+            qpdf_offset_t end_before_space_{0};
+            qpdf_offset_t end_after_space_{0};
+        };
+
+        Entry&
+        entry(size_t id)
+        {
+            return id < table.size() ? table[id] : table[0];
+        }
+
+        Entry&
+        entry(int id, int gen)
+        {
+            auto& e = entry(toS(id));
+            return e.gen_ == gen ? e : table[0];
+        }
+
+        void prepare_obj_table();
+        void create_unresolveds();
+        void create_recovered_unresolveds();
+        void read(qpdf_offset_t offset);
+
+        // Methods to parse tables
+        qpdf_offset_t process_section(qpdf_offset_t offset);
+        std::vector<Subsection> subsections(std::string& line);
+        std::vector<Subsection> bad_subsections(std::string& line, qpdf_offset_t offset);
+        Subsection subsection(std::string const& line);
+        std::tuple<bool, qpdf_offset_t, int, char> read_entry();
+        std::tuple<bool, qpdf_offset_t, int, char> read_bad_entry();
+
+        // Methods to parse streams
+        qpdf_offset_t read_stream(qpdf_offset_t offset);
+        qpdf_offset_t process_stream(qpdf_offset_t offset, QPDFObjectHandle& xref_stream);
+        std::pair<int, std::array<int, 3>>
+        process_W(QPDFObjectHandle& dict, std::function<QPDFExc(std::string_view)> damaged);
+        std::pair<int, size_t> process_Size(
+            QPDFObjectHandle& dict,
+            int entry_size,
+            std::function<QPDFExc(std::string_view)> damaged);
+        std::pair<int, std::vector<std::pair<int, int>>> process_Index(
+            QPDFObjectHandle& dict,
+            int max_num_entries,
+            std::function<QPDFExc(std::string_view)> damaged);
+
+        void resolve_stream(int obj_stream_number);
+        QPDFObjectHandle read_compressed_object(InputSource& input, int obj);
+
+        QPDFObjectHandle read_trailer();
+
+        QPDFTokenizer::Token
+        read_token(size_t max_len = 0)
+        {
+            return objects.tokenizer.readToken(*file, "", true, max_len);
+        }
+
+        QPDFTokenizer::Token
+        read_token(InputSource& input)
+        {
+            return objects.tokenizer.readToken(input, "", true);
+        }
+
+        // Methods to insert table entries
+        void insert(int obj, int f0, qpdf_offset_t f1, int f2);
+        void insert_free(QPDFObjGen);
+
+        QPDFExc
+        damaged_pdf(std::string const& msg)
+        {
+            return qpdf.damagedPDF("", 0, msg);
+        }
+
+        QPDFExc
+        damaged_table(std::string const& msg)
+        {
+            return qpdf.damagedPDF("xref table", msg);
+        }
+
+        void
+        warn_damaged(std::string const& msg)
+        {
+            qpdf.warn(damaged_pdf(msg));
+        }
+
+        QPDF& qpdf;
+        Objects& objects;
+        InputSource* const& file;
+
+        std::vector<Entry> table;
+        QPDFObjectHandle trailer_;
+
+        bool attempt_recovery_{true};
+        bool initialized_{false};
+        bool ignore_streams_{false};
+        bool reconstructed_{false};
+        bool object_streams_{false};
+        // Before the xref table is initialized, max_id_ is an upper bound on the possible object
+        // ids that could be present in the PDF file. Once the trailer has been read, max_id_ is set
+        // to the value of /Size. If the file is damaged, max_id_ becomes the maximum object id in
+        // the xref table after reconstruction.
+        int max_id_{std::numeric_limits<int>::max() - 1};
+
+        // Linearization data
+        bool uncompressed_after_compressed_{false};
+        qpdf_offset_t first_item_offset_{0}; // actual value from file
+    }; // Xref_table
+
+    Objects(QPDF& qpdf, InputSource* const& file) :
+        qpdf(qpdf),
+        file(file),
+        xref(*this)
+    {
+        tokenizer.allowEOF();
+    }
+
+    ~Objects();
+
+    Xref_table&
+    xref_table() noexcept
+    {
+        return xref;
+    }
+
+    Xref_table const&
+    xref_table() const noexcept
+    {
+        return xref;
+    }
+
+    // Return true if Objects contains an object with the (id, gen) combination. The object may be
+    // unresolved, but not deleted.
+    bool
+    contains(int id, int gen) const noexcept
+    {
+        return table.find(id, gen);
+    }
+
+    // Return true if Objects contains an object with the (id, gen) combination. The object may be
+    // unresolved, but not deleted.
+    bool
+    contains(QPDFObjGen og) const noexcept
+    {
+        return contains(og.getObj(), og.getGen());
+    }
+    bool unresolved(int id, int gen) const noexcept;
+
+    QPDFObjectHandle
+    get(QPDFObjGen og)
+    {
+        return get(og.getObj(), og.getGen());
+    }
+
+    QPDFObjectHandle
+    get(int id, int gen)
+    {
+        // This is not called during xref table parsing.
+        if (auto ptr = table.find(id, gen)) {
+            return ptr->valid_object(qpdf, id);
+        }
+        return {QPDF_Null::create()};
+    }
+
+    std::shared_ptr<QPDFObject>
+    get_for_json(int id, int gen)
+    {
+        auto& entry = table[id];
+        if (!entry) {
+            entry.gen = gen;
+            if (id >= next_id_) {
+                next_id_ = id + 1;
+            }
+            entry.object = QPDF_Null::create(&qpdf, QPDFObjGen(id, gen));
+        } else {
+            if (entry.gen != gen) {
+                return QPDF_Null::create();
+            }
+        }
+        return entry.valid_object(qpdf, id);
+    }
+
+    std::shared_ptr<QPDFObject>
+    get_for_parser(int id, int gen, bool parse_pdf = true)
+    {
+        // This method is called by the parser and therefore must not resolve any objects. It is
+        // used both before and after the xref table has been parsed.
+        if (contains(id, gen)) {
+            return table[id].valid_object(qpdf, id);
+        }
+        if (xref.initialized()) {
+            return {};
+        }
+        return get_for_xref(id, gen);
+    }
+
+    std::shared_ptr<QPDFObject>
+    get_for_xref(int id, int gen, bool parse_pdf = true)
+    {
+        // This method is called by the parser and therefore must not resolve any objects. It is
+        // only used during xref table parsing and reconstruction.
+        auto& entry = table[id];
+        if (entry && entry.gen == gen) {
+            return entry.valid_object(qpdf, id);
+        }
+        if (!entry && (!entry.deleted || entry.gen <= gen)) {
+            entry = {gen, QPDF_Unresolved::create(&qpdf, QPDFObjGen(id, gen))};
+            entry.unresolved = true;
+            return entry.object;
+        }
+        return {};
+    }
+
+    std::vector<QPDFObjectHandle> all();
+
+    void erase(QPDFObjGen og);
+
+    void replace(QPDFObjGen og, QPDFObjectHandle oh);
+
+    void swap(QPDFObjGen og1, QPDFObjGen og2);
+
+    std::shared_ptr<QPDFObject> make_indirect(std::shared_ptr<QPDFObject> const& obj);
+
+    QPDFObjectHandle read(
+        bool try_recovery,
+        qpdf_offset_t offset,
+        std::string const& description,
+        QPDFObjGen exp_og,
+        QPDFObjGen& og,
+        bool skip_cache_if_in_xref);
+
+    int
+    next_id()
+    {
+        if (!initialized) {
+            initialize();
+        }
+        return next_id_;
+    }
+
+    // QPDFWriter 'normal' ObjTable size (i.e. part of the ObjTables implemented as std::vector).
+    size_t table_size();
+
+    QPDFObject* resolve(int id, int gen);
+
+    // Get a list of objects that would be permitted in an object stream.
+    template <typename T>
+    std::vector<T> compressible();
+
+    QPDFTokenizer::Token
+    read_token(size_t max_len = 0)
+    {
+        return tokenizer.readToken(*file, "", true, max_len);
+    }
+
+    std::pair<QPDFObjectHandle, bool> parse(
+        InputSource& input,
+        std::string const& description,
+        QPDFObjectHandle::StringDecrypter* decrypter_ptr = nullptr);
+
+  private:
+    struct Entry
+    {
+        Entry() = default;
+
+        Entry(int gen, std::shared_ptr<QPDFObject>&& object) :
+            gen(gen),
+            object(std::move(object))
+        {
+        }
+
+        Entry(int gen, std::shared_ptr<QPDFObject> const& object) :
+            gen(gen),
+            object(object)
+        {
+        }
+
+        Entry(bool deleted, int gen) :
+            gen(gen),
+            deleted(deleted),
+            unresolved(!deleted)
+        {
+        }
+
+        operator bool() const noexcept
+        {
+            return static_cast<bool>(object) || unresolved;
+        }
+
+        std::shared_ptr<QPDFObject> const&
+        valid_object(QPDF& a_qpdf, int id)
+        {
+            if (!object && unresolved) {
+                object = QPDF_Unresolved::create(&a_qpdf, QPDFObjGen(id, gen));
+            }
+            return object;
+        }
+
+        int gen{0};
+        bool deleted{false};
+        bool unresolved{false};
+        std::shared_ptr<QPDFObject> object;
+    }; // Entry
+
+    class Table: public ObjTable<Entry>
+    {
+        friend class Objects;
+
+      public:
+        Entry const*
+        find(int id, int gen) const
+        {
+            auto idx = static_cast<size_t>(id);
+            if (auto ptr = ObjTable<Entry>::find(idx)) {
+                if (ptr->gen == gen && *ptr) {
+                    return ptr;
+                }
+            }
+            return nullptr;
+        }
+
+        Entry*
+        find(int id, int gen)
+        {
+            auto idx = static_cast<size_t>(id);
+            if (auto ptr = ObjTable<Entry>::find(idx)) {
+                if (ptr->gen == gen && *ptr) {
+                    return ptr;
+                }
+            }
+            return nullptr;
+        }
+    };
+
+    void initialize();
+    void update_table(QPDFObjGen og, std::shared_ptr<QPDFObject> const& object);
+    void update_table(int id, int gen, std::shared_ptr<QPDFObject> const& a_object);
+
+    QPDFObjectHandle read_object(QPDFObjGen og);
+    void read_stream(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset_t offset);
+    void validate_stream_line_end(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset_t offset);
+    size_t recover_stream_length(QPDFObjGen og, qpdf_offset_t stream_offset);
+
+    void current_object(std::string const& description, QPDFObjGen og);
+
+    QPDF& qpdf;
+    InputSource* const& file;
+
+    QPDFTokenizer tokenizer;
+    Xref_table xref;
+    Table table;
+    int next_id_{1};
+    bool initialized{false};
+
+}; // Objects
+
+#endif // QPDF_OBJECTS_HH

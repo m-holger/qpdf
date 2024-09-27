@@ -256,10 +256,10 @@ class QPDF::JSONReactor: public JSON::Reactor
     struct StackFrame
     {
         StackFrame(state_e state) :
-            state(state){};
+            state(state) {};
         StackFrame(state_e state, QPDFObjectHandle&& object) :
             state(state),
-            object(object){};
+            object(object) {};
         state_e state;
         QPDFObjectHandle object;
     };
@@ -423,7 +423,7 @@ QPDF::JSONReactor::replaceObject(QPDFObjectHandle&& replacement, JSON const& val
         return;
     }
     pdf.replaceObject(og, replacement);
-    next_obj = pdf.getObject(og);
+    next_obj = pdf.m->objects.get_for_json(og.getObj(), og.getGen());
     setObjectDescription(tos.object, value);
 }
 
@@ -536,7 +536,7 @@ QPDF::JSONReactor::dictionaryItem(std::string const& key, JSON const& value)
         } else if (is_obj_key(key, obj, gen)) {
             this->cur_object = key;
             if (setNextStateIfDictionary(key, value, st_object_top)) {
-                next_obj = pdf.getObjectForJSON(obj, gen);
+                next_obj = pdf.m->objects.get_for_json(obj, gen);
             }
         } else {
             QTC::TC("qpdf", "QPDF_json bad object key");
@@ -582,7 +582,7 @@ QPDF::JSONReactor::dictionaryItem(std::string const& key, JSON const& value)
             this->saw_value = true;
             // The trailer must be a dictionary, so we can use setNextStateIfDictionary.
             if (setNextStateIfDictionary("trailer.value", value, st_object)) {
-                pdf.m->xref_table.trailer(makeObject(value));
+                pdf.m->objects.xref_table().trailer(makeObject(value));
             }
         } else if (key == "stream") {
             // Don't need to set saw_stream here since there's already an error.
@@ -740,7 +740,7 @@ QPDF::JSONReactor::makeObject(JSON const& value)
         int gen = 0;
         std::string str;
         if (is_indirect_object(str_v, obj, gen)) {
-            result = pdf.getObjectForJSON(obj, gen);
+            result = pdf.m->objects.get_for_json(obj, gen);
         } else if (is_unicode_string(str_v, str)) {
             result = QPDFObjectHandle::newUnicodeString(str);
         } else if (is_binary_string(str_v, str)) {
@@ -776,7 +776,10 @@ QPDF::createFromJSON(std::shared_ptr<InputSource> is)
 {
     m->pdf_version = "1.3";
     m->no_input_name = is->getName();
-    m->xref_table.initialize_json();
+    is->seek(0, SEEK_END);
+    auto len = is->tell();
+    is->seek(0, SEEK_SET);
+    m->objects.xref_table().initialize_json(len);
     importJSON(is, true);
 }
 
