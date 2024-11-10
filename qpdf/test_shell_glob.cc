@@ -1,6 +1,9 @@
 #include <qpdf/QUtil.hh>
 #include <iostream>
 
+
+[[maybe_unused]] int _dowildcard = -1;
+
 int
 realmain(int argc, char* argv[])
 {
