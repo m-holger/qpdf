@@ -132,7 +132,7 @@ main()
     print_size(QPDFWriter::FunctionProgressReporter);
     print_size(QPDFXRefEntry);
 //    print_size(qpdf::Legacy);
-//    print_size(qpdf::pl::Concatenate);
+    print_size(qpdf::pl::Buffer);
     print_size(qpdf::pl::Pipeline);
     return 0;
 }

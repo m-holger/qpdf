@@ -5,6 +5,71 @@
 #include <cstring>
 #include <stdexcept>
 
+namespace qpdf::pl {
+
+        void
+        Buffer::write(std::string_view sv)
+        {
+            if (sv.empty()) {
+                return;
+            }
+            data.append(sv);
+            ready = false;
+        }
+
+        void
+        Buffer::finish()
+        {
+            ready = true;
+        }
+
+        ::Buffer*
+        Buffer::getBuffer()
+        {
+            if (!ready) {
+                throw std::logic_error("Pl_Buffer::getBuffer() called when not ready");
+            }
+            auto* b = new ::Buffer(std::move(data));
+            data.clear();
+            return b;
+        }
+
+        std::string
+        Buffer::getString()
+        {
+            if (!ready) {
+                throw std::logic_error("pl::Buffer::getString() called when not ready");
+            }
+            auto s = std::move(data);
+            data.clear();
+            return s;
+        }
+
+        std::shared_ptr<::Buffer>
+        Buffer::getBufferSharedPointer()
+        {
+            return std::shared_ptr<::Buffer>(getBuffer());
+        }
+
+        void
+        Buffer::getMallocBuffer(unsigned char** buf, size_t* len)
+        {
+            if (!ready) {
+                throw std::logic_error("Pl_Buffer::getMallocBuffer() called when not ready");
+            }
+            auto size = data.size();
+            *len = size;
+            if (size > 0) {
+                *buf = reinterpret_cast<unsigned char*>(malloc(size));
+                memcpy(*buf, data.data(), size);
+            } else {
+                *buf = nullptr;
+            }
+            data.clear();
+        }
+} // namespace qpdf::pl
+
+
 Pl_Buffer::Pl_Buffer(char const* identifier, Pipeline* next) :
     Pipeline(identifier, next),
     m(new Members())

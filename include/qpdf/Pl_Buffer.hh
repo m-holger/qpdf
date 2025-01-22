@@ -34,6 +34,53 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
+
+namespace qpdf::pl {
+    class QPDF_DLL_CLASS Buffer final: public Pipeline
+    {
+      public:
+        QPDF_DLL
+        explicit Buffer(char const* identifier) :
+            Pipeline(identifier, nullptr)
+        {
+        }
+        QPDF_DLL
+        ~Buffer() final = default;
+        QPDF_DLL
+        void write(std::string_view sv) final;
+        QPDF_DLL
+        void finish() final;
+
+        // Each call to getBuffer() resets this object -- see notes above.
+        // The caller is responsible for deleting the returned Buffer object. See also
+        // getBufferSharedPointer() and getMallocBuffer().
+        QPDF_DLL
+        ::Buffer* getBuffer();
+
+        // Same as getBuffer but wraps the result in a shared pointer.
+        QPDF_DLL
+        std::shared_ptr<::Buffer> getBufferSharedPointer();
+
+        // getMallocBuffer behaves in the same was as getBuffer except the buffer is allocated with
+        // malloc(), making it suitable for use when calling from other languages. If there is no data,
+        // *buf is set to a null pointer and *len is set to 0. Otherwise, *buf is a buffer of size *len
+        // allocated with malloc(). It is the caller's responsibility to call free() on the buffer.
+        QPDF_DLL
+        void getMallocBuffer(unsigned char** buf, size_t* len);
+
+        // Same as getBuffer but returns the result as a string.
+        QPDF_DLL
+        std::string getString();
+
+      private:
+        class Members {};
+
+        bool ready{true};
+        std::string data;
+        std::unique_ptr<Members> m;
+    };
+} // namespace qpdf::pl
 
 class QPDF_DLL_CLASS Pl_Buffer: public Pipeline
 {
