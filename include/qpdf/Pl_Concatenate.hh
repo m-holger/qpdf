@@ -26,6 +26,38 @@
 
 #include <qpdf/Pipeline.hh>
 
+#include <stdexcept>
+
+namespace qpdf::pl {
+    class Concatenate final: public Pipeline
+    {
+      public:
+        Concatenate(char const* identifier, Pipeline& next) :
+            Pipeline(identifier, &next)
+        {
+        }
+
+        ~Concatenate() final = default;
+
+        void
+        write(unsigned char const* data, size_t len) final
+        {
+            next()->write(data, len);
+        }
+
+        void
+        finish() final
+        {
+        }
+
+        void
+        manualFinish()
+        {
+            next()->finish();
+        }
+    };
+} // namespace qpdf::pl
+
 class QPDF_DLL_CLASS Pl_Concatenate: public Pipeline
 {
   public:

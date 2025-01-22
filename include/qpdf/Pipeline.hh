@@ -40,6 +40,88 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
+
+class Pipeline;
+
+namespace qpdf::pl
+{
+    // Remember to use QPDF_DLL_CLASS on anything derived from Pipeline so it will work with
+    // dynamic_cast across the shared object boundary.
+    class QPDF_DLL_CLASS Pipeline
+    {
+      public:
+        QPDF_DLL
+        Pipeline(char const* identifier, Pipeline* next) :
+            identifier(identifier),
+            next_(next)
+        {
+        }
+
+        inline explicit Pipeline(::Pipeline& legacy);
+
+        QPDF_DLL
+        virtual ~Pipeline() = default;
+
+        // Subclasses should implement write and finish to do their jobs and then, if they are not
+        // end-of-line pipelines, call getNext()->write or getNext()->finish.
+        QPDF_DLL
+        virtual void write(unsigned char const* data, size_t len) = 0;
+        QPDF_DLL
+        virtual void finish() = 0;
+        QPDF_DLL
+        inline std::string getIdentifier() const;
+
+        // These are convenience methods for making it easier to write certain other types of data
+        // to pipelines without having to cast. The methods that take char const* expect
+        // null-terminated C strings and do not write the null terminators.
+        QPDF_DLL
+        void writeCStr(char const* cstr);
+        QPDF_DLL
+        void writeString(std::string const&);
+        // This allows *p << "x" << "y" but is not intended to be a general purpose << compatible
+        // with ostream and does not have local awareness or the ability to be "imbued" with
+        // properties.
+        QPDF_DLL Pipeline& operator<<(char const* cstr);
+        QPDF_DLL Pipeline& operator<<(std::string const&);
+        QPDF_DLL Pipeline& operator<<(short);
+        QPDF_DLL
+        Pipeline& operator<<(int);
+        QPDF_DLL
+        Pipeline& operator<<(long);
+        QPDF_DLL
+        Pipeline& operator<<(long long);
+        QPDF_DLL
+        Pipeline& operator<<(unsigned short);
+        QPDF_DLL
+        Pipeline& operator<<(unsigned int);
+        QPDF_DLL
+        Pipeline& operator<<(unsigned long);
+        QPDF_DLL
+        Pipeline& operator<<(unsigned long long);
+
+        // Overloaded write to reduce casting
+        QPDF_DLL
+        void write(char const* data, size_t len);
+
+      protected:
+        QPDF_DLL
+        Pipeline*
+        next() const noexcept
+        {
+            return next_;
+        }
+        std::string identifier;
+        ::Pipeline* legacy_{nullptr};
+
+      private:
+        Pipeline(Pipeline const&) = delete;
+        Pipeline& operator=(Pipeline const&) = delete;
+
+        Pipeline* next_;
+    };
+
+} // namespace qpdf::pl
 
 // Remember to use QPDF_DLL_CLASS on anything derived from Pipeline so it will work with
 // dynamic_cast across the shared object boundary.
@@ -112,5 +194,70 @@ class QPDF_DLL_CLASS Pipeline
 
     Pipeline* next_;
 };
+
+// Legacy Pipeline class to wrap a qpdf::pl::Pipeline. Used to provide backward compatibility only.
+class NewPipeline final: public Pipeline
+{
+  public:
+    NewPipeline(qpdf::pl::Pipeline& p) :
+        Pipeline(p.getIdentifier().data(), nullptr),
+        p(p)
+    {
+    }
+
+    ~NewPipeline() final = default;
+
+    void write(unsigned char const* data, size_t len) final
+    {
+        p.write(data, len);
+    }
+    void finish() final
+    {   p.finish();
+
+    }
+
+  private:
+    NewPipeline(Pipeline const&) = delete;
+    NewPipeline& operator=(Pipeline const&) = delete;
+
+    qpdf::pl::Pipeline& p;
+};
+
+namespace qpdf::pl
+{
+    class Legacy final : public Pipeline
+    {
+      public:
+        QPDF_DLL
+        explicit Legacy(::Pipeline& legacy) :
+            Pipeline(legacy)
+        {
+        }
+
+        ~Legacy() final = default;
+
+        // Subclasses should implement write and finish to do their jobs and then, if they are not
+        // end-of-line pipelines, call getNext()->write or getNext()->finish.
+        void write(unsigned char const* data, size_t len) final
+        {
+            legacy_-> write(data, len);
+        }
+
+        void finish() final
+        {
+            legacy_->finish();
+        }
+    };
+
+    inline Pipeline::Pipeline(::Pipeline& legacy) :
+        legacy_(&legacy)
+    {
+    }
+
+    inline std::string Pipeline::getIdentifier() const
+    {
+        return legacy_ ? legacy_->getIdentifier() : identifier;
+    }
+} // namespace qpdf::pl
 
 #endif // PIPELINE_HH

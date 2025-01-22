@@ -839,7 +839,7 @@ QPDF::writeJSON(
 void
 QPDF::writeJSON(
     int version,
-    Pipeline* p,
+    Pipeline* lp,
     bool complete,
     bool& first_key,
     qpdf_stream_decode_level_e decode_level,
@@ -847,9 +847,11 @@ QPDF::writeJSON(
     std::string const& file_prefix,
     std::set<std::string> wanted_objects)
 {
+
     if (version != 2) {
         throw std::runtime_error("QPDF::writeJSON: only version 2 is supported");
     }
+    qpdf::pl::Legacy p{*lp};
     JSON::Writer jw{p, 4};
     if (complete) {
         jw << "{";
@@ -916,6 +918,6 @@ QPDF::writeJSON(
     /* clang-format on */
     if (complete) {
         jw << "\n}\n";
-        p->finish();
+        p.finish();
     }
 }

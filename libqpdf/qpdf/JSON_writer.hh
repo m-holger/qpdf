@@ -16,7 +16,7 @@
 class JSON::Writer
 {
   public:
-    Writer(Pipeline* p, size_t depth) :
+    Writer(qpdf::pl::Pipeline& p, size_t depth) :
         p(p),
         indent(2 * depth)
     {
@@ -25,15 +25,15 @@ class JSON::Writer
     Writer&
     write(char const* data, size_t len)
     {
-        p->write(reinterpret_cast<unsigned char const*>(data), len);
+        p.write(reinterpret_cast<unsigned char const*>(data), len);
         return *this;
     }
 
     Writer&
     writeBase64(std::string_view sv)
     {
-        Pl_Concatenate cat{"writer concat", p};
-        Pl_Base64 base{"writer base64", &cat, Pl_Base64::a_encode};
+        qpdf::pl::Concatenate cat{"writer concat", p};
+        qpdf::pl::Base64 base{"writer base64", &cat, qpdf::pl::Base64::a_encode};
         base.write(reinterpret_cast<unsigned char const*>(sv.data()), sv.size());
         base.finish();
         return *this;
@@ -83,7 +83,7 @@ class JSON::Writer
     Writer&
     operator<<(std::string_view sv)
     {
-        p->write(reinterpret_cast<unsigned char const*>(sv.data()), sv.size());
+        p.write(reinterpret_cast<unsigned char const*>(sv.data()), sv.size());
         return *this;
     }
 
@@ -125,7 +125,7 @@ class JSON::Writer
     static std::string encode_string(std::string const& utf8);
 
   private:
-    Pipeline* p;
+    qpdf::pl::Pipeline& p;
     bool first{true};
     size_t indent;
 

@@ -184,7 +184,8 @@ QPDF_Stream::getStreamJSON(
     std::string const& data_filename)
 {
     Pl_Buffer pb{"streamjson"};
-    JSON::Writer jw{&pb, 0};
+    qpdf::pl::Legacy lp{pb};
+    JSON::Writer jw{lp, 0};
     decode_level =
         writeStreamJSON(json_version, jw, json_data, decode_level, p, data_filename, true);
     pb.finish();

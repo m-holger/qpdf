@@ -34,6 +34,18 @@ JSON::writeClose(Pipeline* p, bool first, size_t depth, char const* delimiter)
 }
 
 void
+JSON::writeClose(qpdf::pl::Pipeline& p, bool first, size_t depth, char const* delimiter)
+{
+    if (first) {
+        p << delimiter;
+    } else {
+        std::string s{"\n"};
+        s.append(2 * depth, ' ');
+        p << s + delimiter;
+    }
+}
+
+void
 JSON::writeNext(Pipeline* p, bool& first, size_t depth)
 {
     if (first) {
@@ -46,6 +58,28 @@ JSON::writeNext(Pipeline* p, bool& first, size_t depth)
         s.append(2 * depth, ' ');
         *p << s;
     }
+}
+
+void
+JSON::writeNext(qpdf::pl::Pipeline& p, bool& first, size_t depth)
+{
+    if (first) {
+        first = false;
+        std::string s{"\n"};
+        s.append(2 * depth, ' ');
+        p << s;
+    } else {
+        std::string s{",\n"};
+        s.append(2 * depth, ' ');
+        p << s;
+    }
+}
+
+void
+JSON::writeDictionaryOpen(qpdf::pl::Pipeline& p, bool& first, size_t depth)
+{
+    p << "{";
+    first = true;
 }
 
 void
@@ -63,13 +97,32 @@ JSON::writeArrayOpen(Pipeline* p, bool& first, size_t depth)
 }
 
 void
+JSON::writeArrayOpen(qpdf::pl::Pipeline& p, bool& first, size_t depth)
+{
+    p << "[";
+    first = true;
+}
+
+void
 JSON::writeDictionaryClose(Pipeline* p, bool first, size_t depth)
 {
     writeClose(p, first, depth, "}");
 }
 
 void
+JSON::writeDictionaryClose(qpdf::pl::Pipeline& p, bool first, size_t depth)
+{
+    writeClose(p, first, depth, "}");
+}
+
+void
 JSON::writeArrayClose(Pipeline* p, bool first, size_t depth)
+{
+    writeClose(p, first, depth, "]");
+}
+
+void
+JSON::writeArrayClose(qpdf::pl::Pipeline& p, bool first, size_t depth)
 {
     writeClose(p, first, depth, "]");
 }
@@ -82,8 +135,23 @@ JSON::writeDictionaryKey(Pipeline* p, bool& first, std::string const& key, size_
 }
 
 void
+JSON::writeDictionaryKey(qpdf::pl::Pipeline& p, bool& first, std::string const& key, size_t depth)
+{
+    writeNext(p, first, depth);
+    p << std::string("\"") + key + "\": ";
+}
+
+void
 JSON::writeDictionaryItem(
     Pipeline* p, bool& first, std::string const& key, JSON const& value, size_t depth)
+{
+    writeDictionaryKey(p, first, key, depth);
+    value.write(p, depth);
+}
+
+void
+JSON::writeDictionaryItem(
+    qpdf::pl::Pipeline& p, bool& first, std::string const& key, JSON const& value, size_t depth)
 {
     writeDictionaryKey(p, first, key, depth);
     value.write(p, depth);
@@ -97,7 +165,14 @@ JSON::writeArrayItem(Pipeline* p, bool& first, JSON const& element, size_t depth
 }
 
 void
-JSON::JSON_dictionary::write(Pipeline* p, size_t depth) const
+JSON::writeArrayItem(qpdf::pl::Pipeline& p, bool& first, JSON const& element, size_t depth)
+{
+    writeNext(p, first, depth);
+    element.write(p, depth);
+}
+
+void
+JSON::JSON_dictionary::write(qpdf::pl::Pipeline& p, size_t depth) const
 {
     bool first = true;
     writeDictionaryOpen(p, first, depth);
@@ -108,7 +183,7 @@ JSON::JSON_dictionary::write(Pipeline* p, size_t depth) const
 }
 
 void
-JSON::JSON_array::write(Pipeline* p, size_t depth) const
+JSON::JSON_array::write(qpdf::pl::Pipeline& p, size_t depth) const
 {
     bool first = true;
     writeArrayOpen(p, first, depth);
@@ -126,9 +201,9 @@ JSON::JSON_string::JSON_string(std::string const& utf8) :
 }
 
 void
-JSON::JSON_string::write(Pipeline* p, size_t) const
+JSON::JSON_string::write(qpdf::pl::Pipeline& p, size_t) const
 {
-    *p << std::string("\"") + encoded + "\"";
+    p << std::string("\"") + encoded + "\"";
 }
 
 JSON::JSON_number::JSON_number(long long value) :
@@ -150,9 +225,9 @@ JSON::JSON_number::JSON_number(std::string const& value) :
 }
 
 void
-JSON::JSON_number::write(Pipeline* p, size_t) const
+JSON::JSON_number::write(qpdf::pl::Pipeline& p, size_t) const
 {
-    *p << encoded;
+    p << encoded;
 }
 
 JSON::JSON_bool::JSON_bool(bool val) :
@@ -162,39 +237,60 @@ JSON::JSON_bool::JSON_bool(bool val) :
 }
 
 void
-JSON::JSON_bool::write(Pipeline* p, size_t) const
+JSON::JSON_bool::write(qpdf::pl::Pipeline& p, size_t) const
 {
-    *p << (value ? "true" : "false");
+    p << (value ? "true" : "false");
 }
 
 void
-JSON::JSON_null::write(Pipeline* p, size_t) const
+JSON::JSON_null::write(qpdf::pl::Pipeline& p, size_t) const
 {
-    *p << "null";
+    p << "null";
 }
 
-JSON::JSON_blob::JSON_blob(std::function<void(Pipeline*)> fn) :
+JSON::JSON_blob::JSON_blob(std::function<void(qpdf::pl::Pipeline&)> fn) :
     JSON_value(vt_blob),
     fn(fn)
 {
 }
 
-void
-JSON::JSON_blob::write(Pipeline* p, size_t) const
+JSON::JSON_blob::JSON_blob(std::function<void(Pipeline*)> lfn) :
+    JSON_value(vt_blob),
+    lfn(lfn),
+    fn([this](qpdf::pl::Pipeline& p) -> void {
+        NewPipeline lp{p};
+        this->lfn(&lp);
+    })
 {
-    *p << "\"";
-    Pl_Concatenate cat("blob concatenate", p);
-    Pl_Base64 base64("blob base64", &cat, Pl_Base64::a_encode);
-    fn(&base64);
-    base64.finish();
-    *p << "\"";
 }
 
 void
-JSON::write(Pipeline* p, size_t depth) const
+JSON::JSON_blob::write(qpdf::pl::Pipeline& p, size_t) const
+{
+    p << "\"";
+    qpdf::pl::Concatenate cat("blob concatenate", p);
+    qpdf::pl::Base64 base64("blob base64", &cat, qpdf::pl::Base64::a_encode);
+    fn(base64);
+    base64.finish();
+    p << "\"";
+}
+
+void
+JSON::write(Pipeline* lp, size_t depth) const
+{
+    qpdf::pl::Legacy p{*lp};
+    if (!m) {
+        p << "null";
+    } else {
+        m->value->write(p, depth);
+    }
+}
+
+void
+JSON::write(qpdf::pl::Pipeline& p, size_t depth) const
 {
     if (!m) {
-        *p << "null";
+        p << "null";
     } else {
         m->value->write(p, depth);
     }

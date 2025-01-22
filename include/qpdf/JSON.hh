@@ -30,6 +30,7 @@
 
 #include <qpdf/DLL.h>
 #include <qpdf/PointerHolder.hh> // unused -- remove in qpdf 12 (see #785)
+#include <qpdf/Pipeline.hh>
 #include <qpdf/Types.h>
 
 #include <functional>
@@ -40,7 +41,6 @@
 #include <string>
 #include <vector>
 
-class Pipeline;
 class InputSource;
 
 class JSON
@@ -59,6 +59,8 @@ class JSON
     // incrementally.
     QPDF_DLL
     void write(Pipeline*, size_t depth = 0) const;
+    QPDF_DLL
+    void write(qpdf::pl::Pipeline&, size_t depth = 0) const;
 
     // Helper methods for writing JSON incrementally.
     //
@@ -79,24 +81,40 @@ class JSON
     QPDF_DLL
     static void writeDictionaryOpen(Pipeline*, bool& first, size_t depth = 0);
     QPDF_DLL
+    static void writeDictionaryOpen(qpdf::pl::Pipeline&, bool& first, size_t depth = 0);
+    QPDF_DLL
     static void writeArrayOpen(Pipeline*, bool& first, size_t depth = 0);
+    QPDF_DLL
+    static void writeArrayOpen(qpdf::pl::Pipeline&, bool& first, size_t depth = 0);
     // Close methods don't modify first. A true value indicates that we are closing an empty object.
     QPDF_DLL
     static void writeDictionaryClose(Pipeline*, bool first, size_t depth = 0);
     QPDF_DLL
+    static void writeDictionaryClose(qpdf::pl::Pipeline&, bool first, size_t depth = 0);
+    QPDF_DLL
     static void writeArrayClose(Pipeline*, bool first, size_t depth = 0);
+    QPDF_DLL
+    static void writeArrayClose(qpdf::pl::Pipeline&, bool first, size_t depth = 0);
     // The item methods use the value of first to determine if this is the first item and always set
     // it to false.
     QPDF_DLL
     static void writeDictionaryItem(
         Pipeline*, bool& first, std::string const& key, JSON const& value, size_t depth = 0);
+    QPDF_DLL
+    static void writeDictionaryItem(
+        qpdf::pl::Pipeline&, bool& first, std::string const& key, JSON const& value, size_t depth = 0);
     // Write just the key of a new dictionary item, useful if writing nested structures. Calls
     // writeNext.
     QPDF_DLL
     static void
     writeDictionaryKey(Pipeline* p, bool& first, std::string const& key, size_t depth = 0);
     QPDF_DLL
+    static void
+    writeDictionaryKey(qpdf::pl::Pipeline&, bool& first, std::string const& key, size_t depth = 0);
+    QPDF_DLL
     static void writeArrayItem(Pipeline*, bool& first, JSON const& element, size_t depth = 0);
+    QPDF_DLL
+    static void writeArrayItem(qpdf::pl::Pipeline&, bool& first, JSON const& element, size_t depth = 0);
     // If writing nested structures incrementally, call writeNext before opening a new array or
     // container in the midst of an existing one. The `first` you pass to writeNext should be the
     // one for the parent object. The depth should be the one for the child object. Then start a new
@@ -105,6 +123,8 @@ class JSON
     // array.
     QPDF_DLL
     static void writeNext(Pipeline* p, bool& first, size_t depth = 0);
+    QPDF_DLL
+    static void writeNext(qpdf::pl::Pipeline&, bool& first, size_t depth = 0);
 
     // The JSON spec calls dictionaries "objects", but that creates too much confusion when
     // referring to instances of the JSON class.
@@ -296,6 +316,7 @@ class JSON
 
   private:
     static void writeClose(Pipeline* p, bool first, size_t depth, char const* delimeter);
+    static void writeClose(qpdf::pl::Pipeline& p, bool first, size_t depth, char const* delimeter);
 
     enum value_type_e {
         vt_none,
@@ -315,60 +336,62 @@ class JSON
         {
         }
         virtual ~JSON_value() = default;
-        virtual void write(Pipeline*, size_t depth) const = 0;
+        virtual void write(qpdf::pl::Pipeline&, size_t depth) const = 0;
         const value_type_e type_code{vt_none};
     };
-    struct JSON_dictionary: public JSON_value
+    struct JSON_dictionary final: public JSON_value
     {
         JSON_dictionary() :
             JSON_value(vt_dictionary)
         {
         }
-        ~JSON_dictionary() override = default;
-        void write(Pipeline*, size_t depth) const override;
+        ~JSON_dictionary() final = default;
+        void write(qpdf::pl::Pipeline&, size_t depth) const final;
         std::map<std::string, JSON> members;
         std::set<std::string> parsed_keys;
     };
     struct JSON_array;
-    struct JSON_string: public JSON_value
+    struct JSON_string final: public JSON_value
     {
         JSON_string(std::string const& utf8);
-        ~JSON_string() override = default;
-        void write(Pipeline*, size_t depth) const override;
+        ~JSON_string() final = default;
+        void write(qpdf::pl::Pipeline&, size_t depth) const final;
         std::string utf8;
         std::string encoded;
     };
-    struct JSON_number: public JSON_value
+    struct JSON_number final: public JSON_value
     {
         JSON_number(long long val);
         JSON_number(double val);
         JSON_number(std::string const& val);
-        ~JSON_number() override = default;
-        void write(Pipeline*, size_t depth) const override;
+        ~JSON_number() final = default;
+        void write(qpdf::pl::Pipeline&, size_t depth) const final;
         std::string encoded;
     };
-    struct JSON_bool: public JSON_value
+    struct JSON_bool final: public JSON_value
     {
         JSON_bool(bool val);
-        ~JSON_bool() override = default;
-        void write(Pipeline*, size_t depth) const override;
+        ~JSON_bool() final = default;
+        void write(qpdf::pl::Pipeline&, size_t depth) const final;
         bool value;
     };
-    struct JSON_null: public JSON_value
+    struct JSON_null final: public JSON_value
     {
         JSON_null() :
             JSON_value(vt_null)
         {
         }
-        ~JSON_null() override = default;
-        void write(Pipeline*, size_t depth) const override;
+        ~JSON_null() final = default;
+        void write(qpdf::pl::Pipeline&, size_t depth) const final;
     };
-    struct JSON_blob: public JSON_value
+    struct JSON_blob final: public JSON_value
     {
-        JSON_blob(std::function<void(Pipeline*)> fn);
-        ~JSON_blob() override = default;
-        void write(Pipeline*, size_t depth) const override;
-        std::function<void(Pipeline*)> fn;
+        JSON_blob(std::function<void(qpdf::pl::Pipeline&)> fn);
+        JSON_blob(std::function<void(Pipeline*)> lfn);
+        ~JSON_blob() final = default;
+        void write(qpdf::pl::Pipeline&, size_t depth) const final;
+        std::function<void(Pipeline*)> lfn;
+        std::function<void(qpdf::pl::Pipeline&)> fn;
     };
 
     JSON(std::unique_ptr<JSON_value>);
@@ -401,14 +424,14 @@ class JSON
     std::shared_ptr<Members> m;
 };
 
-struct JSON::JSON_array: public JSON_value
+struct JSON::JSON_array final: public JSON_value
 {
     JSON_array() :
         JSON_value(vt_array)
     {
     }
-    ~JSON_array() override = default;
-    void write(Pipeline*, size_t depth) const override;
+    ~JSON_array() final = default;
+    void write(qpdf::pl::Pipeline&, size_t depth) const final;
     std::vector<JSON> elements;
 };
 
