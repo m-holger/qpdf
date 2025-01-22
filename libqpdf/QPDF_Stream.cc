@@ -334,7 +334,7 @@ QPDF_Stream::getStreamDataProvider() const
     return this->stream_provider;
 }
 
-std::shared_ptr<Buffer>
+std::string
 QPDF_Stream::getStreamData(qpdf_stream_decode_level_e decode_level)
 {
     Pl_Buffer buf("stream data buffer");
@@ -349,10 +349,10 @@ QPDF_Stream::getStreamData(qpdf_stream_decode_level_e decode_level)
             "getStreamData called on unfilterable stream");
     }
     QTC::TC("qpdf", "QPDF_Stream getStreamData");
-    return buf.getBufferSharedPointer();
+    return buf.getString();
 }
 
-std::shared_ptr<Buffer>
+std::string
 QPDF_Stream::getRawStreamData()
 {
     Pl_Buffer buf("stream data buffer");
@@ -365,7 +365,7 @@ QPDF_Stream::getRawStreamData()
             "error getting raw stream data");
     }
     QTC::TC("qpdf", "QPDF_Stream getRawStreamData");
-    return buf.getBufferSharedPointer();
+    return buf.getString();
 }
 
 bool

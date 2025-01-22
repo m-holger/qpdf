@@ -1611,13 +1611,13 @@ QPDFObjectHandle::replaceDict(QPDFObjectHandle const& new_dict)
 std::shared_ptr<Buffer>
 QPDFObjectHandle::getStreamData(qpdf_stream_decode_level_e level)
 {
-    return asStreamWithAssert()->getStreamData(level);
+    return std::make_shared<Buffer>(asStreamWithAssert()->getStreamData(level));
 }
 
 std::shared_ptr<Buffer>
 QPDFObjectHandle::getRawStreamData()
 {
-    return asStreamWithAssert()->getRawStreamData();
+    return std::make_shared<Buffer>(asStreamWithAssert()->getRawStreamData());
 }
 
 bool

@@ -43,8 +43,8 @@ class QPDF_Stream final: public QPDFValue
         qpdf_stream_decode_level_e decode_level,
         bool suppress_warnings,
         bool will_retry);
-    std::shared_ptr<Buffer> getStreamData(qpdf_stream_decode_level_e);
-    std::shared_ptr<Buffer> getRawStreamData();
+    std::string getStreamData(qpdf_stream_decode_level_e);
+    std::string getRawStreamData();
     void replaceStreamData(
         std::shared_ptr<Buffer> data,
         QPDFObjectHandle const& filter,
