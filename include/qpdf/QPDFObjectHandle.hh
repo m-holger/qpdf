@@ -1386,7 +1386,7 @@ class QPDFObjectHandle
     void setParsedOffset(qpdf_offset_t offset);
     void parseContentStream_internal(std::string const& description, ParserCallbacks* callbacks);
     static void parseContentStream_data(
-        std::shared_ptr<Buffer>,
+        std::string const&,
         std::string const& description,
         ParserCallbacks* callbacks,
         QPDF* context);

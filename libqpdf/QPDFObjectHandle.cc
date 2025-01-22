@@ -24,6 +24,7 @@
 #include <qpdf/QPDF_Stream.hh>
 #include <qpdf/QPDF_String.hh>
 #include <qpdf/QPDF_Unresolved.hh>
+#include <qpdf/StringViewInputSource.hh>
 
 #include <qpdf/QIntC.hh>
 #include <qpdf/QTC.hh>
@@ -2135,8 +2136,8 @@ QPDFObjectHandle::parseContentStream_internal(
     Pl_Buffer buf("concatenated stream data buffer");
     std::string all_description;
     pipeContentStreams(&buf, description, all_description);
-    auto stream_data = buf.getBufferSharedPointer();
-    callbacks->contentSize(stream_data->getSize());
+    auto stream_data = buf.getString();
+    callbacks->contentSize(stream_data.size());
     try {
         parseContentStream_data(stream_data, all_description, callbacks, getOwningQPDF());
     } catch (TerminateParsing&) {
@@ -2147,51 +2148,50 @@ QPDFObjectHandle::parseContentStream_internal(
 
 void
 QPDFObjectHandle::parseContentStream_data(
-    std::shared_ptr<Buffer> stream_data,
+    std::string const& stream_data,
     std::string const& description,
     ParserCallbacks* callbacks,
     QPDF* context)
 {
-    size_t stream_length = stream_data->getSize();
-    auto input =
-        std::shared_ptr<InputSource>(new BufferInputSource(description, stream_data.get()));
+    size_t stream_length = stream_data.size();
+    auto input = StringViewInputSource(description, stream_data);
     QPDFTokenizer tokenizer;
     tokenizer.allowEOF();
     bool empty = false;
-    while (QIntC::to_size(input->tell()) < stream_length) {
+    while (QIntC::to_size(input.tell()) < stream_length) {
         // Read a token and seek to the beginning. The offset we get from this process is the
         // beginning of the next non-ignorable (space, comment) token. This way, the offset and
         // don't including ignorable content.
         tokenizer.readToken(input, "content", true);
-        qpdf_offset_t offset = input->getLastOffset();
-        input->seek(offset, SEEK_SET);
+        qpdf_offset_t offset = input.getLastOffset();
+        input.seek(offset, SEEK_SET);
         auto obj =
-            QPDFParser(*input, "content", tokenizer, nullptr, context, false).parse(empty, true);
+            QPDFParser(input, "content", tokenizer, nullptr, context, false).parse(empty, true);
         if (!obj) {
             // EOF
             break;
         }
-        size_t length = QIntC::to_size(input->tell() - offset);
+        size_t length = QIntC::to_size(input.tell() - offset);
 
         callbacks->handleObject(obj, QIntC::to_size(offset), length);
         if (obj.isOperator() && (obj.getOperatorValue() == "ID")) {
             // Discard next character; it is the space after ID that terminated the token.  Read
             // until end of inline image.
             char ch;
-            input->read(&ch, 1);
+            input.read(&ch, 1);
             tokenizer.expectInlineImage(input);
             QPDFTokenizer::Token t = tokenizer.readToken(input, description, true);
-            offset = input->getLastOffset();
-            length = QIntC::to_size(input->tell() - offset);
+            offset = input.getLastOffset();
+            length = QIntC::to_size(input.tell() - offset);
             if (t.getType() == QPDFTokenizer::tt_bad) {
                 QTC::TC("qpdf", "QPDFObjectHandle EOF in inline image");
                 warn(
                     context,
                     QPDFExc(
                         qpdf_e_damaged_pdf,
-                        input->getName(),
+                        input.getName(),
                         "stream data",
-                        input->tell(),
+                        input.tell(),
                         "EOF found while reading inline image"));
             } else {
                 std::string inline_image = t.getValue();
