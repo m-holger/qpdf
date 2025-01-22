@@ -2298,16 +2298,15 @@ QPDFWriter::writeHeader()
 void
 QPDFWriter::writeHintStream(int hint_id)
 {
-    std::shared_ptr<Buffer> hint_buffer;
     int S = 0;
     int O = 0;
     bool compressed = (m->compress_streams && !m->qdf_mode);
-    QPDF::Writer::generateHintStream(m->pdf, m->new_obj, m->obj, hint_buffer, S, O, compressed);
+    auto hint_buffer = QPDF::Writer::generateHintStream(m->pdf, m->new_obj, m->obj, S, O, compressed);
 
     openObject(hint_id);
     setDataKey(hint_id);
 
-    size_t hlen = hint_buffer->getSize();
+    size_t hlen = hint_buffer.size();
 
     writeString("<< ");
     if (compressed) {
@@ -2331,7 +2330,7 @@ QPDFWriter::writeHintStream(int hint_id)
     {
         PipelinePopper pp_enc(this);
         pushEncryptionFilter(pp_enc);
-        writeBuffer(hint_buffer);
+        writeString(hint_buffer);
         last_char = m->pipeline->getLastChar();
     }
 

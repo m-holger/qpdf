@@ -821,10 +821,9 @@ class QPDF
         std::vector<QPDFObjectHandle>& part8,
         std::vector<QPDFObjectHandle>& part9);
 
-    void generateHintStream(
+    std::string generateHintStream(
         QPDFWriter::NewObjTable const& new_obj,
         QPDFWriter::ObjTable const& obj,
-        std::shared_ptr<Buffer>& hint_stream,
         int& S,
         int& O,
         bool compressed);

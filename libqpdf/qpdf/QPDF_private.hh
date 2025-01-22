@@ -505,17 +505,16 @@ class QPDF::Writer
         qpdf.getLinearizedParts(obj, part4, part6, part7, part8, part9);
     }
 
-    static void
+    static std::string
     generateHintStream(
         QPDF& qpdf,
         QPDFWriter::NewObjTable const& new_obj,
         QPDFWriter::ObjTable const& obj,
-        std::shared_ptr<Buffer>& hint_stream,
         int& S,
         int& O,
         bool compressed)
     {
-        return qpdf.generateHintStream(new_obj, obj, hint_stream, S, O, compressed);
+        return qpdf.generateHintStream(new_obj, obj, S, O, compressed);
     }
 
     static std::vector<QPDFObjGen>

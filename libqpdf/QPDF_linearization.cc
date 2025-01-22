@@ -1749,11 +1749,10 @@ QPDF::writeHGeneric(BitWriter& w, HGeneric& t)
     w.writeBitsInt(t.group_length, 32);            // 4
 }
 
-void
+std::string
 QPDF::generateHintStream(
     QPDFWriter::NewObjTable const& new_obj,
     QPDFWriter::ObjTable const& obj,
-    std::shared_ptr<Buffer>& hint_buffer,
     int& S,
     int& O,
     bool compressed)
@@ -1786,5 +1785,5 @@ QPDF::generateHintStream(
     }
     c.finish();
 
-    hint_buffer = hint_stream.getBufferSharedPointer();
+    return hint_stream.getString();
 }
