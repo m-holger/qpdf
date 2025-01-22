@@ -456,6 +456,12 @@ JSON::makeBlob(std::function<void(Pipeline*)> fn)
     return {std::make_unique<JSON_blob>(fn)};
 }
 
+JSON
+JSON::makeBlob(std::function<void(qpdf::pl::Pipeline&)> fn)
+{
+    return {std::make_unique<JSON_blob>(fn)};
+}
+
 bool
 JSON::isArray() const
 {

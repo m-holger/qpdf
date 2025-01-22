@@ -61,7 +61,7 @@ namespace
     {
       public:
         StreamBlobProvider(QPDF_Stream* stream, qpdf_stream_decode_level_e decode_level);
-        void operator()(Pipeline*);
+        void operator()(qpdf::pl::Pipeline&);
 
       private:
         QPDF_Stream* stream;
@@ -101,9 +101,10 @@ StreamBlobProvider::StreamBlobProvider(
 }
 
 void
-StreamBlobProvider::operator()(Pipeline* p)
+StreamBlobProvider::operator()(qpdf::pl::Pipeline& p)
 {
-    this->stream->pipeStreamData(p, nullptr, 0, decode_level, false, false);
+    NewPipeline np(p);
+    stream->pipeStreamData(&np, nullptr, 0, decode_level, false, false);
 }
 
 QPDF_Stream::QPDF_Stream(

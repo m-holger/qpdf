@@ -156,6 +156,8 @@ class JSON
     // time.
     QPDF_DLL
     static JSON makeBlob(std::function<void(Pipeline*)>);
+    QPDF_DLL
+    static JSON makeBlob(std::function<void(qpdf::pl::Pipeline&)>);
 
     QPDF_DLL
     bool isArray() const;
