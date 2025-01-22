@@ -66,43 +66,81 @@ namespace qpdf::pl
         // Subclasses should implement write and finish to do their jobs and then, if they are not
         // end-of-line pipelines, call getNext()->write or getNext()->finish.
         QPDF_DLL
-        virtual void write(unsigned char const* data, size_t len) = 0;
+        virtual void write(std::string_view data) = 0;
         QPDF_DLL
         virtual void finish() = 0;
         QPDF_DLL
         inline std::string getIdentifier() const;
 
-        // These are convenience methods for making it easier to write certain other types of data
-        // to pipelines without having to cast. The methods that take char const* expect
-        // null-terminated C strings and do not write the null terminators.
-        QPDF_DLL
-        void writeCStr(char const* cstr);
-        QPDF_DLL
-        void writeString(std::string const&);
-        // This allows *p << "x" << "y" but is not intended to be a general purpose << compatible
-        // with ostream and does not have local awareness or the ability to be "imbued" with
-        // properties.
-        QPDF_DLL Pipeline& operator<<(char const* cstr);
-        QPDF_DLL Pipeline& operator<<(std::string const&);
-        QPDF_DLL Pipeline& operator<<(short);
-        QPDF_DLL
-        Pipeline& operator<<(int);
-        QPDF_DLL
-        Pipeline& operator<<(long);
-        QPDF_DLL
-        Pipeline& operator<<(long long);
-        QPDF_DLL
-        Pipeline& operator<<(unsigned short);
-        QPDF_DLL
-        Pipeline& operator<<(unsigned int);
-        QPDF_DLL
-        Pipeline& operator<<(unsigned long);
-        QPDF_DLL
-        Pipeline& operator<<(unsigned long long);
+        Pipeline&
+        operator<<(char const* cstr)
+        {
+            write(cstr);
+            return *this;
+        }
 
-        // Overloaded write to reduce casting
-        QPDF_DLL
-        void write(char const* data, size_t len);
+        Pipeline&
+        operator<<(std::string const& str)
+        {
+            write(str);
+            return *this;
+        }
+
+        Pipeline&
+        operator<<(short i)
+        {
+            write(std::to_string(i));
+            return *this;
+        }
+
+        Pipeline&
+        operator<<(int i)
+        {
+            write(std::to_string(i));
+            return *this;
+        }
+
+        Pipeline&
+        operator<<(long i)
+        {
+            write(std::to_string(i));
+            return *this;
+        }
+
+        Pipeline&
+        operator<<(long long i)
+        {
+            write(std::to_string(i));
+            return *this;
+        }
+
+        Pipeline&
+        operator<<(unsigned short i)
+        {
+            write(std::to_string(i));
+            return *this;
+        }
+
+        Pipeline&
+        operator<<(unsigned int i)
+        {
+            write(std::to_string(i));
+            return *this;
+        }
+
+        Pipeline&
+        operator<<(unsigned long i)
+        {
+            write(std::to_string(i));
+            return *this;
+        }
+
+        Pipeline&
+        operator<<(unsigned long long i)
+        {
+            write(std::to_string(i));
+            return *this;
+        }
 
       protected:
         QPDF_DLL
@@ -209,7 +247,7 @@ class NewPipeline final: public Pipeline
 
     void write(unsigned char const* data, size_t len) final
     {
-        p.write(data, len);
+        p.write({reinterpret_cast<char const*>(data), len});
     }
     void finish() final
     {   p.finish();
@@ -238,9 +276,9 @@ namespace qpdf::pl
 
         // Subclasses should implement write and finish to do their jobs and then, if they are not
         // end-of-line pipelines, call getNext()->write or getNext()->finish.
-        void write(unsigned char const* data, size_t len) final
+        void write(std::string_view data) final
         {
-            legacy_-> write(data, len);
+            legacy_-> write(reinterpret_cast<unsigned char const*>(data.data()), data.size());
         }
 
         void finish() final

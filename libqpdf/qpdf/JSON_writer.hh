@@ -25,7 +25,7 @@ class JSON::Writer
     Writer&
     write(char const* data, size_t len)
     {
-        p.write(reinterpret_cast<unsigned char const*>(data), len);
+        p.write({data, len});
         return *this;
     }
 
@@ -34,7 +34,7 @@ class JSON::Writer
     {
         qpdf::pl::Concatenate cat{"writer concat", p};
         qpdf::pl::Base64 base{"writer base64", &cat, qpdf::pl::Base64::a_encode};
-        base.write(reinterpret_cast<unsigned char const*>(sv.data()), sv.size());
+        base.write(sv);
         base.finish();
         return *this;
     }
@@ -83,7 +83,7 @@ class JSON::Writer
     Writer&
     operator<<(std::string_view sv)
     {
-        p.write(reinterpret_cast<unsigned char const*>(sv.data()), sv.size());
+        p.write(sv);
         return *this;
     }
 

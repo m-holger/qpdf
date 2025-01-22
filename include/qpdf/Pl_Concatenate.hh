@@ -40,9 +40,9 @@ namespace qpdf::pl {
         ~Concatenate() final = default;
 
         void
-        write(unsigned char const* data, size_t len) final
+        write(std::string_view data) final
         {
-            next()->write(data, len);
+            next()->write(data);
         }
 
         void

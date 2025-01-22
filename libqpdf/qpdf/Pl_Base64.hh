@@ -10,12 +10,12 @@ namespace qpdf::pl {
         enum action_e { a_encode, a_decode };
         Base64(char const* identifier, Pipeline* next, action_e);
         ~Base64() final = default;
-        void write(unsigned char const* buf, size_t len) final;
+        void write(std::string_view data) final;
         void finish() final;
 
       private:
-        void decode(unsigned char const* buf, size_t len);
-        void encode(unsigned char const* buf, size_t len);
+        void decode(std::string_view buf);
+        void encode(std::string_view buf);
         void flush();
         void flush_decode();
         void flush_encode();

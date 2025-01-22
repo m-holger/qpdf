@@ -198,22 +198,23 @@ namespace qpdf::pl
     }
 
     void
-    Base64::write(unsigned char const* data, size_t len)
+    Base64::write(std::string_view data)
     {
         if (finished) {
             throw std::logic_error("Base64 used after finished");
         }
         if (this->action == a_decode) {
-            decode(data, len);
+            decode(data);
         } else {
-            encode(data, len);
+            encode(data);
         }
     }
 
     void
-    Base64::decode(unsigned char const* data, size_t len)
+    Base64::decode(std::string_view sv)
     {
-        unsigned char const* p = data;
+        auto p = reinterpret_cast<unsigned char const*>(sv.data());
+        auto len = sv.size();
         while (len > 0) {
             if (!QUtil::is_space(to_c(*p))) {
                 this->buf[this->pos++] = *p;
@@ -227,9 +228,10 @@ namespace qpdf::pl
     }
 
     void
-    Base64::encode(unsigned char const* data, size_t len)
+    Base64::encode(std::string_view sv)
     {
-        unsigned char const* p = data;
+        auto p = reinterpret_cast<unsigned char const*>(sv.data());
+        auto len = sv.size();
         while (len > 0) {
             this->buf[this->pos++] = *p;
             if (this->pos == 3) {
@@ -290,7 +292,7 @@ namespace qpdf::pl
             to_uc(0xff & outval),
         };
 
-        next()->write(out, QIntC::to_size(3 - pad));
+        next()->write({reinterpret_cast<char const*>(out), QIntC::to_size(3 - pad)});
     }
 
     void
@@ -323,7 +325,7 @@ namespace qpdf::pl
         for (size_t i = 0; i < 3 - this->pos; ++i) {
             out[3 - i] = '=';
         }
-        next()->write(out, 4);
+        next()->write({reinterpret_cast<char const*>(out), 4});
     }
 
     void
