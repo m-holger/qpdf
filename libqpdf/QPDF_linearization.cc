@@ -260,10 +260,9 @@ QPDF::readLinearizationData()
     QPDFObjectHandle HS = H0.getKey("/S"); // shared object
     QPDFObjectHandle HO = H0.getKey("/O"); // outline
 
-    auto hbp = pb.getBufferSharedPointer();
-    Buffer* hb = hbp.get();
-    unsigned char const* h_buf = hb->getBuffer();
-    size_t h_size = hb->getSize();
+    auto hbp = pb.getString();
+    auto h_buf = reinterpret_cast<unsigned char const*>(hbp.data());
+    size_t h_size = hbp.size();
 
     readHPageOffset(BitStream(h_buf, h_size));
 
