@@ -125,12 +125,6 @@ QPDF::ForeignStreamData::ForeignStreamData(
 {
 }
 
-QPDF::CopiedStreamDataProvider::CopiedStreamDataProvider(QPDF& destination_qpdf) :
-    QPDFObjectHandle::StreamDataProvider(true),
-    destination_qpdf(destination_qpdf)
-{
-}
-
 bool
 QPDF::CopiedStreamDataProvider::provideStreamData(
     QPDFObjGen const& og, Pipeline* pipeline, bool suppress_warnings, bool will_retry)

@@ -1545,6 +1545,12 @@ QPDF::readObjectAtOffset(
     return oh;
 }
 
+QPDF::CopiedStreamDataProvider::CopiedStreamDataProvider(QPDF& destination_qpdf) :
+    QPDFObjectHandle::StreamDataProvider(true),
+    destination_qpdf(destination_qpdf)
+{
+}
+
 std::shared_ptr<QPDFObject> const&
 QPDF::resolve(QPDFObjGen og)
 {
