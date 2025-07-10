@@ -25,6 +25,7 @@
 
 #include <bitset>
 #include <cstdio>
+#include <concepts>
 #include <functional>
 #include <list>
 #include <map>
