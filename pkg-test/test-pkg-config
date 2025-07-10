@@ -20,7 +20,7 @@ if [ "$(pkg-config libqpdf --modversion)" != "$WANTED_VERSION" ]; then
     echo 1>&2 "Failed to get correct qpdf version from pkg-config --modversion"
 fi
 pkg-config libqpdf --libs --static
-g++ qpdf-version.cc -o qpdf-version \
+g++ qpdf-version.cc -o -std=c++20 qpdf-version \
     $(pkg-config libqpdf --cflags) \
     $(pkg-config libqpdf --libs)
 if [ "$(./qpdf-version)" != "$WANTED_VERSION" ]; then
