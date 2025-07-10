@@ -840,7 +840,28 @@ QPDFWriter::write(std::string_view str)
 }
 
 QPDFWriter&
-QPDFWriter::write(std::integral auto val)
+QPDFWriter::write(int  val)
+{
+    m->pipeline->write(std::to_string(val));
+    return *this;
+}
+
+QPDFWriter&
+QPDFWriter::write(unsigned int val)
+{
+    m->pipeline->write(std::to_string(val));
+    return *this;
+}
+
+QPDFWriter&
+QPDFWriter::write(unsigned long val)
+{
+    m->pipeline->write(std::to_string(val));
+    return *this;
+}
+
+QPDFWriter&
+QPDFWriter::write(long long  val)
 {
     m->pipeline->write(std::to_string(val));
     return *this;

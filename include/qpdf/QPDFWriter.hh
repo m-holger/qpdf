@@ -25,7 +25,7 @@
 
 #include <bitset>
 #include <cstdio>
-#include <concepts>
+//#include <concepts>
 #include <functional>
 #include <list>
 #include <map>
@@ -484,7 +484,10 @@ class QPDFWriter
     void writeBinary(unsigned long long val, unsigned int bytes);
     QPDFWriter& write(std::string_view str);
     QPDFWriter& write(size_t count, char c);
-    QPDFWriter& write(std::integral auto val);
+    QPDFWriter& write(int  val);
+    QPDFWriter& write(long long  val);
+    QPDFWriter& write(unsigned int val);
+    QPDFWriter& write(unsigned long val);
     QPDFWriter& write_name(std::string const& str);
     QPDFWriter& write_string(std::string const& str, bool force_binary = false);
 
