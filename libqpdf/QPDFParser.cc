@@ -15,6 +15,7 @@ using namespace qpdf;
 
 using ObjectPtr = std::shared_ptr<QPDFObject>;
 
+static uint32_t const& max_nesting{global::Limits::objects_max_nesting()};
 QPDFObjectHandle
 QPDFParser::parse(InputSource& input, std::string const& object_description, QPDF* context)
 {
@@ -409,7 +410,7 @@ QPDFParser::parseRemainder(bool content_stream)
 
         case QPDFTokenizer::tt_array_open:
         case QPDFTokenizer::tt_dict_open:
-            if (stack.size() > 499) {
+            if (stack.size() > max_nesting) {
                 QTC::TC("qpdf", "QPDFParser too deep");
                 warn("ignoring excessively deeply nested data structure");
                 return {QPDFObject::create<QPDF_Null>()};
@@ -563,8 +564,8 @@ template <typename T, typename... Args>
 void
 QPDFParser::addScalar(Args&&... args)
 {
-    if ((bad_count || sanity_checks) &&
-        (frame->olist.size() > 5'000 || frame->dict.size() > 5'000)) {
+    auto limit = Limits::objects_max_container_size(bad_count || sanity_checks);
+    if (frame->olist.size() > limit || frame->dict.size() > limit) {
         // Stop adding scalars. We are going to abort when the close token or a bad token is
         // encountered.
         max_bad_count = 0;
@@ -621,16 +622,17 @@ QPDFParser::fixMissingKeys()
 bool
 QPDFParser::tooManyBadTokens()
 {
-    if (frame->olist.size() > 5'000 || frame->dict.size() > 5'000) {
+    auto limit = Limits::objects_max_container_size(bad_count || sanity_checks);
+    if (frame->olist.size() > limit || frame->dict.size() > limit) {
         if (bad_count) {
             warn(
-                "encountered errors while parsing an array or dictionary with more than 5000 "
-                "elements; giving up on reading object");
+                "encountered errors while parsing an array or dictionary with more than " +
+                std::to_string(limit) + " elements; giving up on reading object");
             return true;
         }
         warn(
-            "encountered an array or dictionary with more than 5000 elements during xref recovery; "
-            "giving up on reading object");
+            "encountered an array or dictionary with more than " + std::to_string(limit) +
+            " elements during xref recovery; giving up on reading object");
     }
     if (max_bad_count && --max_bad_count > 0 && good_count > 4) {
         good_count = 0;
