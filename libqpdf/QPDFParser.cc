@@ -297,7 +297,7 @@ QPDFParser::parseRemainder(bool content_stream)
                     add(QPDF::ParseGuard::getObject(context, id, gen, parse_pdf));
                 } else {
                     QTC::TC("qpdf", "QPDFParser invalid objgen");
-                    addNull();
+                    add_bad_null("treating bad indirect reference as null");
                 }
                 int_count = 0;
                 continue;
