@@ -1164,13 +1164,9 @@ QPDFObjectHandle
 QPDF::readTrailer()
 {
     qpdf_offset_t offset = m->file->tell();
-    auto [object, empty] =
+    auto object =
         QPDFParser::parse(*m->file, "trailer", m->tokenizer, nullptr, *this, m->reconstructed_xref);
-    if (empty) {
-        // Nothing in the PDF spec appears to allow empty objects, but they have been encountered in
-        // actual PDF files and Adobe Reader appears to ignore them.
-        warn(damagedPDF("trailer", "empty object treated as null"));
-    } else if (object.isDictionary() && readToken(*m->file).isWord("stream")) {
+    if (object.isDictionary() && readToken(*m->file).isWord("stream")) {
         warn(damagedPDF("trailer", m->file->tell(), "stream keyword found in trailer"));
     }
     // Override last_offset so that it points to the beginning of the object we just read
@@ -1186,19 +1182,15 @@ QPDF::readObject(std::string const& description, QPDFObjGen og)
 
     StringDecrypter decrypter{this, og};
     StringDecrypter* decrypter_ptr = m->encp->encrypted ? &decrypter : nullptr;
-    auto [object, empty] = QPDFParser::parse(
+    auto object = QPDFParser::parse(
         *m->file,
         m->last_object_description,
         m->tokenizer,
         decrypter_ptr,
         *this,
         m->reconstructed_xref || m->in_read_xref_stream);
-    ;
-    if (empty) {
-        // Nothing in the PDF spec appears to allow empty objects, but they have been encountered in
-        // actual PDF files and Adobe Reader appears to ignore them.
-        warn(damagedPDF(*m->file, m->file->getLastOffset(), "empty object treated as null"));
-        return object;
+    if (!object) {
+        return {};
     }
     auto token = readToken(*m->file);
     if (object.isDictionary() && token.isWord("stream")) {
@@ -1302,24 +1294,6 @@ QPDF::validateStreamLineEnd(QPDFObjectHandle& object, QPDFObjGen og, qpdf_offset
         }
         warn(damagedPDF(m->file->tell(), "stream keyword followed by extraneous whitespace"));
     }
-}
-
-QPDFObjectHandle
-QPDF::readObjectInStream(is::OffsetBuffer& input, int stream_id, int obj_id)
-{
-    auto [object, empty] = QPDFParser::parse(input, stream_id, obj_id, m->tokenizer, *this);
-    if (empty) {
-        // Nothing in the PDF spec appears to allow empty objects, but they have been encountered in
-        // actual PDF files and Adobe Reader appears to ignore them.
-        warn(QPDFExc(
-            qpdf_e_damaged_pdf,
-            m->file->getName() + " object stream " + std::to_string(stream_id),
-            +"object " + std::to_string(obj_id) + " 0, offset " +
-                std::to_string(input.getLastOffset()),
-            0,
-            "empty object treated as null"));
-    }
-    return object;
 }
 
 bool
@@ -1485,25 +1459,25 @@ QPDF::readObjectAtOffset(
         return;
     }
 
-    QPDFObjectHandle oh = readObject(description, og);
+    if (auto oh = readObject(description, og)) {
+        // Determine the end offset of this object before and after white space.  We use these
+        // numbers to validate linearization hint tables.  Offsets and lengths of objects may imply
+        // the end of an object to be anywhere between these values.
+        qpdf_offset_t end_before_space = m->file->tell();
 
-    // Determine the end offset of this object before and after white space.  We use these
-    // numbers to validate linearization hint tables.  Offsets and lengths of objects may imply
-    // the end of an object to be anywhere between these values.
-    qpdf_offset_t end_before_space = m->file->tell();
-
-    // skip over spaces
-    while (true) {
-        char ch;
-        if (!m->file->read(&ch, 1)) {
-            throw damagedPDF(m->file->tell(), "EOF after endobj");
+        // skip over spaces
+        while (true) {
+            char ch;
+            if (!m->file->read(&ch, 1)) {
+                throw damagedPDF(m->file->tell(), "EOF after endobj");
+            }
+            if (!isspace(static_cast<unsigned char>(ch))) {
+                m->file->seek(-1, SEEK_CUR);
+                break;
+            }
         }
-        if (!isspace(static_cast<unsigned char>(ch))) {
-            m->file->seek(-1, SEEK_CUR);
-            break;
-        }
+        updateCache(og, oh.getObj(), end_before_space, m->file->tell());
     }
-    updateCache(og, oh.getObj(), end_before_space, m->file->tell());
 }
 
 QPDFObjectHandle
@@ -1513,7 +1487,7 @@ QPDF::readObjectAtOffset(
     auto og = read_object_start(offset);
     auto oh = readObject(description, og);
 
-    if (!isUnresolved(og)) {
+    if (!oh || !isUnresolved(og)) {
         return oh;
     }
 
@@ -1759,8 +1733,9 @@ QPDF::resolveObjectsInStream(int obj_stream_number)
         if (entry != m->xref_table.end() && entry->second.getType() == 2 &&
             entry->second.getObjStreamNumber() == obj_stream_number) {
             is::OffsetBuffer in("", {b_start + obj_offset, obj_size}, obj_offset);
-            auto oh = readObjectInStream(in, obj_stream_number, obj_id);
-            updateCache(og, oh.getObj(), end_before_space, end_after_space);
+            if (auto oh = QPDFParser::parse(in, obj_stream_number, obj_id, m->tokenizer, *this)) {
+                updateCache(og, oh.getObj(), end_before_space, end_after_space);
+            }
         } else {
             QTC::TC("qpdf", "QPDF not caching overridden objstm object");
         }

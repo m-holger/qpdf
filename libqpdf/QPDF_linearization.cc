@@ -275,12 +275,12 @@ QPDFObjectHandle
 QPDF::readHintStream(Pipeline& pl, qpdf_offset_t offset, size_t length)
 {
     auto H = readObjectAtOffset(offset, "linearization hint stream", false);
-    ObjCache& oc = m->obj_cache[H];
-    qpdf_offset_t min_end_offset = oc.end_before_space;
-    qpdf_offset_t max_end_offset = oc.end_after_space;
     if (!H.isStream()) {
         throw damagedPDF("linearization dictionary", "hint table is not a stream");
     }
+    ObjCache& oc = m->obj_cache[H];
+    qpdf_offset_t min_end_offset = oc.end_before_space;
+    qpdf_offset_t max_end_offset = oc.end_after_space;
 
     QPDFObjectHandle Hdict = H.getDict();
 
