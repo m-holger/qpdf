@@ -12,6 +12,8 @@
 #include <qpdf/QPDFPageLabelDocumentHelper.hh>
 #include <qpdf/QPDFTokenizer_private.hh>
 
+#include <exception>
+
 using namespace qpdf;
 
 namespace qpdf
@@ -142,6 +144,19 @@ namespace qpdf
                 return *this;
             }
 
+            bool
+            inspection_mode() const
+            {
+                return inspection_mode_;
+            }
+
+            Config&
+            inspection_mode(bool val)
+            {
+                inspection_mode_ = val;
+                return *this;
+            }
+
           private:
             std::shared_ptr<QPDFLogger> log_;
 
@@ -152,6 +167,7 @@ namespace qpdf
             bool suppress_warnings_{false};
             bool surpress_recovery_{false};
             bool check_mode_{false};
+            bool inspection_mode_{false};
             bool immediate_copy_from_{false};
         }; // Class Config
     }; // class Doc
@@ -368,6 +384,7 @@ class QPDF::Doc
     acroform()
     {
         if (!acroform_) {
+            no_inspection();
             acroform_ = std::make_unique<QPDFAcroFormDocumentHelper>(qpdf);
         }
         return *acroform_;
@@ -377,6 +394,7 @@ class QPDF::Doc
     embedded_files()
     {
         if (!embedded_files_) {
+            no_inspection();
             embedded_files_ = std::make_unique<QPDFEmbeddedFileDocumentHelper>(qpdf);
         }
         return *embedded_files_;
@@ -386,6 +404,7 @@ class QPDF::Doc
     outlines()
     {
         if (!outlines_) {
+            no_inspection();
             outlines_ = std::make_unique<QPDFOutlineDocumentHelper>(qpdf);
         }
         return *outlines_;
@@ -395,6 +414,7 @@ class QPDF::Doc
     page_dh()
     {
         if (!page_dh_) {
+            no_inspection();
             page_dh_ = std::make_unique<QPDFPageDocumentHelper>(qpdf);
         }
         return *page_dh_;
@@ -404,12 +424,21 @@ class QPDF::Doc
     page_labels()
     {
         if (!page_labels_) {
+            no_inspection();
             page_labels_ = std::make_unique<QPDFPageLabelDocumentHelper>(qpdf);
         }
         return *page_labels_;
     }
 
   protected:
+    void
+    no_inspection()
+    {
+        if (cf.inspection_mode()) {
+            throw std::logic_error("Attempted unsupported operation in inspection mode");
+        }
+    }
+
     QPDF& qpdf;
     QPDF::Members* m;
 

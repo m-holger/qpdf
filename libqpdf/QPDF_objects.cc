@@ -157,14 +157,24 @@ Objects::parse(char const* password)
             throw damagedPDF("", -1, std::string("error reading xref: ") + e.what());
         }
     } catch (QPDFExc& e) {
-        if (!cf.surpress_recovery()) {
-            reconstruct_xref(e, xref_offset > 0);
-        } else {
+        if (cf.inspection_mode()) {
+            try {
+                reconstruct_xref(e, xref_offset > 0);
+            } catch (std::exception& er) {
+                warn(damagedPDF("", -1, "error reconstructing xref: "s + er.what()));
+            }
+            if (!m->trailer) {
+                m->trailer = Dictionary::empty();
+            }
+            return;
+        }
+        if (cf.surpress_recovery()) {
             throw;
         }
+        reconstruct_xref(e, xref_offset > 0);
     }
 
-    qpdf.initializeEncryption();
+    m->encp->initialize(qpdf);
     m->parsed = true;
     if (!m->xref_table.empty() && !qpdf.getRoot().getKey("/Pages").isDictionary()) {
         // QPDFs created from JSON have an empty xref table and no root object yet.
@@ -276,10 +286,9 @@ Objects::reconstruct_xref(QPDFExc& e, bool found_startxref)
                 m->objects.read_xref(offset);
 
                 if (qpdf.getRoot().getKey("/Pages").isDictionary()) {
-                    QTC::TC("qpdf", "QPDF startxref more than 1024 before end");
                     warn(damagedPDF(
                         "", -1, "startxref was more than 1024 bytes before end of file"));
-                    qpdf.initializeEncryption();
+                    m->encp->initialize(qpdf);
                     m->parsed = true;
                     m->reconstructed_xref = false;
                     return;
