@@ -63,6 +63,9 @@ more detail.
    - Option :qpdf:ref:`--check` now includes additional basic checks of the
      AcroForm, Dests, Outlines, and PageLabels structures.
 
+   - Added :qpdf:ref:`--inspection-mode`, which enables inspection
+     mode (see above).
+
   - Other enhancements
 
     - ``QPDFWriter`` will no longer add filters when writing empty streams.
