@@ -52,6 +52,7 @@ this->ap.addBare("flatten-rotation", [this](){c_main->flattenRotation();});
 this->ap.addBare("generate-appearances", [this](){c_main->generateAppearances();});
 this->ap.addBare("ignore-xref-streams", [this](){c_main->ignoreXrefStreams();});
 this->ap.addBare("is-encrypted", [this](){c_main->isEncrypted();});
+this->ap.addBare("inspection-mode", [this](){c_main->inspectionMode();});
 this->ap.addBare("json-input", [this](){c_main->jsonInput();});
 this->ap.addBare("keep-inline-images", [this](){c_main->keepInlineImages();});
 this->ap.addBare("linearize", [this](){c_main->linearize();});

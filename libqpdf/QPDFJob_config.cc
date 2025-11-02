@@ -238,6 +238,13 @@ QPDFJob::Config::ignoreXrefStreams()
 }
 
 QPDFJob::Config*
+QPDFJob::Config::inspectionMode()
+{
+    o.m->d_cfg.inspection_mode(true);
+    return this;
+}
+
+QPDFJob::Config*
 QPDFJob::Config::iiMinBytes(std::string const& parameter)
 {
     o.m->ii_min_bytes = QUtil::string_to_uint(parameter.c_str());

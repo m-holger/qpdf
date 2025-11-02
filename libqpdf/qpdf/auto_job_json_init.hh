@@ -211,6 +211,9 @@ addBare([this]() { c_enc->forceR5(); });
 popHandler(); // key: forceR5
 popHandler(); // key: 256bit
 popHandler(); // key: encrypt
+pushKey("inspectionMode");
+addBare([this]() { c_main->inspectionMode(); });
+popHandler(); // key: inspectionMode
 pushKey("check");
 addBare([this]() { c_main->check(); });
 popHandler(); // key: check

@@ -877,6 +877,10 @@ ap.addOptionHelp("--requires-password", "inspection", "silently test a file's pa
 2: the file is not encrypted
 3: the file is encrypted, and correct password (if any) has been supplied
 )");
+ap.addOptionHelp("--inspection-mode", "inspection", "allow loading of badly damaged files, with restrictions", R"(In inspection mode, :command:`qpdf` will load some files it
+cannot normally. But some operations will no longer be possible,
+and will fail.
+)");
 ap.addOptionHelp("--check", "inspection", "partially check whether PDF is valid", R"(Check the structure of the PDF file as well as a number of other
 aspects of the file, and write information about the file to
 standard output. Note that qpdf does not perform any validation
@@ -924,12 +928,12 @@ Useful for scripts.
 ap.addOptionHelp("--show-pages", "inspection", "display page dictionary information", R"(Show the object and generation number for each page dictionary
 object and for each content stream associated with the page.
 )");
-ap.addOptionHelp("--with-images", "inspection", "include image details with --show-pages", R"(When used with --show-pages, also shows the object and
-generation numbers for the image objects on each page.
-)");
 }
 static void add_help_8(QPDFArgParser& ap)
 {
+ap.addOptionHelp("--with-images", "inspection", "include image details with --show-pages", R"(When used with --show-pages, also shows the object and
+generation numbers for the image objects on each page.
+)");
 ap.addOptionHelp("--list-attachments", "inspection", "list embedded files", R"(Show the key and stream number for each embedded file. Combine
 with --verbose for more detailed information.
 )");
@@ -1029,6 +1033,9 @@ ap.addOptionHelp("--report-memory-usage", "testing", "best effort report of memo
 maximum amount of memory used in supported environments.
 )");
 }
+static void add_help_9(QPDFArgParser& ap)
+{
+}
 static void add_help(QPDFArgParser& ap)
 {
     add_help_1(ap);
@@ -1039,6 +1046,7 @@ static void add_help(QPDFArgParser& ap)
     add_help_6(ap);
     add_help_7(ap);
     add_help_8(ap);
+    add_help_9(ap);
 ap.addHelpFooter("For detailed help, visit the qpdf manual: https://qpdf.readthedocs.io\n");
 }
 

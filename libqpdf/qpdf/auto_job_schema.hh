@@ -67,6 +67,7 @@ static constexpr char const* JOB_SCHEMA_DATA = R"({
       "forceR5": "use unsupported R=5 encryption"
     }
   },
+  "inspectionMode": "allow loading of badly damaged files, with restrictions",
   "check": "partially check whether PDF is valid",
   "checkLinearization": "check linearization tables",
   "filteredStreamData": "show filtered stream data",
