@@ -62,8 +62,8 @@ more detail.
     - Option :qpdf:ref:`--check` now includes additional basic checks of the
       AcroForm, Dests, Outlines, and PageLabels structures.
 
-    - Added :qpdf:ref:`--inspection-mode`, which enables inspection
-      mode (see above).
+    - Add new :qpdf:ref:`--inspection-mode` option, which enables
+      inspection mode (see above).
 
   - Other enhancements
 
