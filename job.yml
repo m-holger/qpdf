@@ -114,6 +114,7 @@ options:
       - generate-appearances
       - ignore-xref-streams
       - is-encrypted
+      - inspection-mode
       - json-input
       - keep-inline-images
       - linearize
@@ -378,6 +379,7 @@ json:
       allow-insecure:
       force-R5:
   # inspect
+  inspection-mode:
   check:
   check-linearization:
   filtered-stream-data:

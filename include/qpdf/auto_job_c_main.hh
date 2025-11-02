@@ -17,6 +17,7 @@ QPDF_DLL Config* flattenRotation();
 QPDF_DLL Config* generateAppearances();
 QPDF_DLL Config* ignoreXrefStreams();
 QPDF_DLL Config* isEncrypted();
+QPDF_DLL Config* inspectionMode();
 QPDF_DLL Config* jsonInput();
 QPDF_DLL Config* keepInlineImages();
 QPDF_DLL Config* linearize();

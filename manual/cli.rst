@@ -3345,6 +3345,36 @@ Related Options
    :qpdf:ref:`--is-encrypted` exit with status ``2`` for non-encrypted
    files.
 
+.. qpdf:option:: --inspection-mode
+
+   .. help: allow loading of badly damaged files, with restrictions
+
+      In inspection mode, :command:`qpdf` will load some files it
+      cannot normally. But some operations will no longer be possible,
+      and will fail.
+
+   One purpose of qpdf is to provide a tool for the study and analysis
+   of PDF files. When used in this way, repairing the faults in input
+   files or preventing the creation of unusable output files, often
+   with unacceptable resource usage, is counter-productive rather than
+   useful.
+
+   To accomodate the needs of those who use qpdf as a tool for
+   inspecting and investigating PDF files, qpdf version 12.3
+   introduced a special ``ìnspection mode`` which is enabled using
+   :samp:`--inspection-mode`.  In inspection mode, only a very limited
+   set of basic operations is supported and a number of automatic
+   repairs are disabled. Transformations of the input files such as
+   linearizing files, creating object streams or encrypting files are
+   not supported, and neither is the use of document and object
+   helpers.
+
+   Inspection mode is intended for manual investigations and
+   repairs. As such, stability is less of a concern than for other
+   uses of qpdf. The exact effect of specifying inspection mode will
+   evolve from version to version. For full details please see TODO -
+   Appendix 1 - Inspection Mode.
+
 .. qpdf:option:: --check
 
    .. help: partially check whether PDF is valid

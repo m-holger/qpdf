@@ -53,15 +53,17 @@ more detail.
       than ``unsigned char``) container and facilitate the efficient moving
       of its content into a `std::string``.
 
-
   - CLI Enhancements
 
-   - Disallow option :qpdf:ref:`--deterministic-id` to be used together
-     with the incompatible options :qpdf:ref:`--encrypt` or
-     :qpdf:ref:`--copy-encryption`.
+    - Disallow option :qpdf:ref:`--deterministic-id` to be used together
+      with the incompatible options :qpdf:ref:`--encrypt` or
+      :qpdf:ref:`--copy-encryption`.
 
-   - Option :qpdf:ref:`--check` now includes additional basic checks of the
-     AcroForm, Dests, Outlines, and PageLabels structures.
+    - Option :qpdf:ref:`--check` now includes additional basic checks of the
+      AcroForm, Dests, Outlines, and PageLabels structures.
+
+    - Add new :qpdf:ref:`--inspection-mode` option, which enables
+      inspection mode (see above).
 
   - Other enhancements
 

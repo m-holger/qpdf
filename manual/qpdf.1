@@ -1043,6 +1043,11 @@ Silently exit with a code indicating the file's password status:
 2: the file is not encrypted
 3: the file is encrypted, and correct password (if any) has been supplied
 .TP
+.B --inspection-mode \-\- allow loading of badly damaged files, with restrictions
+In inspection mode, :command:`qpdf` will load some files it
+cannot normally. But some operations will no longer be possible,
+and will fail.
+.TP
 .B --check \-\- partially check whether PDF is valid
 Check the structure of the PDF file as well as a number of other
 aspects of the file, and write information about the file to
