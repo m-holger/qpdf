@@ -118,7 +118,7 @@ namespace qpdf::impl
         // but this is not always the case. Note that if you call this method with an annotation
         // that is not a widget annotation, there will not be an associated field, and this method
         // will return a helper associated with a null object (isNull() == true).
-        QPDFFormFieldObjectHelper getFieldForAnnotation(QPDFAnnotationObjectHelper);
+        QPDFFormFieldObjectHelper getFieldForAnnotation(QPDFAnnotationObjectHelper); 
 
         // Return the current value of /NeedAppearances. If /NeedAppearances is missing, return
         // false as that is how PDF viewers are supposed to interpret it.
