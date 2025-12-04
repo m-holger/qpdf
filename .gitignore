@@ -16,3 +16,6 @@ Doxyfile
 # macOS junk files
 .DS_Store
 ._*
+
+# CodeQL artifacts
+_codeql_detected_source_root
