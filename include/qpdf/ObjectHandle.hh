@@ -87,12 +87,12 @@ namespace qpdf
         bool contains(std::string const& key) const;
         size_t erase(std::string const& key);
         QPDFObjectHandle& find(std::string const& key) const;
-        // For dictionaries, add or replace the value associated with key. If value is a direct null,
-        // the key is removed from the dictionary (since PDF treats missing keys and null values
-        // identically). Indirect nulls are preserved as they represent dangling references.
-        // Returns true if the underlying object is a dictionary, false otherwise.
-        // Unlike BaseDictionary::replace(), this method does not create a dictionary if one does not
-        // exist - it simply returns false.
+        /// For dictionaries, add or replace the value associated with key. If value is a direct null,
+        /// the key is removed from the dictionary (since PDF treats missing keys and null values
+        /// identically). Indirect nulls are preserved as they represent dangling references.
+        /// Returns true if the underlying object is a dictionary, false otherwise.
+        /// Unlike BaseDictionary::replace(), this method does not create a dictionary if one does not
+        /// exist - it simply returns false.
         bool replace(std::string const& key, QPDFObjectHandle value);
         QPDFObjectHandle const& operator[](std::string const& key) const;
 
