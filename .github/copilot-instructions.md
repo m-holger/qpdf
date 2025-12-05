@@ -119,7 +119,10 @@ When modifying `job.yml` or CLI options, regenerate with:
 ### New Code Style (See `libqpdf/qpdf/AcroForm.hh` FormNode class for examples)
 1. **PIMPL Pattern**: New public classes should use the PIMPL (Pointer to Implementation) pattern with a full implementation class. See `QPDFAcroFormDocumentHelper::Members` as an example.
 2. **Avoid `this->`**: Do not use `this->` and remove it when updating existing code.
-3. **QTC::TC Calls**: Remove simple `QTC::TC` calls (those with 0 as the last parameter) unless they are the only executable statement in a branch.
+3. **QTC::TC Calls**: Remove simple `QTC::TC` calls (those with 2 parameters) unless they are the only executable statement in a branch.
+   - When removing a `QTC::TC` call:
+      - Use the first parameter to find the corresponding `.testcov` file.
+      - Remove the line in the `.testcov` (or related coverage file) that includes the second parameter.
 4. **Doxygen Comments**: Use `///` style comments with appropriate tags (`@brief`, `@param`, `@return`, `@tparam`, `@since`).
    ```cpp
    /// @brief Retrieves the field value.
