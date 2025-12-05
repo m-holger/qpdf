@@ -116,6 +116,26 @@ When modifying `job.yml` or CLI options, regenerate with:
 4. **Include order**: Include the class's own header first, then a blank line, then other includes.
 5. **Use `std::to_string`** instead of QUtil::int_to_string.
 
+### New Code Style (See `libqpdf/qpdf/AcroForm.hh` FormNode class for examples)
+1. **PIMPL Pattern**: New public classes should use the PIMPL (Pointer to Implementation) pattern with a full implementation class. See `QPDFAcroFormDocumentHelper::Members` as an example.
+2. **Doxygen Comments**: Use `///` style comments with appropriate tags (`@brief`, `@param`, `@return`, `@tparam`, `@since`).
+   ```cpp
+   /// @brief Retrieves the field value.
+   ///
+   /// @param inherit If true, traverse parent hierarchy.
+   /// @return The field value or empty string if not found.
+   std::string value() const;
+   ```
+3. **Member Variables**: Use trailing underscores for member variables (e.g., `cache_valid_`, `fields_`).
+4. **Naming Conventions**:
+   - Use `snake_case` for new function and variable names (e.g., `fully_qualified_name()`, `root_field()`).
+   - **Exception**: PDF dictionary entry accessors use the exact capitalization from the PDF spec (e.g., `FT()`, `TU()`, `DV()` for `/FT`, `/TU`, `/DV`).
+5. **Getters/Setters**: For simple getters returning dictionary entries, use concise inline implementations:
+   ```cpp
+   String TU() const { return {get("/TU")}; }
+   ```
+   For setters with side effects, use descriptive names like `setV()`, `setFieldAttribute()`.
+
 ### Style
 - Column limit: 100 characters
 - Braces on their own lines for classes/functions
