@@ -118,7 +118,9 @@ When modifying `job.yml` or CLI options, regenerate with:
 
 ### New Code Style (See `libqpdf/qpdf/AcroForm.hh` FormNode class for examples)
 1. **PIMPL Pattern**: New public classes should use the PIMPL (Pointer to Implementation) pattern with a full implementation class. See `QPDFAcroFormDocumentHelper::Members` as an example.
-2. **Doxygen Comments**: Use `///` style comments with appropriate tags (`@brief`, `@param`, `@return`, `@tparam`, `@since`).
+2. **Avoid `this->`**: Do not use `this->` and remove it when updating existing code.
+3. **QTC::TC Calls**: Remove simple `QTC::TC` calls (those with 0 as the last parameter) unless they are the only executable statement in a branch.
+4. **Doxygen Comments**: Use `///` style comments with appropriate tags (`@brief`, `@param`, `@return`, `@tparam`, `@since`).
    ```cpp
    /// @brief Retrieves the field value.
    ///
@@ -126,15 +128,15 @@ When modifying `job.yml` or CLI options, regenerate with:
    /// @return The field value or empty string if not found.
    std::string value() const;
    ```
-3. **Member Variables**: Use trailing underscores for member variables (e.g., `cache_valid_`, `fields_`).
-4. **Naming Conventions**:
+5. **Member Variables**: Use trailing underscores for member variables (e.g., `cache_valid_`, `fields_`).
+6. **Naming Conventions**:
    - Use `snake_case` for new function and variable names (e.g., `fully_qualified_name()`, `root_field()`).
-   - **Exception**: PDF dictionary entry accessors use the exact capitalization from the PDF spec (e.g., `FT()`, `TU()`, `DV()` for `/FT`, `/TU`, `/DV`).
-5. **Getters/Setters**: For simple getters returning dictionary entries, use concise inline implementations:
+   - **Exception**: PDF dictionary entry accessors and variables use the exact capitalization from the PDF spec (e.g., `FT()`, `TU()`, `DV()` for `/FT`, `/TU`, `/DV`).
+7. **Getters/Setters**: Simple getters/setters use the attribute name without "get" or "set" prefixes:
    ```cpp
    String TU() const { return {get("/TU")}; }
    ```
-   For setters with side effects, use descriptive names like `setV()`, `setFieldAttribute()`.
+   Note: Names like `setFieldAttribute()` are legacy naming; new code should use `snake_case` (e.g., `set_field_attribute()`).
 
 ### Style
 - Column limit: 100 characters
