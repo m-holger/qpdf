@@ -52,7 +52,7 @@ namespace qpdf::impl
             qpdf::Tokenizer& tokenizer,
             QPDF* context);
 
-        /// @brief Parse a PDF object (deprecated interface for QPDFObjectHandle::parse).
+        /// @brief Parse a PDF object (interface for deprecated QPDFObjectHandle::parse).
         /// @param input The input source to read from.
         /// @param object_description Description of the object for error messages.
         /// @param tokenizer The tokenizer to use for parsing.
@@ -68,7 +68,7 @@ namespace qpdf::impl
             QPDFObjectHandle::StringDecrypter* decrypter,
             QPDF* context);
 
-        /// @brief Parse a PDF object for use by QPDF internal code.
+        /// @brief Parse a PDF object for use by QPDF.
         /// @param input The input source to read from.
         /// @param object_description Description of the object for error messages.
         /// @param tokenizer The tokenizer to use for parsing.
@@ -179,7 +179,7 @@ namespace qpdf::impl
         /// @return The parsed object handle.
         QPDFObjectHandle parse_first(bool content_stream);
 
-        /// @brief Parse the remainder of a composite object (array/dict).
+        /// @brief Parse the remainder of a composite object (array/dict/reference).
         /// @param content_stream True if parsing a content stream.
         /// @return The completed object handle.
         QPDFObjectHandle parse_remainder(bool content_stream);
