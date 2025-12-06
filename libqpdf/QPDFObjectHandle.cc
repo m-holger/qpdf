@@ -1660,13 +1660,13 @@ QPDFObjectHandle::parseContentStream_data(
     size_t stream_length = stream_data.size();
     auto input = is::OffsetBuffer(description, stream_data);
     Tokenizer tokenizer;
-    tokenizer.allowEOF();
+    tokenizer.allow_eof();
     auto sp_description = QPDFParser::make_description(description, "content");
     while (QIntC::to_size(input.tell()) < stream_length) {
         // Read a token and seek to the beginning. The offset we get from this process is the
         // beginning of the next non-ignorable (space, comment) token. This way, the offset and
         // don't including ignorable content.
-        tokenizer.nextToken(input, "content", true);
+        tokenizer.next_token(input, "content", true);
         qpdf_offset_t offset = input.getLastOffset();
         input.seek(offset, SEEK_SET);
         auto obj = QPDFParser::parse_content(input, sp_description, tokenizer, context);
@@ -1683,11 +1683,11 @@ QPDFObjectHandle::parseContentStream_data(
             // until end of inline image.
             char ch;
             input.read(&ch, 1);
-            tokenizer.expectInlineImage(input);
-            tokenizer.nextToken(input, description);
+            tokenizer.expect_inline_image(input);
+            tokenizer.next_token(input, description);
             offset = input.getLastOffset();
             length = QIntC::to_size(input.tell() - offset);
-            if (tokenizer.getType() == QPDFTokenizer::tt_bad) {
+            if (tokenizer.get_type() == QPDFTokenizer::tt_bad) {
                 QTC::TC("qpdf", "QPDFObjectHandle EOF in inline image");
                 warn(
                     context,
@@ -1700,7 +1700,7 @@ QPDFObjectHandle::parseContentStream_data(
                 QTC::TC("qpdf", "QPDFObjectHandle inline image token");
                 if (callbacks) {
                     callbacks->handleObject(
-                        QPDFObjectHandle::newInlineImage(tokenizer.getValue()),
+                        QPDFObjectHandle::newInlineImage(tokenizer.get_value()),
                         QIntC::to_size(offset),
                         length);
                 }

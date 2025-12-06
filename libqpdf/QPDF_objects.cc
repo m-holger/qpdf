@@ -1480,7 +1480,7 @@ Objects::recoverStreamLength(
 QPDFTokenizer::Token
 Objects::readToken(InputSource& input, size_t max_len)
 {
-    return m->tokenizer.readToken(input, m->last_object_description, true, max_len);
+    return m->tokenizer.read_token(input, m->last_object_description, true, max_len);
 }
 
 QPDFObjGen
