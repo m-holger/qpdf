@@ -27,13 +27,6 @@ main QTest stream 0
 QPDF lin write nshared_total > nshared_first_page 1
 QPDFWriter encrypted hint stream 0
 QPDF xref gen > 0 1
-QPDFTokenizer bad ) 0
-QPDFTokenizer bad > 0
-QPDFTokenizer bad hexstring character 0
-QPDFTokenizer bad hexstring 2nd character 0
-QPDFTokenizer null in name 0
-QPDFTokenizer bad name 1 0
-QPDFTokenizer bad name 2 0
 QPDF UseOutlines but no Outlines 0
 QPDFObjectHandle makeDirect loop 0
 QPDFObjectHandle copy stream 1
@@ -119,8 +112,6 @@ QPDF_Stream unknown stream length 0
 QPDF replaceReserved 0
 QPDFWriter copy use_aes 1
 QPDFObjectHandle trailing data in parse 0
-QPDFTokenizer EOF reading token 0
-QPDFTokenizer EOF reading appendable token 0
 QPDFWriter extra header text no newline 0
 QPDFWriter make Extensions direct 0
 QPDFWriter make ADBE direct 1
@@ -144,16 +135,13 @@ QPDFObjectHandle errors in parsecontent 0
 QPDFJob split-pages %d 0
 QPDFJob split-pages .pdf 0
 QPDFJob split-pages other 0
-QPDFTokenizer allowing bad token 0
 QPDF_encryption pad short parameter 0
 QPDFObjectHandle found old angle 1
-QPDFTokenizer block long token 0
 qpdf-c called qpdf_set_decode_level 0
 qpdf-c called qpdf_set_compress_streams 0
 qpdf-c called qpdf_set_preserve_unreferenced_objects 0
 qpdf-c called qpdf_set_newline_before_endstream 0
 SF_FlateLzwDecode TIFF predictor 0
-QPDFTokenizer inline image at EOF 0
 Pl_QPDFTokenizer found ID 0
 QPDFObjectHandle coalesce called on stream 0
 QPDFObjectHandle coalesce provide stream data 0
@@ -217,9 +205,6 @@ QPDFFormFieldObjectHelper replaced BMC at EOF 0
 QPDFFormFieldObjectHelper fallback Tf 0
 QPDFPageObjectHelper copy shared attribute 1
 QPDF inherit mediabox 1
-QPDFTokenizer finder found wrong word 0
-QPDFTokenizer found EI by byte count 0
-QPDFTokenizer found EI after more than one try 0
 QPDFPageObjectHelper externalize inline image 0
 QPDFPageObjectHelper keep inline image 0
 QPDFJob image optimize colorspace 0
