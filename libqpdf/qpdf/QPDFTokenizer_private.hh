@@ -62,24 +62,24 @@ namespace qpdf
         inline QPDFTokenizer::token_type_e
         getType() const
         {
-            return this->type;
+            return type_;
         }
         inline std::string const&
         getValue() const
         {
-            return (this->type == QPDFTokenizer::tt_name || this->type == QPDFTokenizer::tt_string)
-                ? this->val
-                : this->raw_val;
+            return (type_ == QPDFTokenizer::tt_name || type_ == QPDFTokenizer::tt_string)
+                ? val_
+                : raw_val_;
         }
         inline std::string const&
         getRawValue() const
         {
-            return this->raw_val;
+            return raw_val_;
         }
         inline std::string const&
         getErrorMessage() const
         {
-            return this->error_message;
+            return error_message_;
         }
 
       private:
@@ -138,27 +138,27 @@ namespace qpdf
         void reset();
 
         // Lexer state
-        state_e state;
+        state_e state_;
 
-        bool allow_eof{false};
-        bool include_ignorable{false};
+        bool allow_eof_{false};
+        bool include_ignorable_{false};
 
         // Current token accumulation
-        QPDFTokenizer::token_type_e type;
-        std::string val;
-        std::string raw_val;
-        std::string error_message;
-        bool before_token;
-        bool in_token;
-        char char_to_unread;
-        size_t inline_image_bytes;
-        bool bad;
+        QPDFTokenizer::token_type_e type_;
+        std::string val_;
+        std::string raw_val_;
+        std::string error_message_;
+        bool before_token_;
+        bool in_token_;
+        char char_to_unread_;
+        size_t inline_image_bytes_;
+        bool bad_;
 
         // State for strings
-        int string_depth;
-        int char_code;
-        char hex_char;
-        int digit_count;
+        int string_depth_;
+        int char_code_;
+        char hex_char_;
+        int digit_count_;
     };
 
 } // namespace qpdf

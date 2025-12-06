@@ -83,17 +83,17 @@ QPDFWordTokenFinder::check()
 void
 Tokenizer::reset()
 {
-    state = st_before_token;
-    type = tt::tt_bad;
-    val.clear();
-    raw_val.clear();
-    error_message = "";
-    before_token = true;
-    in_token = false;
-    char_to_unread = '\0';
-    inline_image_bytes = 0;
-    string_depth = 0;
-    bad = false;
+    state_ = st_before_token;
+    type_ = tt::tt_bad;
+    val_.clear();
+    raw_val_.clear();
+    error_message_ = "";
+    before_token_ = true;
+    in_token_ = false;
+    char_to_unread_ = '\0';
+    inline_image_bytes_ = 0;
+    string_depth_ = 0;
+    bad_ = false;
 }
 
 QPDFTokenizer::Token::Token(token_type_e type, std::string const& value) :
@@ -101,9 +101,9 @@ QPDFTokenizer::Token::Token(token_type_e type, std::string const& value) :
     value(value),
     raw_value(value)
 {
-    if (type == tt_string) {
+    if (type_ == tt_string) {
         raw_value = QPDFObjectHandle::newString(value).unparse();
-    } else if (type == tt_name) {
+    } else if (type_ == tt_name) {
         raw_value = QPDFObjectHandle::newName(value).unparse();
     }
 }
@@ -129,7 +129,7 @@ QPDFTokenizer::allowEOF()
 void
 Tokenizer::allowEOF()
 {
-    allow_eof = true;
+    allow_eof_ = true;
 }
 
 void
@@ -141,7 +141,7 @@ QPDFTokenizer::includeIgnorable()
 void
 Tokenizer::includeIgnorable()
 {
-    include_ignorable = true;
+    include_ignorable_ = true;
 }
 
 bool
@@ -167,8 +167,8 @@ Tokenizer::presentCharacter(char ch)
 {
     handleCharacter(ch);
 
-    if (in_token) {
-        raw_val += ch;
+    if (in_token_) {
+        raw_val_ += ch;
     }
 }
 
@@ -284,18 +284,18 @@ Tokenizer::inBeforeToken(char ch)
 {
     // Note: we specifically do not use ctype here.  It is locale-dependent.
     if (isSpace(ch)) {
-        before_token = !include_ignorable;
-        in_token = include_ignorable;
-        if (include_ignorable) {
-            state = st_in_space;
+        before_token_ = !include_ignorable_;
+        in_token_ = include_ignorable_;
+        if (include_ignorable_) {
+            state_ = st_in_space;
         }
     } else if (ch == '%') {
-        before_token = !include_ignorable;
-        in_token = include_ignorable;
-        state = st_in_comment;
+        before_token_ = !include_ignorable_;
+        in_token_ = include_ignorable_;
+        state_ = st_in_comment;
     } else {
-        before_token = false;
-        in_token = true;
+        before_token_ = false;
+        in_token_ = true;
         inTop(ch);
     }
 }
@@ -305,48 +305,48 @@ Tokenizer::inTop(char ch)
 {
     switch (ch) {
     case '(':
-        string_depth = 1;
-        state = st_in_string;
+        string_depth_ = 1;
+        state_ = st_in_string;
         return;
 
     case '<':
-        state = st_lt;
+        state_ = st_lt;
         return;
 
     case '>':
-        state = st_gt;
+        state_ = st_gt;
         return;
 
     case (')'):
-        type = tt::tt_bad;
+        type_ = tt::tt_bad;
         QTC::TC("qpdf", "QPDFTokenizer bad )");
-        error_message = "unexpected )";
-        state = st_token_ready;
+        error_message_ = "unexpected )";
+        state_ = st_token_ready;
         return;
 
     case '[':
-        type = tt::tt_array_open;
-        state = st_token_ready;
+        type_ = tt::tt_array_open;
+        state_ = st_token_ready;
         return;
 
     case ']':
-        type = tt::tt_array_close;
-        state = st_token_ready;
+        type_ = tt::tt_array_close;
+        state_ = st_token_ready;
         return;
 
     case '{':
-        type = tt::tt_brace_open;
-        state = st_token_ready;
+        type_ = tt::tt_brace_open;
+        state_ = st_token_ready;
         return;
 
     case '}':
-        type = tt::tt_brace_close;
-        state = st_token_ready;
+        type_ = tt::tt_brace_close;
+        state_ = st_token_ready;
         return;
 
     case '/':
-        state = st_name;
-        val += ch;
+        state_ = st_name;
+        val_ += ch;
         return;
 
     case '0':
@@ -359,20 +359,20 @@ Tokenizer::inTop(char ch)
     case '7':
     case '8':
     case '9':
-        state = st_number;
+        state_ = st_number;
         return;
 
     case '+':
     case '-':
-        state = st_sign;
+        state_ = st_sign;
         return;
 
     case '.':
-        state = st_decimal;
+        state_ = st_decimal;
         return;
 
     default:
-        state = st_literal;
+        state_ = st_literal;
         return;
     }
 }
@@ -380,12 +380,12 @@ Tokenizer::inTop(char ch)
 void
 Tokenizer::inSpace(char ch)
 {
-    // We only enter this state if include_ignorable is true.
+    // We only enter this state if include_ignorable_ is true.
     if (!isSpace(ch)) {
-        type = tt::tt_space;
-        in_token = false;
-        char_to_unread = ch;
-        state = st_token_ready;
+        type_ = tt::tt_space;
+        in_token_ = false;
+        char_to_unread_ = ch;
+        state_ = st_token_ready;
     }
 }
 
@@ -393,13 +393,13 @@ void
 Tokenizer::inComment(char ch)
 {
     if ((ch == '\r') || (ch == '\n')) {
-        if (include_ignorable) {
-            type = tt::tt_comment;
-            in_token = false;
-            char_to_unread = ch;
-            state = st_token_ready;
+        if (include_ignorable_) {
+            type_ = tt::tt_comment;
+            in_token_ = false;
+            char_to_unread_ = ch;
+            state_ = st_token_ready;
         } else {
-            state = st_before_token;
+            state_ = st_before_token;
         }
     }
 }
@@ -409,36 +409,36 @@ Tokenizer::inString(char ch)
 {
     switch (ch) {
     case '\\':
-        state = st_string_escape;
+        state_ = st_string_escape;
         return;
 
     case '(':
-        val += ch;
+        val_ += ch;
         ++string_depth;
         return;
 
     case ')':
-        if (--string_depth == 0) {
-            type = tt::tt_string;
-            state = st_token_ready;
+        if (--string_depth_ == 0) {
+            type_ = tt::tt_string;
+            state_ = st_token_ready;
             return;
         }
 
-        val += ch;
+        val_ += ch;
         return;
 
     case '\r':
         // CR by itself is converted to LF
-        val += '\n';
-        state = st_string_after_cr;
+        val_ += '\n';
+        state_ = st_string_after_cr;
         return;
 
     case '\n':
-        val += ch;
+        val_ += ch;
         return;
 
     default:
-        val += ch;
+        val_ += ch;
         return;
     }
 }
@@ -453,32 +453,32 @@ Tokenizer::inName(char ch)
         // though not on any files in the test suite as of this
         // writing.
 
-        type = bad ? tt::tt_bad : tt::tt_name;
-        in_token = false;
-        char_to_unread = ch;
-        state = st_token_ready;
+        type_ = bad_ ? tt::tt_bad : tt::tt_name;
+        in_token_ = false;
+        char_to_unread_ = ch;
+        state_ = st_token_ready;
     } else if (ch == '#') {
-        char_code = 0;
-        state = st_name_hex1;
+        char_code_ = 0;
+        state_ = st_name_hex1;
     } else {
-        val += ch;
+        val_ += ch;
     }
 }
 
 void
 Tokenizer::inNameHex1(char ch)
 {
-    hex_char = ch;
+    hex_char_ = ch;
 
     if (char hval = util::hex_decode_char(ch); hval < '\20') {
-        char_code = int(hval) << 4;
-        state = st_name_hex2;
+        char_code_ = int(hval) << 4;
+        state_ = st_name_hex2;
     } else {
         QTC::TC("qpdf", "QPDFTokenizer bad name 1");
-        error_message = "name with stray # will not work with PDF >= 1.2";
+        error_message_ = "name with stray # will not work with PDF >= 1.2";
         // Use null to encode a bad # -- this is reversed in QPDF_Name::normalizeName.
-        val += '\0';
-        state = st_name;
+        val_ += '\0';
+        state_ = st_name;
         inName(ch);
     }
 }
@@ -490,23 +490,23 @@ Tokenizer::inNameHex2(char ch)
         char_code |= int(hval);
     } else {
         QTC::TC("qpdf", "QPDFTokenizer bad name 2");
-        error_message = "name with stray # will not work with PDF >= 1.2";
+        error_message_ = "name with stray # will not work with PDF >= 1.2";
         // Use null to encode a bad # -- this is reversed in QPDF_Name::normalizeName.
-        val += '\0';
-        val += hex_char;
-        state = st_name;
+        val_ += '\0';
+        val_ += hex_char;
+        state_ = st_name;
         inName(ch);
         return;
     }
-    if (char_code == 0) {
+    if (char_code_ == 0) {
         QTC::TC("qpdf", "QPDFTokenizer null in name");
-        error_message = "null character not allowed in name token";
-        val += "#00";
-        state = st_name;
-        bad = true;
+        error_message_ = "null character not allowed in name token";
+        val_ += "#00";
+        state_ = st_name;
+        bad_ = true;
     } else {
-        val += char(char_code);
-        state = st_name;
+        val_ += char(char_code_);
+        state_ = st_name;
     }
 }
 
@@ -514,11 +514,11 @@ void
 Tokenizer::inSign(char ch)
 {
     if (util::is_digit(ch)) {
-        state = st_number;
+        state_ = st_number;
     } else if (ch == '.') {
-        state = st_decimal;
+        state_ = st_decimal;
     } else {
-        state = st_literal;
+        state_ = st_literal;
         inLiteral(ch);
     }
 }
@@ -527,9 +527,9 @@ void
 Tokenizer::inDecimal(char ch)
 {
     if (util::is_digit(ch)) {
-        state = st_real;
+        state_ = st_real;
     } else {
-        state = st_literal;
+        state_ = st_literal;
         inLiteral(ch);
     }
 }
@@ -539,14 +539,14 @@ Tokenizer::inNumber(char ch)
 {
     if (util::is_digit(ch)) {
     } else if (ch == '.') {
-        state = st_real;
+        state_ = st_real;
     } else if (isDelimiter(ch)) {
-        type = tt::tt_integer;
-        state = st_token_ready;
-        in_token = false;
-        char_to_unread = ch;
+        type_ = tt::tt_integer;
+        state_ = st_token_ready;
+        in_token_ = false;
+        char_to_unread_ = ch;
     } else {
-        state = st_literal;
+        state_ = st_literal;
     }
 }
 
@@ -555,18 +555,18 @@ Tokenizer::inReal(char ch)
 {
     if (util::is_digit(ch)) {
     } else if (isDelimiter(ch)) {
-        type = tt::tt_real;
-        state = st_token_ready;
-        in_token = false;
-        char_to_unread = ch;
+        type_ = tt::tt_real;
+        state_ = st_token_ready;
+        in_token_ = false;
+        char_to_unread_ = ch;
     } else {
-        state = st_literal;
+        state_ = st_literal;
     }
 }
 void
 Tokenizer::inStringEscape(char ch)
 {
-    state = st_in_string;
+    state_ = st_in_string;
     switch (ch) {
     case '0':
     case '1':
@@ -576,42 +576,42 @@ Tokenizer::inStringEscape(char ch)
     case '5':
     case '6':
     case '7':
-        state = st_char_code;
-        char_code = 0;
-        digit_count = 0;
+        state_ = st_char_code;
+        char_code_ = 0;
+        digit_count_ = 0;
         inCharCode(ch);
         return;
 
     case 'n':
-        val += '\n';
+        val_ += '\n';
         return;
 
     case 'r':
-        val += '\r';
+        val_ += '\r';
         return;
 
     case 't':
-        val += '\t';
+        val_ += '\t';
         return;
 
     case 'b':
-        val += '\b';
+        val_ += '\b';
         return;
 
     case 'f':
-        val += '\f';
+        val_ += '\f';
         return;
 
     case '\n':
         return;
 
     case '\r':
-        state = st_string_after_cr;
+        state_ = st_string_after_cr;
         return;
 
     default:
         // PDF spec says backslash is ignored before anything else
-        val += ch;
+        val_ += ch;
         return;
     }
 }
@@ -619,7 +619,7 @@ Tokenizer::inStringEscape(char ch)
 void
 Tokenizer::inStringAfterCR(char ch)
 {
-    state = st_in_string;
+    state_ = st_in_string;
     if (ch != '\n') {
         inString(ch);
     }
@@ -629,12 +629,12 @@ void
 Tokenizer::inLt(char ch)
 {
     if (ch == '<') {
-        type = tt::tt_dict_open;
-        state = st_token_ready;
+        type_ = tt::tt_dict_open;
+        state_ = st_token_ready;
         return;
     }
 
-    state = st_in_hexstring;
+    state_ = st_in_hexstring;
     inHexstring(ch);
 }
 
@@ -642,15 +642,15 @@ void
 Tokenizer::inGt(char ch)
 {
     if (ch == '>') {
-        type = tt::tt_dict_close;
-        state = st_token_ready;
+        type_ = tt::tt_dict_close;
+        state_ = st_token_ready;
     } else {
-        type = tt::tt_bad;
+        type_ = tt::tt_bad;
         QTC::TC("qpdf", "QPDFTokenizer bad >");
-        error_message = "unexpected >";
-        in_token = false;
-        char_to_unread = ch;
-        state = st_token_ready;
+        error_message_ = "unexpected >";
+        in_token_ = false;
+        char_to_unread_ = ch;
+        state_ = st_token_ready;
     }
 }
 
@@ -663,12 +663,12 @@ Tokenizer::inLiteral(char ch)
         // stream keyword.  Removing it here could make the stream-reading code break on some files,
         // though not on any files in the test suite as of this writing.
 
-        in_token = false;
-        char_to_unread = ch;
-        state = st_token_ready;
-        type = (raw_val == "true") || (raw_val == "false")
+        in_token_ = false;
+        char_to_unread_ = ch;
+        state_ = st_token_ready;
+        type_ = (raw_val_ == "true") || (raw_val_ == "false")
             ? tt::tt_bool
-            : (raw_val == "null" ? tt::tt_null : tt::tt_word);
+            : (raw_val_ == "null" ? tt::tt_null : tt::tt_word);
     }
 }
 
@@ -676,21 +676,21 @@ void
 Tokenizer::inHexstring(char ch)
 {
     if (char hval = util::hex_decode_char(ch); hval < '\20') {
-        char_code = int(hval) << 4;
-        state = st_in_hexstring_2nd;
+        char_code_ = int(hval) << 4;
+        state_ = st_in_hexstring_2nd;
 
     } else if (ch == '>') {
-        type = tt::tt_string;
-        state = st_token_ready;
+        type_ = tt::tt_string;
+        state_ = st_token_ready;
 
     } else if (isSpace(ch)) {
         // ignore
 
     } else {
-        type = tt::tt_bad;
+        type_ = tt::tt_bad;
         QTC::TC("qpdf", "QPDFTokenizer bad hexstring character");
-        error_message = std::string("invalid character (") + ch + ") in hexstring";
-        state = st_token_ready;
+        error_message_ = std::string("invalid character (") + ch + ") in hexstring";
+        state_ = st_token_ready;
     }
 }
 
@@ -698,23 +698,23 @@ void
 Tokenizer::inHexstring2nd(char ch)
 {
     if (char hval = util::hex_decode_char(ch); hval < '\20') {
-        val += char(char_code) | hval;
-        state = st_in_hexstring;
+        val_ += char(char_code_) | hval;
+        state_ = st_in_hexstring;
 
     } else if (ch == '>') {
         // PDF spec says odd hexstrings have implicit trailing 0.
-        val += char(char_code);
-        type = tt::tt_string;
-        state = st_token_ready;
+        val_ += char(char_code_);
+        type_ = tt::tt_string;
+        state_ = st_token_ready;
 
     } else if (isSpace(ch)) {
         // ignore
 
     } else {
-        type = tt::tt_bad;
+        type_ = tt::tt_bad;
         QTC::TC("qpdf", "QPDFTokenizer bad hexstring 2nd character");
-        error_message = std::string("invalid character (") + ch + ") in hexstring";
-        state = st_token_ready;
+        error_message_ = std::string("invalid character (") + ch + ") in hexstring";
+        state_ = st_token_ready;
     }
 }
 
@@ -723,7 +723,7 @@ Tokenizer::inCharCode(char ch)
 {
     bool handled = false;
     if (('0' <= ch) && (ch <= '7')) {
-        char_code = 8 * char_code + (int(ch) - int('0'));
+        char_code_ = 8 * char_code + (int(ch) - int('0'));
         if (++(digit_count) < 3) {
             return;
         }
@@ -731,8 +731,8 @@ Tokenizer::inCharCode(char ch)
     }
     // We've accumulated \ddd or we have \d or \dd followed by other than an octal digit. The PDF
     // Spec says to ignore high-order overflow.
-    val += char(char_code % 256);
-    state = st_in_string;
+    val_ += char(char_code % 256);
+    state_ = st_in_string;
     if (!handled) {
         inString(ch);
     }
@@ -741,11 +741,11 @@ Tokenizer::inCharCode(char ch)
 void
 Tokenizer::inInlineImage(char ch)
 {
-    if ((raw_val.length() + 1) == inline_image_bytes) {
+    if ((raw_val_.length() + 1) == inline_image_bytes_) {
         QTC::TC("qpdf", "QPDFTokenizer found EI by byte count");
-        type = tt::tt_inline_image;
-        inline_image_bytes = 0;
-        state = st_token_ready;
+        type_ = tt::tt_inline_image;
+        inline_image_bytes_ = 0;
+        state_ = st_token_ready;
     }
 }
 
@@ -770,20 +770,20 @@ Tokenizer::presentEOF()
         QTC::TC("qpdf", "QPDFTokenizer EOF reading appendable token");
         // Push any delimiter to the state machine to finish off the final token.
         presentCharacter('\f');
-        in_token = true;
+        in_token_ = true;
         break;
 
     case st_top:
     case st_before_token:
-        type = tt::tt_eof;
+        type_ = tt::tt_eof;
         break;
 
     case st_in_space:
-        type = include_ignorable ? tt::tt_space : tt::tt_eof;
+        type_ = include_ignorable_ ? tt::tt_space : tt::tt_eof;
         break;
 
     case st_in_comment:
-        type = include_ignorable ? tt::tt_comment : tt::tt_bad;
+        type_ = include_ignorable_ ? tt::tt_comment : tt::tt_bad;
         break;
 
     case st_token_ready:
@@ -791,10 +791,10 @@ Tokenizer::presentEOF()
 
     default:
         QTC::TC("qpdf", "QPDFTokenizer EOF reading token");
-        type = tt::tt_bad;
-        error_message = "EOF while reading token";
+        type_ = tt::tt_bad;
+        error_message_ = "EOF while reading token";
     }
-    state = st_token_ready;
+    state_ = st_token_ready;
 }
 
 void
@@ -812,16 +812,16 @@ QPDFTokenizer::expectInlineImage(InputSource& input)
 void
 Tokenizer::expectInlineImage(InputSource& input)
 {
-    if (state == st_token_ready) {
+    if (state_ == st_token_ready) {
         reset();
-    } else if (state != st_before_token) {
+    } else if (state_ != st_before_token) {
         throw std::logic_error(
             "QPDFTokenizer::expectInlineImage called when tokenizer is in improper state");
     }
     findEI(input);
-    before_token = false;
-    in_token = true;
-    state = st_inline_image;
+    before_token_ = false;
+    in_token_ = true;
+    state_ = st_inline_image;
 }
 
 void
@@ -844,7 +844,7 @@ Tokenizer::findEI(InputSource& input)
         if (!input.findFirst("EI", input.tell(), 0, f)) {
             break;
         }
-        inline_image_bytes = QIntC::to_size(input.tell() - pos - 2);
+        inline_image_bytes_ = QIntC::to_size(input.tell() - pos - 2);
 
         Tokenizer check;
         bool found_bad = false;
@@ -914,11 +914,11 @@ QPDFTokenizer::getToken(Token& token, bool& unread_char, char& ch)
 bool
 Tokenizer::getToken(Token& token, bool& unread_char, char& ch)
 {
-    bool ready = (state == st_token_ready);
+    bool ready = (state_ == st_token_ready);
     unread_char = !in_token && !before_token;
     ch = char_to_unread;
     if (ready) {
-        token = (!(type == tt::tt_name || type == tt::tt_string))
+        token = (!(type_ == tt::tt_name || type_ == tt::tt_string))
             ? Token(type, raw_val, raw_val, error_message)
             : Token(type, val, raw_val, error_message);
 
@@ -981,44 +981,44 @@ Tokenizer::readToken(InputSource& input, std::string const& context, bool allow_
 bool
 Tokenizer::nextToken(InputSource& input, std::string const& context, size_t max_len)
 {
-    if (state != st_inline_image) {
+    if (state_ != st_inline_image) {
         reset();
     }
     qpdf_offset_t offset = input.fastTell();
 
-    while (state != st_token_ready) {
+    while (state_ != st_token_ready) {
         char ch;
         if (!input.fastRead(ch)) {
             presentEOF();
 
-            if ((type == tt::tt_eof) && (!allow_eof)) {
+            if ((type_ == tt::tt_eof) && (!allow_eof_)) {
                 // Nothing in the qpdf library calls readToken without allowEOF anymore, so this
                 // case is not exercised.
-                type = tt::tt_bad;
-                error_message = "unexpected EOF";
+                type_ = tt::tt_bad;
+                error_message_ = "unexpected EOF";
                 offset = input.getLastOffset();
             }
         } else {
             handleCharacter(ch);
-            if (before_token) {
+            if (before_token_) {
                 ++offset;
             }
-            if (in_token) {
-                raw_val += ch;
+            if (in_token_) {
+                raw_val_ += ch;
             }
-            if (max_len && (raw_val.length() >= max_len) && (state != st_token_ready)) {
+            if (max_len && (raw_val_.length() >= max_len) && (state_ != st_token_ready)) {
                 // terminate this token now
                 QTC::TC("qpdf", "QPDFTokenizer block long token");
-                type = tt::tt_bad;
-                state = st_token_ready;
-                error_message = "exceeded allowable length while reading token";
+                type_ = tt::tt_bad;
+                state_ = st_token_ready;
+                error_message_ = "exceeded allowable length while reading token";
             }
         }
     }
 
-    input.fastUnread(!in_token && !before_token);
+    input.fastUnread(!in_token && !before_token_);
 
-    if (type != tt::tt_eof) {
+    if (type_ != tt::tt_eof) {
         input.setLastOffset(offset);
     }
 
