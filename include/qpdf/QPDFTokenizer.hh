@@ -30,7 +30,12 @@
 
 namespace qpdf
 {
-    class Tokenizer;
+    namespace impl
+    {
+        class Tokenizer;
+        class Parser;
+    }
+    using Tokenizer = impl::Tokenizer;
 } // namespace qpdf
 
 class QPDFTokenizer
@@ -203,7 +208,7 @@ class QPDFTokenizer
     void expectInlineImage(InputSource& input);
 
   private:
-    friend class QPDFParser;
+    friend class qpdf::impl::Parser;
 
     QPDFTokenizer(QPDFTokenizer const&) = delete;
     QPDFTokenizer& operator=(QPDFTokenizer const&) = delete;
