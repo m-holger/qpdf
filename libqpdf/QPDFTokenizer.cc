@@ -20,6 +20,13 @@ using namespace qpdf;
 using Token = QPDFTokenizer::Token;
 using tt = QPDFTokenizer::token_type_e;
 
+/// @brief Check if a character is a PDF delimiter.
+///
+/// PDF delimiters are special characters that separate tokens and include whitespace, parentheses,
+/// angle brackets, square brackets, slash, percent, braces, and null.
+///
+/// @param ch The character to test.
+/// @return true if ch is a delimiter character.
 static inline bool
 delimiter(char ch)
 {
@@ -29,6 +36,10 @@ delimiter(char ch)
         ch == '\v' || ch == '\f' || ch == 0);
 }
 
+/// @brief Check if a character is whitespace or null.
+///
+/// @param ch The character to test.
+/// @return true if ch is a space, tab, newline, carriage return, form feed, vertical tab, or null.
 static inline bool
 space(char ch)
 {
@@ -37,20 +48,34 @@ space(char ch)
 
 namespace
 {
+    /// @brief Helper class to find a specific word token in an input source.
+    ///
+    /// This class is used with InputSource::findFirst() to locate occurrences of a specific word
+    /// token. It ensures that the word is delimited properly (preceded and followed by delimiters or
+    /// EOF).
     class QPDFWordTokenFinder: public InputSource::Finder
     {
       public:
+        /// @brief Construct a finder for a specific word.
+        ///
+        /// @param is The input source to search.
+        /// @param str The word token to find.
         QPDFWordTokenFinder(InputSource& is, std::string const& str) :
             is(is),
             str(str)
         {
         }
         ~QPDFWordTokenFinder() override = default;
+
+        /// @brief Check if the current position contains the target word.
+        ///
+        /// @return true if a properly-delimited word token matching str is found at the current
+        /// position.
         bool check() override;
 
       private:
-        InputSource& is;
-        std::string str;
+        InputSource& is;  ///< Input source to search
+        std::string str;  ///< Target word to find
     };
 } // namespace
 
