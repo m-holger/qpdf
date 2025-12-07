@@ -59,25 +59,25 @@ namespace qpdf
         // accessed without creating a Token, thus avoiding copying information that may not be
         // needed.
 
-        inline QPDFTokenizer::token_type_e
-        get_type() const
+        QPDFTokenizer::token_type_e
+        type() const
         {
             return type_;
         }
-        inline std::string const&
-        get_value() const
+        std::string const&
+        value() const
         {
             return (type_ == QPDFTokenizer::tt_name || type_ == QPDFTokenizer::tt_string)
                 ? val_
                 : raw_val_;
         }
-        inline std::string const&
-        get_raw_value() const
+        std::string const&
+        raw_value() const
         {
             return raw_val_;
         }
-        inline std::string const&
-        get_error_message() const
+        std::string const&
+        error_message() const
         {
             return error_message_;
         }

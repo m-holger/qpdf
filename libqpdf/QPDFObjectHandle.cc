@@ -1687,7 +1687,7 @@ QPDFObjectHandle::parseContentStream_data(
             tokenizer.next_token(input, description);
             offset = input.getLastOffset();
             length = QIntC::to_size(input.tell() - offset);
-            if (tokenizer.get_type() == QPDFTokenizer::tt_bad) {
+            if (tokenizer.type() == QPDFTokenizer::tt_bad) {
                 QTC::TC("qpdf", "QPDFObjectHandle EOF in inline image");
                 warn(
                     context,
@@ -1700,7 +1700,7 @@ QPDFObjectHandle::parseContentStream_data(
                 QTC::TC("qpdf", "QPDFObjectHandle inline image token");
                 if (callbacks) {
                     callbacks->handleObject(
-                        QPDFObjectHandle::newInlineImage(tokenizer.get_value()),
+                        QPDFObjectHandle::newInlineImage(tokenizer.value()),
                         QIntC::to_size(offset),
                         length);
                 }

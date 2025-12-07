@@ -62,7 +62,7 @@ QPDFWordTokenFinder::check()
     Tokenizer tokenizer;
     tokenizer.next_token(is, "finder", str.size() + 2);
     qpdf_offset_t pos = is.tell();
-    if (tokenizer.get_type() != tt::tt_word || tokenizer.get_value() != str) {
+    if (tokenizer.type() != tt::tt_word || tokenizer.value() != str) {
         return false;
     }
     qpdf_offset_t token_start = is.getLastOffset();
@@ -837,7 +837,7 @@ Tokenizer::find_ei(InputSource& input)
         // be pretty sure we've found the actual EI.
         for (int i = 0; i < 10; ++i) {
             check.next_token(input, "checker");
-            auto typ = check.get_type();
+            auto typ = check.type();
             if (typ == tt::tt_eof) {
                 okay = true;
             } else if (typ == tt::tt_bad) {
@@ -851,7 +851,7 @@ Tokenizer::find_ei(InputSource& input)
                 bool found_alpha = false;
                 bool found_non_printable = false;
                 bool found_other = false;
-                for (char ch: check.get_value()) {
+                for (char ch: check.value()) {
                     if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch == '*')) {
                         // Treat '*' as alpha since there are valid PDF operators that contain *
                         // along with alphabetic characters.

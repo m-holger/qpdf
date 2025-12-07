@@ -189,10 +189,10 @@ Parser::parse_first(bool content_stream)
     QPDF::Doc::ParseGuard pg(context_);
     start_ = input_.tell();
     if (!tokenizer_.next_token(input_, object_description_)) {
-        warn(tokenizer_.get_error_message());
+        warn(tokenizer_.error_message());
     }
 
-    switch (tokenizer_.get_type()) {
+    switch (tokenizer_.type()) {
     case QPDFTokenizer::tt_eof:
         if (content_stream) {
             // In content stream mode, leave object uninitialized to indicate EOF
@@ -223,28 +223,28 @@ Parser::parse_first(bool content_stream)
         stack_.clear();
         stack_.emplace_back(
             input_,
-            (tokenizer_.get_type() == QPDFTokenizer::tt_array_open) ? st_array : st_dictionary_key);
+            (tokenizer_.type() == QPDFTokenizer::tt_array_open) ? st_array : st_dictionary_key);
         frame_ = &stack_.back();
         return parse_remainder(content_stream);
 
     case QPDFTokenizer::tt_bool:
-        return with_description<QPDF_Bool>(tokenizer_.get_value() == "true");
+        return with_description<QPDF_Bool>(tokenizer_.value() == "true");
 
     case QPDFTokenizer::tt_null:
         return {QPDFObject::create<QPDF_Null>()};
 
     case QPDFTokenizer::tt_integer:
-        return with_description<QPDF_Integer>(QUtil::string_to_ll(tokenizer_.get_value().c_str()));
+        return with_description<QPDF_Integer>(QUtil::string_to_ll(tokenizer_.value().c_str()));
 
     case QPDFTokenizer::tt_real:
-        return with_description<QPDF_Real>(tokenizer_.get_value());
+        return with_description<QPDF_Real>(tokenizer_.value());
 
     case QPDFTokenizer::tt_name:
-        return with_description<QPDF_Name>(tokenizer_.get_value());
+        return with_description<QPDF_Name>(tokenizer_.value());
 
     case QPDFTokenizer::tt_word:
         {
-            auto const& value = tokenizer_.get_value();
+            auto const& value = tokenizer_.value();
             if (content_stream) {
                 return with_description<QPDF_Operator>(value);
             } else if (value == "endobj") {
@@ -266,11 +266,11 @@ Parser::parse_first(bool content_stream)
 
     case QPDFTokenizer::tt_string:
         if (decrypter_) {
-            std::string s{tokenizer_.get_value()};
+            std::string s{tokenizer_.value()};
             decrypter_->decryptString(s);
             return with_description<QPDF_String>(s);
         } else {
-            return with_description<QPDF_String>(tokenizer_.get_value());
+            return with_description<QPDF_String>(tokenizer_.value());
         }
 
     default:
@@ -292,25 +292,25 @@ Parser::parse_remainder(bool content_stream)
 
     while (true) {
         if (!tokenizer_.next_token(input_, object_description_)) {
-            warn(tokenizer_.get_error_message());
+            warn(tokenizer_.error_message());
         }
         ++good_count_; // optimistically
 
         if (int_count_ != 0) {
             // Special handling of indirect references. Treat integer tokens as part of an indirect
             // reference until proven otherwise.
-            if (tokenizer_.get_type() == QPDFTokenizer::tt_integer) {
+            if (tokenizer_.type() == QPDFTokenizer::tt_integer) {
                 if (++int_count_ > 2) {
                     // Process the oldest buffered integer.
                     add_int(int_count_);
                 }
                 last_offset_buffer_[int_count_ % 2] = input_.getLastOffset();
-                int_buffer_[int_count_ % 2] = QUtil::string_to_ll(tokenizer_.get_value().c_str());
+                int_buffer_[int_count_ % 2] = QUtil::string_to_ll(tokenizer_.value().c_str());
                 continue;
 
             } else if (
-                int_count_ >= 2 && tokenizer_.get_type() == QPDFTokenizer::tt_word &&
-                tokenizer_.get_value() == "R") {
+                int_count_ >= 2 && tokenizer_.type() == QPDFTokenizer::tt_word &&
+                tokenizer_.value() == "R") {
                 if (!context_) {
                     throw std::logic_error(
                         "Parser::parse called without context on an object with indirect "
@@ -338,7 +338,7 @@ Parser::parse_remainder(bool content_stream)
             }
         }
 
-        switch (tokenizer_.get_type()) {
+        switch (tokenizer_.type()) {
         case QPDFTokenizer::tt_eof:
             warn("parse error while reading object");
             if (content_stream) {
@@ -444,13 +444,12 @@ Parser::parse_remainder(bool content_stream)
             b_contents = false;
             stack_.emplace_back(
                 input_,
-                (tokenizer_.get_type() == QPDFTokenizer::tt_array_open) ? st_array
-                                                                        : st_dictionary_key);
+                (tokenizer_.type() == QPDFTokenizer::tt_array_open) ? st_array : st_dictionary_key);
             frame_ = &stack_.back();
             continue;
 
         case QPDFTokenizer::tt_bool:
-            add_scalar<QPDF_Bool>(tokenizer_.get_value() == "true");
+            add_scalar<QPDF_Bool>(tokenizer_.value() == "true");
             continue;
 
         case QPDFTokenizer::tt_null:
@@ -461,36 +460,36 @@ Parser::parse_remainder(bool content_stream)
             if (!content_stream) {
                 // Buffer token in case it is part of an indirect reference.
                 last_offset_buffer_[1] = input_.getLastOffset();
-                int_buffer_[1] = QUtil::string_to_ll(tokenizer_.get_value().c_str());
+                int_buffer_[1] = QUtil::string_to_ll(tokenizer_.value().c_str());
                 int_count_ = 1;
             } else {
-                add_scalar<QPDF_Integer>(QUtil::string_to_ll(tokenizer_.get_value().c_str()));
+                add_scalar<QPDF_Integer>(QUtil::string_to_ll(tokenizer_.value().c_str()));
             }
             continue;
 
         case QPDFTokenizer::tt_real:
-            add_scalar<QPDF_Real>(tokenizer_.get_value());
+            add_scalar<QPDF_Real>(tokenizer_.value());
             continue;
 
         case QPDFTokenizer::tt_name:
             if (frame_->state == st_dictionary_key) {
-                frame_->key = tokenizer_.get_value();
+                frame_->key = tokenizer_.value();
                 frame_->state = st_dictionary_value;
                 b_contents = decrypter_ && frame_->key == "/Contents";
                 continue;
             } else {
-                add_scalar<QPDF_Name>(tokenizer_.get_value());
+                add_scalar<QPDF_Name>(tokenizer_.value());
             }
             continue;
 
         case QPDFTokenizer::tt_word:
             if (content_stream) {
-                add_scalar<QPDF_Operator>(tokenizer_.get_value());
+                add_scalar<QPDF_Operator>(tokenizer_.value());
                 continue;
             }
 
             if (sanity_checks_) {
-                if (tokenizer_.get_value() == "endobj" || tokenizer_.get_value() == "endstream") {
+                if (tokenizer_.value() == "endobj" || tokenizer_.value() == "endstream") {
                     // During sanity checks, assume an unexpected endobj or endstream indicates that
                     // we are parsing past the end of the object.
                     warn(
@@ -505,13 +504,13 @@ Parser::parse_remainder(bool content_stream)
 
             warn("unknown token while reading object; treating as string");
             check_too_many_bad_tokens();
-            add_scalar<QPDF_String>(tokenizer_.get_value());
+            add_scalar<QPDF_String>(tokenizer_.value());
 
             continue;
 
         case QPDFTokenizer::tt_string:
             {
-                auto const& val = tokenizer_.get_value();
+                auto const& val = tokenizer_.value();
                 if (decrypter_) {
                     if (b_contents) {
                         frame_->contents_string = val;
