@@ -159,14 +159,14 @@ namespace qpdf::impl
             {
             }
 
-            std::vector<QPDFObjectHandle> olist;  ///< Object list for arrays/dict values
-            std::map<std::string, QPDFObjectHandle> dict;  ///< Dictionary entries
-            parser_state_e state;  ///< Current parser state
-            std::string key;  ///< Current dictionary key
-            qpdf_offset_t offset;  ///< Offset of container start
-            std::string contents_string;  ///< For /Contents field in signatures
-            qpdf_offset_t contents_offset{-1};  ///< Offset of /Contents value
-            int null_count{0};  ///< Count of null values in container
+            std::vector<QPDFObjectHandle> olist;          ///< Object list for arrays/dict values
+            std::map<std::string, QPDFObjectHandle> dict; ///< Dictionary entries
+            parser_state_e state;                         ///< Current parser state
+            std::string key;                              ///< Current dictionary key
+            qpdf_offset_t offset;                         ///< Offset of container start
+            std::string contents_string;                  ///< For /Contents field in signatures
+            qpdf_offset_t contents_offset{-1};            ///< Offset of /Contents value
+            int null_count{0};                            ///< Count of null values in container
         };
 
         /// @brief Parse an object, handling exceptions and returning null on error.
@@ -248,20 +248,20 @@ namespace qpdf::impl
         void set_description(std::shared_ptr<QPDFObject>& obj, qpdf_offset_t parsed_offset);
 
         // Core parsing state
-        InputSource& input_;  ///< Input source to read from
-        std::string const& object_description_;  ///< Description for error messages
-        qpdf::Tokenizer& tokenizer_;  ///< Tokenizer for lexical analysis
-        QPDFObjectHandle::StringDecrypter* decrypter_;  ///< Decrypter for encrypted strings
-        QPDF* context_;  ///< QPDF context for object resolution
-        std::shared_ptr<QPDFObject::Description> description_;  ///< Shared description for objects
-        bool parse_pdf_{false};  ///< True if parsing PDF objects vs content streams
-        int stream_id_{0};  ///< Object stream ID (for object stream parsing)
-        int obj_id_{0};  ///< Object ID within object stream
-        bool sanity_checks_{false};  ///< Enable additional validation checks
+        InputSource& input_;                           ///< Input source to read from
+        std::string const& object_description_;        ///< Description for error messages
+        qpdf::Tokenizer& tokenizer_;                   ///< Tokenizer for lexical analysis
+        QPDFObjectHandle::StringDecrypter* decrypter_; ///< Decrypter for encrypted strings
+        QPDF* context_;                                ///< QPDF context for object resolution
+        std::shared_ptr<QPDFObject::Description> description_; ///< Shared description for objects
+        bool parse_pdf_{false};     ///< True if parsing PDF objects vs content streams
+        int stream_id_{0};          ///< Object stream ID (for object stream parsing)
+        int obj_id_{0};             ///< Object ID within object stream
+        bool sanity_checks_{false}; ///< Enable additional validation checks
 
         // Composite object parsing state
-        std::vector<StackFrame> stack_;  ///< Stack of nested containers
-        StackFrame* frame_{nullptr};  ///< Current stack frame pointer
+        std::vector<StackFrame> stack_; ///< Stack of nested containers
+        StackFrame* frame_{nullptr};    ///< Current stack frame pointer
 
         // Error tracking state
         /// Number of recent bad tokens. Always > 0 after first bad token encountered.

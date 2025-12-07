@@ -445,7 +445,7 @@ Parser::parse_remainder(bool content_stream)
             stack_.emplace_back(
                 input_,
                 (tokenizer_.getType() == QPDFTokenizer::tt_array_open) ? st_array
-                                                                      : st_dictionary_key);
+                                                                       : st_dictionary_key);
             frame_ = &stack_.back();
             continue;
 
@@ -702,7 +702,8 @@ Parser::warn_duplicate_key()
 {
     warn(
         frame_->offset,
-        "dictionary has duplicated key " + frame_->key + "; last occurrence overrides earlier ones");
+        "dictionary has duplicated key " + frame_->key +
+            "; last occurrence overrides earlier ones");
 }
 
 void

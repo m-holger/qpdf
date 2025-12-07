@@ -21,7 +21,7 @@ using Token = QPDFTokenizer::Token;
 using tt = QPDFTokenizer::token_type_e;
 
 static inline bool
-is_delimiter(char ch)
+delimiter(char ch)
 {
     return (
         ch == ' ' || ch == '\n' || ch == '/' || ch == '(' || ch == ')' || ch == '{' || ch == '}' ||
@@ -65,7 +65,7 @@ QPDFWordTokenFinder::check()
     if (is.read(&next, 1) == 0) {
         next_okay = true;
     } else {
-        next_okay = is_delimiter(next);
+        next_okay = delimiter(next);
     }
     is.seek(pos, SEEK_SET);
     if (!next_okay) {
@@ -146,12 +146,6 @@ bool
 Tokenizer::isSpace(char ch)
 {
     return (ch == '\0' || util::is_space(ch));
-}
-
-bool
-Tokenizer::isDelimiter(char ch)
-{
-    return is_delimiter(ch);
 }
 
 void
@@ -443,7 +437,7 @@ Tokenizer::inString(char ch)
 void
 Tokenizer::inName(char ch)
 {
-    if (isDelimiter(ch)) {
+    if (delimiter(ch)) {
         // A C-locale whitespace character or delimiter terminates token.  It is important to unread
         // the whitespace character even though it is ignored since it may be the newline after a
         // stream keyword.  Removing it here could make the stream-reading code break on some files,
@@ -534,7 +528,7 @@ Tokenizer::inNumber(char ch)
     if (util::is_digit(ch)) {
     } else if (ch == '.') {
         state_ = st_real;
-    } else if (isDelimiter(ch)) {
+    } else if (delimiter(ch)) {
         type_ = tt::tt_integer;
         state_ = st_token_ready;
         in_token_ = false;
@@ -548,7 +542,7 @@ void
 Tokenizer::inReal(char ch)
 {
     if (util::is_digit(ch)) {
-    } else if (isDelimiter(ch)) {
+    } else if (delimiter(ch)) {
         type_ = tt::tt_real;
         state_ = st_token_ready;
         in_token_ = false;
@@ -650,7 +644,7 @@ Tokenizer::inGt(char ch)
 void
 Tokenizer::inLiteral(char ch)
 {
-    if (isDelimiter(ch)) {
+    if (delimiter(ch)) {
         // A C-locale whitespace character or delimiter terminates token.  It is important to unread
         // the whitespace character even though it is ignored since it may be the newline after a
         // stream keyword.  Removing it here could make the stream-reading code break on some files,
