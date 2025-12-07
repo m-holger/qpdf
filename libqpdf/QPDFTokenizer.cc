@@ -29,6 +29,12 @@ delimiter(char ch)
         ch == '\v' || ch == '\f' || ch == 0);
 }
 
+static inline bool
+space(char ch)
+{
+    return ch == '\0' || util::is_space(ch);
+}
+
 namespace
 {
     class QPDFWordTokenFinder: public InputSource::Finder
@@ -140,12 +146,6 @@ void
 Tokenizer::includeIgnorable()
 {
     include_ignorable_ = true;
-}
-
-bool
-Tokenizer::isSpace(char ch)
-{
-    return (ch == '\0' || util::is_space(ch));
 }
 
 void
@@ -275,7 +275,7 @@ void
 Tokenizer::inBeforeToken(char ch)
 {
     // Note: we specifically do not use ctype here.  It is locale-dependent.
-    if (isSpace(ch)) {
+    if (space(ch)) {
         before_token_ = !include_ignorable_;
         in_token_ = include_ignorable_;
         if (include_ignorable_) {
@@ -372,7 +372,7 @@ void
 Tokenizer::inSpace(char ch)
 {
     // We only enter this state if include_ignorable_ is true.
-    if (!isSpace(ch)) {
+    if (!space(ch)) {
         type_ = tt::tt_space;
         in_token_ = false;
         char_to_unread_ = ch;
@@ -670,7 +670,7 @@ Tokenizer::inHexstring(char ch)
         type_ = tt::tt_string;
         state_ = st_token_ready;
 
-    } else if (isSpace(ch)) {
+    } else if (space(ch)) {
         // ignore
 
     } else {
@@ -693,7 +693,7 @@ Tokenizer::inHexstring2nd(char ch)
         type_ = tt::tt_string;
         state_ = st_token_ready;
 
-    } else if (isSpace(ch)) {
+    } else if (space(ch)) {
         // ignore
 
     } else {
@@ -856,7 +856,7 @@ Tokenizer::findEI(InputSource& input)
                         // Treat '*' as alpha since there are valid PDF operators that contain *
                         // along with alphabetic characters.
                         found_alpha = true;
-                    } else if (static_cast<signed char>(ch) < 32 && !isSpace(ch)) {
+                    } else if (static_cast<signed char>(ch) < 32 && !space(ch)) {
                         // Compare ch as a signed char so characters outside of 7-bit will be < 0.
                         found_non_printable = true;
                         break;

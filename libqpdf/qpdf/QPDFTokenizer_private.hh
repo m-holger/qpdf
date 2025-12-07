@@ -83,7 +83,6 @@ namespace qpdf
         }
 
       private:
-        bool isSpace(char);
         void findEI(InputSource& input);
 
         enum state_e {
