@@ -30,11 +30,12 @@
 
 namespace qpdf
 {
-    class Tokenizer;
     namespace impl
     {
+        class Tokenizer;
         class Parser;
     }
+    using Tokenizer = impl::Tokenizer;
 } // namespace qpdf
 
 class QPDFTokenizer

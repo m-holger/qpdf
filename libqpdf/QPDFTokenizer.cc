@@ -59,7 +59,7 @@ QPDFWordTokenFinder::check()
 {
     // Find a word token matching the given string, preceded by a delimiter, and followed by a
     // delimiter or EOF.
-    Tokenizer tokenizer;
+    qpdf::impl::Tokenizer tokenizer;
     tokenizer.next_token(is, "finder", str.size() + 2);
     qpdf_offset_t pos = is.tell();
     if (tokenizer.type() != tt::tt_word || tokenizer.value() != str) {
@@ -85,7 +85,7 @@ QPDFWordTokenFinder::check()
 }
 
 void
-Tokenizer::reset()
+qpdf::impl::Tokenizer::reset()
 {
     state_ = st_before_token;
     type_ = tt::tt_bad;
@@ -119,7 +119,7 @@ QPDFTokenizer::QPDFTokenizer() :
 
 QPDFTokenizer::~QPDFTokenizer() = default;
 
-Tokenizer::Tokenizer()
+qpdf::impl::Tokenizer::Tokenizer()
 {
     reset();
 }
@@ -131,7 +131,7 @@ QPDFTokenizer::allowEOF()
 }
 
 void
-Tokenizer::allow_eof()
+qpdf::impl::Tokenizer::allow_eof()
 {
     allow_eof_ = true;
 }
@@ -143,7 +143,7 @@ QPDFTokenizer::includeIgnorable()
 }
 
 void
-Tokenizer::include_ignorable()
+qpdf::impl::Tokenizer::include_ignorable()
 {
     include_ignorable_ = true;
 }
@@ -155,7 +155,7 @@ QPDFTokenizer::presentCharacter(char ch)
 }
 
 void
-Tokenizer::present_character(char ch)
+qpdf::impl::Tokenizer::present_character(char ch)
 {
     handle_character(ch);
 
@@ -165,7 +165,7 @@ Tokenizer::present_character(char ch)
 }
 
 void
-Tokenizer::handle_character(char ch)
+qpdf::impl::Tokenizer::handle_character(char ch)
 {
     // In some cases, functions called below may call a second handler. This happens whenever you
     // have to use a character from the next token to detect the end of the current token.
@@ -265,14 +265,14 @@ Tokenizer::handle_character(char ch)
 }
 
 void
-Tokenizer::in_token_ready(char ch)
+qpdf::impl::Tokenizer::in_token_ready(char ch)
 {
     throw std::logic_error(
         "INTERNAL ERROR: QPDF tokenizer presented character while token is waiting");
 }
 
 void
-Tokenizer::in_before_token(char ch)
+qpdf::impl::Tokenizer::in_before_token(char ch)
 {
     // Note: we specifically do not use ctype here.  It is locale-dependent.
     if (space(ch)) {
@@ -293,7 +293,7 @@ Tokenizer::in_before_token(char ch)
 }
 
 void
-Tokenizer::in_top(char ch)
+qpdf::impl::Tokenizer::in_top(char ch)
 {
     switch (ch) {
     case '(':
@@ -369,7 +369,7 @@ Tokenizer::in_top(char ch)
 }
 
 void
-Tokenizer::in_space(char ch)
+qpdf::impl::Tokenizer::in_space(char ch)
 {
     // We only enter this state if include_ignorable_ is true.
     if (!space(ch)) {
@@ -381,7 +381,7 @@ Tokenizer::in_space(char ch)
 }
 
 void
-Tokenizer::in_comment(char ch)
+qpdf::impl::Tokenizer::in_comment(char ch)
 {
     if ((ch == '\r') || (ch == '\n')) {
         if (include_ignorable_) {
@@ -396,7 +396,7 @@ Tokenizer::in_comment(char ch)
 }
 
 void
-Tokenizer::in_string(char ch)
+qpdf::impl::Tokenizer::in_string(char ch)
 {
     switch (ch) {
     case '\\':
@@ -435,7 +435,7 @@ Tokenizer::in_string(char ch)
 }
 
 void
-Tokenizer::in_name(char ch)
+qpdf::impl::Tokenizer::in_name(char ch)
 {
     if (delimiter(ch)) {
         // A C-locale whitespace character or delimiter terminates token.  It is important to unread
@@ -457,7 +457,7 @@ Tokenizer::in_name(char ch)
 }
 
 void
-Tokenizer::in_name_hex1(char ch)
+qpdf::impl::Tokenizer::in_name_hex1(char ch)
 {
     hex_char_ = ch;
 
@@ -474,7 +474,7 @@ Tokenizer::in_name_hex1(char ch)
 }
 
 void
-Tokenizer::in_name_hex2(char ch)
+qpdf::impl::Tokenizer::in_name_hex2(char ch)
 {
     if (char hval = util::hex_decode_char(ch); hval < '\20') {
         char_code_ |= int(hval);
@@ -499,7 +499,7 @@ Tokenizer::in_name_hex2(char ch)
 }
 
 void
-Tokenizer::in_sign(char ch)
+qpdf::impl::Tokenizer::in_sign(char ch)
 {
     if (util::is_digit(ch)) {
         state_ = st_number;
@@ -512,7 +512,7 @@ Tokenizer::in_sign(char ch)
 }
 
 void
-Tokenizer::in_decimal(char ch)
+qpdf::impl::Tokenizer::in_decimal(char ch)
 {
     if (util::is_digit(ch)) {
         state_ = st_real;
@@ -523,7 +523,7 @@ Tokenizer::in_decimal(char ch)
 }
 
 void
-Tokenizer::in_number(char ch)
+qpdf::impl::Tokenizer::in_number(char ch)
 {
     if (util::is_digit(ch)) {
     } else if (ch == '.') {
@@ -539,7 +539,7 @@ Tokenizer::in_number(char ch)
 }
 
 void
-Tokenizer::in_real(char ch)
+qpdf::impl::Tokenizer::in_real(char ch)
 {
     if (util::is_digit(ch)) {
     } else if (delimiter(ch)) {
@@ -552,7 +552,7 @@ Tokenizer::in_real(char ch)
     }
 }
 void
-Tokenizer::in_string_escape(char ch)
+qpdf::impl::Tokenizer::in_string_escape(char ch)
 {
     state_ = st_in_string;
     switch (ch) {
@@ -605,7 +605,7 @@ Tokenizer::in_string_escape(char ch)
 }
 
 void
-Tokenizer::in_string_after_cr(char ch)
+qpdf::impl::Tokenizer::in_string_after_cr(char ch)
 {
     state_ = st_in_string;
     if (ch != '\n') {
@@ -614,7 +614,7 @@ Tokenizer::in_string_after_cr(char ch)
 }
 
 void
-Tokenizer::in_lt(char ch)
+qpdf::impl::Tokenizer::in_lt(char ch)
 {
     if (ch == '<') {
         type_ = tt::tt_dict_open;
@@ -627,7 +627,7 @@ Tokenizer::in_lt(char ch)
 }
 
 void
-Tokenizer::in_gt(char ch)
+qpdf::impl::Tokenizer::in_gt(char ch)
 {
     if (ch == '>') {
         type_ = tt::tt_dict_close;
@@ -642,7 +642,7 @@ Tokenizer::in_gt(char ch)
 }
 
 void
-Tokenizer::in_literal(char ch)
+qpdf::impl::Tokenizer::in_literal(char ch)
 {
     if (delimiter(ch)) {
         // A C-locale whitespace character or delimiter terminates token.  It is important to unread
@@ -660,7 +660,7 @@ Tokenizer::in_literal(char ch)
 }
 
 void
-Tokenizer::in_hexstring(char ch)
+qpdf::impl::Tokenizer::in_hexstring(char ch)
 {
     if (char hval = util::hex_decode_char(ch); hval < '\20') {
         char_code_ = int(hval) << 4;
@@ -681,7 +681,7 @@ Tokenizer::in_hexstring(char ch)
 }
 
 void
-Tokenizer::in_hexstring_2nd(char ch)
+qpdf::impl::Tokenizer::in_hexstring_2nd(char ch)
 {
     if (char hval = util::hex_decode_char(ch); hval < '\20') {
         val_ += char(char_code_) | hval;
@@ -704,7 +704,7 @@ Tokenizer::in_hexstring_2nd(char ch)
 }
 
 void
-Tokenizer::in_char_code(char ch)
+qpdf::impl::Tokenizer::in_char_code(char ch)
 {
     bool handled = false;
     if (('0' <= ch) && (ch <= '7')) {
@@ -724,7 +724,7 @@ Tokenizer::in_char_code(char ch)
 }
 
 void
-Tokenizer::in_inline_image(char ch)
+qpdf::impl::Tokenizer::in_inline_image(char ch)
 {
     if ((raw_val_.length() + 1) == inline_image_bytes_) {
         type_ = tt::tt_inline_image;
@@ -740,7 +740,7 @@ QPDFTokenizer::presentEOF()
 }
 
 void
-Tokenizer::present_eof()
+qpdf::impl::Tokenizer::present_eof()
 {
     switch (state_) {
     case st_name:
@@ -792,7 +792,7 @@ QPDFTokenizer::expectInlineImage(InputSource& input)
 }
 
 void
-Tokenizer::expect_inline_image(InputSource& input)
+qpdf::impl::Tokenizer::expect_inline_image(InputSource& input)
 {
     if (state_ == st_token_ready) {
         reset();
@@ -807,7 +807,7 @@ Tokenizer::expect_inline_image(InputSource& input)
 }
 
 void
-Tokenizer::find_ei(InputSource& input)
+qpdf::impl::Tokenizer::find_ei(InputSource& input)
 {
     qpdf_offset_t last_offset = input.getLastOffset();
     qpdf_offset_t pos = input.tell();
@@ -828,7 +828,7 @@ Tokenizer::find_ei(InputSource& input)
         }
         inline_image_bytes_ = QIntC::to_size(input.tell() - pos - 2);
 
-        Tokenizer check;
+        qpdf::impl::Tokenizer check;
         bool found_bad = false;
         // Look at the next 10 tokens or up to EOF. The next inline image's image data would look
         // like bad tokens, but there will always be at least 10 tokens between one inline image's
@@ -893,7 +893,7 @@ QPDFTokenizer::getToken(Token& token, bool& unread_char, char& ch)
 }
 
 bool
-Tokenizer::get_token(Token& token, bool& unread_char, char& ch)
+qpdf::impl::Tokenizer::get_token(Token& token, bool& unread_char, char& ch)
 {
     bool ready = (state_ == st_token_ready);
     unread_char = !in_token_ && !before_token_;
@@ -915,7 +915,7 @@ QPDFTokenizer::betweenTokens()
 }
 
 bool
-Tokenizer::between_tokens()
+qpdf::impl::Tokenizer::between_tokens()
 {
     return before_token_;
 }
@@ -935,7 +935,7 @@ QPDFTokenizer::readToken(
 }
 
 QPDFTokenizer::Token
-Tokenizer::read_token(
+qpdf::impl::Tokenizer::read_token(
     InputSource& input, std::string const& context, bool allow_bad, size_t max_len)
 {
     next_token(input, context, max_len);
@@ -960,7 +960,7 @@ Tokenizer::read_token(
 }
 
 bool
-Tokenizer::next_token(InputSource& input, std::string const& context, size_t max_len)
+qpdf::impl::Tokenizer::next_token(InputSource& input, std::string const& context, size_t max_len)
 {
     if (state_ != st_inline_image) {
         reset();

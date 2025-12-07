@@ -3,7 +3,7 @@
 
 #include <qpdf/QPDFTokenizer.hh>
 
-namespace qpdf
+namespace qpdf::impl
 {
 
     class Tokenizer
@@ -159,6 +159,11 @@ namespace qpdf
         int digit_count_;
     };
 
-} // namespace qpdf
+} // namespace qpdf::impl
+
+namespace qpdf
+{
+    using Tokenizer = qpdf::impl::Tokenizer;
+}
 
 #endif // QPDFTOKENIZER_PRIVATE_HH
