@@ -1016,6 +1016,9 @@ limits, especially limits designed to prevent stack overflow, cannot be removed
 with this option but can be modified. Where this is the case it is mentioned
 in the entry for the relevant option.
 )");
+ap.addOptionHelp("--preserve-invalid-attributes", "global", "preserve invalid attributes when processing PDFs", R"(Enables preservation of invalid attributes when processing PDFs. By default,
+invalid attributes are not preserved.
+)");
 ap.addOptionHelp("--parser-max-nesting", "global", "set the maximum nesting level while parsing objects", R"(--parser-max-nesting=n
 
 Set the maximum nesting level while parsing objects. The maximum nesting level
@@ -1033,6 +1036,9 @@ parsing. The limit applies when the PDF document's xref table is undamaged
 and the object itself can be parsed without errors. The default limit
 is 4,294,967,295. See also --parser-max-container-size-damaged.
 )");
+}
+static void add_help_9(QPDFArgParser& ap)
+{
 ap.addOptionHelp("--parser-max-container-size-damaged", "global", "set the maximum container size while parsing damaged files", R"(--parser-max-container-size-damaged=n
 
 Set the maximum number of top-level objects allowed in a container while
@@ -1041,9 +1047,6 @@ or the object itself is damaged. The limit also applies when parsing
 xref streams. The default limit is 5,000.
 See also --parser-max-container-size.
 )");
-}
-static void add_help_9(QPDFArgParser& ap)
-{
 ap.addOptionHelp("--max-stream-filters", "global", "set the maximum number of filters allowed when filtering streams", R"(--max-stream-filters=n
 
 An excessive number of stream filters is usually a sign that a file

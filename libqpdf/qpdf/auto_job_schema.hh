@@ -92,6 +92,7 @@ static constexpr char const* JOB_SCHEMA_DATA = R"({
   "jsonStreamPrefix": "prefix for json stream data files",
   "global": {
     "noDefaultLimits": "disable optional default limits",
+    "preserveInvalidAttributes": "preserve invalid attributes when processing PDFs",
     "parserMaxContainerSize": "set the maximum container size while parsing",
     "parserMaxContainerSizeDamaged": "set the maximum container size while parsing damaged files",
     "parserMaxErrors": "set the maximum number of errors while parsing",

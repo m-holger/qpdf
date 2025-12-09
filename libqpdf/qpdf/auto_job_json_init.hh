@@ -277,6 +277,9 @@ beginDict(bindJSON(&Handlers::beginGlobal), bindBare(&Handlers::endGlobal)); // 
 pushKey("noDefaultLimits");
 addBare([this]() { c_global->noDefaultLimits(); });
 popHandler(); // key: noDefaultLimits
+pushKey("preserveInvalidAttributes");
+addBare([this]() { c_global->preserveInvalidAttributes(); });
+popHandler(); // key: preserveInvalidAttributes
 pushKey("parserMaxContainerSize");
 addParameter([this](std::string const& p) { c_global->parserMaxContainerSize(p); });
 popHandler(); // key: parserMaxContainerSize

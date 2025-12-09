@@ -6,6 +6,7 @@
 // clang-format off
 //
 QPDF_DLL GlobalConfig* noDefaultLimits();
+QPDF_DLL GlobalConfig* preserveInvalidAttributes();
 QPDF_DLL GlobalConfig* parserMaxContainerSize(std::string const& parameter);
 QPDF_DLL GlobalConfig* parserMaxContainerSizeDamaged(std::string const& parameter);
 QPDF_DLL GlobalConfig* parserMaxErrors(std::string const& parameter);

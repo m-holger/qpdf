@@ -303,11 +303,38 @@ test_2(QPDF& pdf, char const* arg2)
     assert(max_stream_filters() == 215);
     assert(!default_limits());
 
-    // Test preserve_invalid_attributes option
+    // Test preserve_invalid_attributes option with direct API
+    preserve_invalid_attributes(false); // Reset to false for test (no effect if already false)
     assert(!preserve_invalid_attributes());
     preserve_invalid_attributes(true);
     assert(preserve_invalid_attributes());
     preserve_invalid_attributes(false); // should have no effect
+    assert(preserve_invalid_attributes());
+
+    // Test preserve_invalid_attributes with QPDFJob interface
+    preserve_invalid_attributes(false); // Reset (no effect, but try anyway)
+    QPDFJob j_attr;
+    j_attr.config()
+        ->inputFile("minimal.pdf")
+        ->global()
+        ->preserveInvalidAttributes()
+        ->endGlobal()
+        ->outputFile("a.pdf");
+    auto qpdf_uptr_attr = j_attr.createQPDF();
+    assert(preserve_invalid_attributes());
+
+    // Test preserve_invalid_attributes with JobJSON
+    QPDFJob jj_attr;
+    jj_attr.initializeFromJson(R"(
+        {
+            "inputFile": "minimal.pdf",
+            "global": {
+                "preserveInvalidAttributes": ""
+            },
+            "outputFile": "a.pdf"
+        }
+    )");
+    qpdf_uptr_attr = jj_attr.createQPDF();
     assert(preserve_invalid_attributes());
 }
 

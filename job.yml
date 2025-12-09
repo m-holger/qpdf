@@ -90,6 +90,7 @@ options:
     positional: false
     bare:
       - no-default-limits
+      - preserve-invalid-attributes
     required_parameter:
       parser-max-container-size:  level
       parser-max-container-size-damaged: level
@@ -416,6 +417,7 @@ json:
   # global options
   global:
       no-default-limits:
+      preserve-invalid-attributes:
       parser-max-container-size:
       parser-max-container-size-damaged:
       parser-max-errors:
