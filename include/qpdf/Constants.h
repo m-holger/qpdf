@@ -279,6 +279,7 @@ enum qpdf_param_e {
     /* global options */
     qpdf_p_inspection_mode = 0x11000,
     qpdf_p_default_limits = 0x11100,
+    qpdf_p_preserve_invalid_attributes = 0x11200,
     /* global limits */
 
     /* parser limits */

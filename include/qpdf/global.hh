@@ -117,6 +117,31 @@ namespace qpdf::global
             set_uint32(qpdf_p_default_limits, value ? QPDF_TRUE : QPDF_FALSE);
         }
 
+        /// @brief  Retrieves whether invalid attributes are preserved.
+        ///
+        /// @return True if invalid attributes are preserved.
+        ///
+        /// @since 12.3
+        bool inline preserve_invalid_attributes()
+        {
+            return get_uint32(qpdf_p_preserve_invalid_attributes) != 0;
+        }
+
+        /// @brief  Set whether to preserve invalid attributes.
+        ///
+        /// This function enables preservation of invalid attributes if `true` is passed.
+        /// By default invalid attributes are not preserved. Calling
+        /// `preserve_invalid_attributes(false)` has no effect.
+        ///
+        /// @param value A boolean indicating whether to enable (true) preservation of invalid
+        ///              attributes.
+        ///
+        /// @since 12.3
+        void inline preserve_invalid_attributes(bool value)
+        {
+            set_uint32(qpdf_p_preserve_invalid_attributes, value ? QPDF_TRUE : QPDF_FALSE);
+        }
+
     } // namespace options
 
     namespace limits

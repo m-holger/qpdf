@@ -302,6 +302,13 @@ test_2(QPDF& pdf, char const* arg2)
     assert(parser_max_container_size_damaged() == 214);
     assert(max_stream_filters() == 215);
     assert(!default_limits());
+
+    // Test preserve_invalid_attributes option
+    assert(!preserve_invalid_attributes());
+    preserve_invalid_attributes(true);
+    assert(preserve_invalid_attributes());
+    preserve_invalid_attributes(false); // should have no effect
+    assert(preserve_invalid_attributes());
 }
 
 void
