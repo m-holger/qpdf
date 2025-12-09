@@ -683,7 +683,7 @@ Pages::flatten_annotations_for_page(
         }
         if (process && as.isStream()) {
             if (is_widget) {
-                QPDFFormFieldObjectHelper ff = afdh.getFieldForAnnotation(aoh);
+                auto ff = afdh.field_for_widget(aoh.getObjectHandle());
                 QPDFObjectHandle as_resources = as.getDict().getKey("/Resources");
                 if (as_resources.isIndirect()) {
                     ;

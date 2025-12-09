@@ -1158,8 +1158,8 @@ QPDFJob::doJSONAcroform(Pipeline* p, bool& first, QPDF& pdf)
     int pagepos1 = 0;
     for (auto const& page: doc.pages()) {
         ++pagepos1;
-        for (auto& aoh: afdh.getWidgetAnnotationsForPage({page})) {
-            QPDFFormFieldObjectHelper ffh = afdh.getFieldForAnnotation(aoh);
+        for (auto& aoh: afdh.getWidgetAnnotationsForPage(page)) {
+            QPDFFormFieldObjectHelper ffh(afdh.field_for_widget(aoh.getObjectHandle()));
             if (!ffh.getObjectHandle().isDictionary()) {
                 continue;
             }
