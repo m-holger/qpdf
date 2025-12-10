@@ -54,6 +54,42 @@ namespace qpdf::global
         handle_result(qpdf_global_set_uint32(param, value));
     }
 
+    /// @brief Retrieves the qpdf major version number.
+    ///
+    /// Returns the major version component of the qpdf library. This item is read only.
+    ///
+    /// @return The major version number.
+    ///
+    /// @since 12.3
+    uint32_t inline version_major()
+    {
+        return get_uint32(qpdf_p_version_major);
+    }
+
+    /// @brief Retrieves the qpdf minor version number.
+    ///
+    /// Returns the minor version component of the qpdf library. This item is read only.
+    ///
+    /// @return The minor version number.
+    ///
+    /// @since 12.3
+    uint32_t inline version_minor()
+    {
+        return get_uint32(qpdf_p_version_minor);
+    }
+
+    /// @brief Retrieves the qpdf patch version number.
+    ///
+    /// Returns the patch version component of the qpdf library. This item is read only.
+    ///
+    /// @return The patch version number.
+    ///
+    /// @since 12.3
+    uint32_t inline version_patch()
+    {
+        return get_uint32(qpdf_p_version_patch);
+    }
+
     /// @brief Retrieves the number of limit errors.
     ///
     /// Returns the number of times a global limit was exceeded. This item is read only.

@@ -343,6 +343,11 @@ test_2(QPDF& pdf, char const* arg2)
     assert(qpdf::global::invalid_attribute_errors() == 1);
     qpdf::global::State::invalid_attribute_error();
     assert(qpdf::global::invalid_attribute_errors() == 2);
+
+    // Test version getters
+    assert(qpdf::global::version_major() == 12);
+    assert(qpdf::global::version_minor() == 3);
+    assert(qpdf::global::version_patch() == 0);
 }
 
 void

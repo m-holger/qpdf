@@ -176,6 +176,24 @@ namespace qpdf::global
             return s.invalid_attribute_errors_;
         }
 
+        static uint32_t const&
+        version_major()
+        {
+            return s.version_major_;
+        }
+
+        static uint32_t const&
+        version_minor()
+        {
+            return s.version_minor_;
+        }
+
+        static uint32_t const&
+        version_patch()
+        {
+            return s.version_patch_;
+        }
+
       private:
         State() = default;
         ~State() = default;
@@ -183,6 +201,9 @@ namespace qpdf::global
         static State s;
 
         uint32_t invalid_attribute_errors_{0};
+        uint32_t version_major_{12};
+        uint32_t version_minor_{3};
+        uint32_t version_patch_{0};
     };
 } // namespace qpdf::global
 

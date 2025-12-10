@@ -39,6 +39,15 @@ qpdf_global_get_uint32(qpdf_param_e param, uint32_t* value)
 {
     qpdf_expect(value);
     switch (param) {
+    case qpdf_p_version_major:
+        *value = State::version_major();
+        return qpdf_r_ok;
+    case qpdf_p_version_minor:
+        *value = State::version_minor();
+        return qpdf_r_ok;
+    case qpdf_p_version_patch:
+        *value = State::version_patch();
+        return qpdf_r_ok;
     case qpdf_p_inspection_mode:
         *value = Options::inspection_mode();
         return qpdf_r_ok;
