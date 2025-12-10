@@ -141,25 +141,27 @@ When modifying `job.yml` or CLI options, regenerate with:
    ```
    Note: Names like `setFieldAttribute()` are legacy naming; new code should use `snake_case` (e.g., `set_field_attribute()`).
 
+The qpdf API is being actively updated. Prefer the new internal APIs in code in the libqpdf and
+libtests directories:
+
+8. **New APIs are initially private** - New API additions are for internal qpdf use only
+   initially. Do not use in code in other directories, e.g. examples
+9. **Prefer typed handles** - Use `BaseHandle` methods and typed object handles (`Integer`,
+   `Array`, `Dictionary`, `String`) over generic `QPDFObjectHandle`
+10. **Use PIMPL pattern** - Prefer private implementation4 classes (`Members` classes) for
+   internal use
+11. **Array semantics** - Array methods treat scalars as single-element arrays and null as empty
+   array (per PDF spec)
+12. **Map semantics** - Map methods treat null values as missing entries (per PDF spec)
+13. **Object references** - Methods often return references; avoid unnecessary copying but copy
+   if reference may become stale
+14. **Thread safety** - Object handles cannot be shared across threads
+
 ### Style
 - Column limit: 100 characters
 - Braces on their own lines for classes/functions
 - Use `// line-break` comment to prevent clang-format from joining lines
 - Use `// clang-format off/on` for blocks that shouldn't be formatted
-
-### New API Development Guidelines
-
-The qpdf API is being actively updated. Prefer the new internal APIs in code in the libqpdf and 
-libtests directories:
-
-1. **New APIs are initially private** - New API additions are for internal qpdf use only 
-   initially. Do not use in code in other directories, e.g. examples
-2. **Prefer typed handles** - Use `BaseHandle` methods and typed object handles (`Integer`, `Array`, `Dictionary`, `String`) over generic `QPDFObjectHandle`
-3. **Use PIMPL pattern** - Prefer private implementation classes (`Members` classes) for internal use
-4. **Array semantics** - Array methods treat scalars as single-element arrays and null as empty array (per PDF spec)
-5. **Map semantics** - Map methods treat null values as missing entries (per PDF spec)
-6. **Object references** - Methods often return references; avoid unnecessary copying but copy if reference may become stale
-7. **Thread safety** - Object handles cannot be shared across threads
 
 ## Adding Command-Line Arguments
 1. Add option to `job.yml` (top half for CLI, bottom half for JSON schema)
