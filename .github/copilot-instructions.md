@@ -178,17 +178,18 @@ Global limits are uint32_t values (e.g., `parser_max_nesting`, `parser_max_error
 - Add to `namespace limits` in `global.hh`
 - Consider interaction with `disable_defaults()` and add `_set_` flag if needed
 
-### Quick Reference for Error Tracking
+### Quick Reference for Global State
 
-To track error occurrences (e.g., `invalid_attribute_errors`):
+Global state items are read-only values (e.g., `version_major`, `invalid_attribute_errors`):
 
-1. **Add enum**: Add `qpdf_p_error_type_errors` to enum in Constants.h (use `0x10xxx` range for global state)
-2. **Add counter**: Add `uint32_t error_type_{0};` to `Limits` class in `global_private.hh`
-3. **Add methods**: Add `static void error_type()` (incrementer) and `static uint32_t const& error_type()` (getter)
-4. **Add public API**: Add read-only getter at top level of `qpdf::global` namespace in `global.hh`
-5. **Add case**: Add case to `qpdf_global_get_uint32()` in `global.cc` (read-only, no setter)
-6. **Use in QPDFJob**: Add warning message in `libqpdf/QPDFJob.cc` when error count is non-zero
-7. **Call in code**: Call `global::Limits::error_type()` where errors occur
+1. **Add enum**: Add `qpdf_p_state_item` to enum in Constants.h (use `0x10xxx` range for global state)
+2. **Add member**: Add `uint32_t state_item_{initial_value};` to `State` class in `global_private.hh`
+3. **Add getter**: Add `static uint32_t const& state_item()` getter in `State` class
+4. **For error counters**: Also add `static void error_type()` incrementer method
+5. **Add public API**: Add read-only getter at top level of `qpdf::global` namespace in `global.hh`
+6. **Add case**: Add case to `qpdf_global_get_uint32()` in `global.cc` (read-only, no setter)
+7. **Add tests**: Add tests in `libtests/objects.cc`
+8. **For error counters**: Add warning in `QPDFJob.cc` and call `global::State::error_type()` where errors occur
 
 ### Example
 
@@ -196,7 +197,9 @@ The `preserve_invalid_attributes` feature demonstrates all patterns:
 - Commit 1: Global option (C++ API)
 - Commit 2: CLI integration
 - Commit 3: Interaction with `inspection_mode` (auto-set behavior)
-- Commit 4: Error tracking (`invalid_attribute_errors` counter)
+- Commit 4: Error tracking (`invalid_attribute_errors` counter in State class)
+- Commit 7: Create State class to separate state from limits
+- Commit 8: Add version access API (read-only state items)
 
 ## Validation Checklist
 Before submitting changes:

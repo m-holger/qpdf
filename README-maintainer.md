@@ -566,32 +566,59 @@ Follow similar steps as for options, but:
 - Update `Limits::disable_defaults()` if the limit should be affected by `--no-default-limits`
 - Add public API under `namespace limits` in `global.hh`
 
-### Adding Error Tracking
+### Adding Global State
 
-To track occurrences of specific error conditions (like invalid attributes or limit violations):
+Global state items are read-only values in the `qpdf::global::State` class that provide information
+about the library or track error counts. Examples include `version_major`, `version_minor`,
+`version_patch`, and `invalid_attribute_errors`.
 
-1. **Add enum value for the error counter:**
-   - Add to the "global state" section of `qpdf_param_e` enum (e.g., `qpdf_p_invalid_attribute_errors = 0x10030`)
+1. **Add enum value for the state item:**
+   - Add to the "global state" section of `qpdf_param_e` enum
+   - Use `0x10xxx` range for global state items
+   - Example: `qpdf_p_version_major = 0x10000` or `qpdf_p_invalid_attribute_errors = 0x10030`
 
-2. **Add counter to Limits class:**
-   - Add `uint32_t error_type_{0};` member to `Limits` class in `global_private.hh`
-   - Add recording method: `static void error_type() { if (l.error_type_ < max) ++l.error_type_; }`
-   - Add getter method: `static uint32_t const& error_type() { return l.error_type_; }`
+2. **Add member variable to State class:**
+   - Add `uint32_t item_name_{initial_value};` member to `State` class in `global_private.hh`
+   - For version information, use values from `DLL.h`
+   - For error counters, initialize to 0
 
-3. **Add public API:**
-   - Add getter function at top level of `qpdf::global` namespace in `global.hh`
+3. **Add getter method (and optional setter for error counters):**
+   - In `global_private.hh`, add static getter method to the `State` class
+   - For error counters, also add a recording method
+   - Example:
+     ```cpp
+     static uint32_t const& version_major() { return s.version_major_; }
+     static void invalid_attribute_error() {
+         if (s.invalid_attribute_errors_ < max) ++s.invalid_attribute_errors_;
+     }
+     static uint32_t const& invalid_attribute_errors() { return s.invalid_attribute_errors_; }
+     ```
+
+4. **Add case handling in global.cc:**
+   - Add case in `qpdf_global_get_uint32()` function (read-only, no setter needed)
+   - Example:
+     ```cpp
+     case qpdf_p_version_major:
+         *value = State::version_major();
+         return qpdf_r_ok;
+     ```
+
+5. **Add public API in global.hh:**
+   - Add inline getter function at top level of `qpdf::global` namespace in `global.hh`
+   - Include Doxygen documentation with `@brief`, `@return`, and `@since` tags
    - Mark as read-only in documentation
 
-4. **Add case handling:**
-   - Add case in `qpdf_global_get_uint32()` in `global.cc` (read-only, no setter needed)
+6. **Add tests:**
+   - Add test code in `libtests/objects.cc` to verify the state item returns expected values
+   - For error counters, test both the getter and recording method
 
-5. **Add usage in QPDFJob:**
+7. **For error counters, add usage in QPDFJob:**
    - In `libqpdf/QPDFJob.cc`, add warning message when error count is non-zero
    - Follow pattern used for `global::Limits::errors()` around line 490
 
-6. **Call the error recording method:**
-   - In relevant code where the error condition occurs, call `global::Limits::error_type()`
-   - Example: `global::Limits::invalid_attribute_error()` when an invalid attribute is detected
+8. **Call the error recording method (for error counters):**
+   - In relevant code where the error condition occurs, call `global::State::error_type()`
+   - Example: `global::State::invalid_attribute_error()` when an invalid attribute is detected
 
 ### Adding a CLI Option for Global Settings
 
@@ -633,7 +660,9 @@ For a complete example of adding a global option with all these steps, see the c
 - Commit 1: Add global option (C++ API)
 - Commit 2: Add CLI option
 - Commit 3: Enhance behavior (interaction with inspection_mode)
-- Commit 4: Add error tracking (invalid_attribute_errors counter)
+- Commit 4: Add error tracking (invalid_attribute_errors counter in State class)
+- Commit 7: Refactor to create State class
+- Commit 8: Add version access API (read-only state items)
 
 ## RELEASE PREPARATION
 
