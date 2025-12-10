@@ -304,12 +304,12 @@ test_2(QPDF& pdf, char const* arg2)
     assert(!default_limits());
 
     // Test preserve_invalid_attributes option with direct API
-    preserve_invalid_attributes(false); // Reset to false for test (no effect if already false)
+    preserve_invalid_attributes(false); // Can now set to false
     assert(!preserve_invalid_attributes());
     preserve_invalid_attributes(true);
     assert(preserve_invalid_attributes());
-    preserve_invalid_attributes(false); // should have no effect
-    assert(preserve_invalid_attributes());
+    preserve_invalid_attributes(false); // Can now set to false
+    assert(!preserve_invalid_attributes());
 
     // Test preserve_invalid_attributes with QPDFJob interface
     preserve_invalid_attributes(false); // Reset (no effect, but try anyway)
@@ -336,6 +336,7 @@ test_2(QPDF& pdf, char const* arg2)
     )");
     qpdf_uptr_attr = jj_attr.createQPDF();
     assert(preserve_invalid_attributes());
+
 }
 
 void

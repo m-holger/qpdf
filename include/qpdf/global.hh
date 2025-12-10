@@ -84,6 +84,9 @@ namespace qpdf::global
         /// must be enabled before a QPDF object is created. By default inspection mode is off.
         /// Calling `inspection_mode(false)` is not supported and currently is a no-op.
         ///
+        /// When inspection mode is enabled, `preserve_invalid_attributes` is automatically set to
+        /// `true` unless it has been explicitly set by the user.
+        ///
         /// @param value A boolean indicating whether to enable (true) inspection mode.
         ///
         /// @since 12.3
@@ -129,11 +132,11 @@ namespace qpdf::global
 
         /// @brief  Set whether to preserve invalid attributes.
         ///
-        /// This function enables preservation of invalid attributes if `true` is passed.
-        /// By default invalid attributes are not preserved. Calling
-        /// `preserve_invalid_attributes(false)` has no effect.
+        /// This function controls whether invalid attributes are preserved during PDF processing.
+        /// By default invalid attributes are not preserved. When inspection mode is enabled,
+        /// this option is automatically set to `true` unless explicitly set by the user.
         ///
-        /// @param value A boolean indicating whether to enable (true) preservation of invalid
+        /// @param value A boolean indicating whether to preserve (true) or discard (false) invalid
         ///              attributes.
         ///
         /// @since 12.3

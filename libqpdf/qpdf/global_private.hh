@@ -110,6 +110,9 @@ namespace qpdf::global
         {
             if (value) {
                 o.inspection_mode_ = true;
+                if (!o.preserve_invalid_attributes_set_) {
+                    o.preserve_invalid_attributes_ = true;
+                }
             }
         }
 
@@ -137,9 +140,8 @@ namespace qpdf::global
         static void
         preserve_invalid_attributes(bool value)
         {
-            if (value) {
-                o.preserve_invalid_attributes_ = true;
-            }
+            o.preserve_invalid_attributes_set_ = true;
+            o.preserve_invalid_attributes_ = value;
         }
 
       private:
@@ -148,6 +150,7 @@ namespace qpdf::global
         bool inspection_mode_{false};
         bool default_limits_{true};
         bool preserve_invalid_attributes_{false};
+        bool preserve_invalid_attributes_set_{false};
     };
 } // namespace qpdf::global
 
