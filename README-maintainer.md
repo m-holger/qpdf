@@ -9,6 +9,7 @@
 * [CODING RULES](#coding-rules)
 * [ZLIB COMPATIBILITY](#zlib-compatibility)
 * [HOW TO ADD A COMMAND-LINE ARGUMENT](#how-to-add-a-command-line-argument)
+* [HOW TO ADD A GLOBAL OPTION OR LIMIT](#how-to-add-a-global-option-or-limit)
 * [RELEASE PREPARATION](#release-preparation)
 * [CREATING A RELEASE](#creating-a-release)
 * [RUNNING pikepdf's TEST SUITE](#running-pikepdfs-test-suite)
@@ -501,6 +502,138 @@ When done, the following should happen:
   QPDFJob) should exist that corresponds to the command-line flag
 * The job JSON file should have a new key in the schema corresponding
   to the new option
+
+## HOW TO ADD A GLOBAL OPTION OR LIMIT
+
+Global options and limits are qpdf-wide settings that affect behavior across all qpdf operations,
+independent of individual file processing. Follow these steps to add a new global option or limit:
+
+### Adding a Global Option
+
+Global options are boolean settings in the `qpdf::global::options` namespace. Examples include
+`inspection_mode`, `default_limits`, and `preserve_invalid_attributes`.
+
+1. **Add enum value to Constants.h:**
+   - Add a new `qpdf_p_*` enum value to the `qpdf_param_e` enum in `include/qpdf/Constants.h`
+   - Use appropriate hex value based on category (e.g., `0x11xxx` for global options)
+   - Example: `qpdf_p_preserve_invalid_attributes = 0x11200`
+
+2. **Add member variable to Options class:**
+   - In `libqpdf/qpdf/global_private.hh`, add a private member variable to the `Options` class
+   - If tracking explicit setting is needed, add a corresponding `_set_` boolean flag
+   - Example: `bool preserve_invalid_attributes_{false};` and `bool preserve_invalid_attributes_set_{false};`
+
+3. **Add getter and setter methods:**
+   - In `libqpdf/qpdf/global_private.hh`, add static getter and setter methods to the `Options` class
+   - Setter should update the `_set_` flag if tracking explicit setting
+   - Example:
+     ```cpp
+     static bool preserve_invalid_attributes() { return o.preserve_invalid_attributes_; }
+     static void preserve_invalid_attributes(bool value) {
+         o.preserve_invalid_attributes_set_ = true;
+         o.preserve_invalid_attributes_ = value;
+     }
+     ```
+
+4. **Add case handling in global.cc:**
+   - Add cases in both `qpdf_global_get_uint32()` and `qpdf_global_set_uint32()` functions
+   - Example:
+     ```cpp
+     case qpdf_p_preserve_invalid_attributes:
+         *value = Options::preserve_invalid_attributes();
+         return qpdf_r_ok;
+     ```
+
+5. **Add public API in global.hh:**
+   - Add inline getter and setter functions in `include/qpdf/global.hh` under `namespace options`
+   - Include Doxygen documentation with `@brief`, `@param`, `@return`, and `@since` tags
+   - Document any interactions with other options (e.g., inspection_mode setting preserve_invalid_attributes)
+
+6. **Add tests:**
+   - Add test code in `libtests/objects.cc` to verify the option works correctly
+   - Test both getter and setter, and any interactions with other options
+
+### Adding a Global Limit
+
+Global limits are uint32_t values in the `qpdf::global::limits` namespace that control resource usage
+and processing constraints. Examples include `parser_max_nesting` and `parser_max_errors`.
+
+Follow similar steps as for options, but:
+- Place enum value in the appropriate limits section of `qpdf_param_e` (e.g., `0x13xxx` for parser limits)
+- Add member variables to the `Limits` class in `global_private.hh`
+- Consider adding a `_set_` flag if the limit should not be affected by `disable_defaults()`
+- Add getter/setter to `Limits` class instead of `Options` class
+- Update `Limits::disable_defaults()` if the limit should be affected by `--no-default-limits`
+- Add public API under `namespace limits` in `global.hh`
+
+### Adding Error Tracking
+
+To track occurrences of specific error conditions (like invalid attributes or limit violations):
+
+1. **Add enum value for the error counter:**
+   - Add to the "global state" section of `qpdf_param_e` enum (e.g., `qpdf_p_invalid_attribute_errors = 0x10030`)
+
+2. **Add counter to Limits class:**
+   - Add `uint32_t error_type_{0};` member to `Limits` class in `global_private.hh`
+   - Add recording method: `static void error_type() { if (l.error_type_ < max) ++l.error_type_; }`
+   - Add getter method: `static uint32_t const& error_type() { return l.error_type_; }`
+
+3. **Add public API:**
+   - Add getter function at top level of `qpdf::global` namespace in `global.hh`
+   - Mark as read-only in documentation
+
+4. **Add case handling:**
+   - Add case in `qpdf_global_get_uint32()` in `global.cc` (read-only, no setter needed)
+
+5. **Add usage in QPDFJob:**
+   - In `libqpdf/QPDFJob.cc`, add warning message when error count is non-zero
+   - Follow pattern used for `global::Limits::errors()` around line 490
+
+6. **Call the error recording method:**
+   - In relevant code where the error condition occurs, call `global::Limits::error_type()`
+   - Example: `global::Limits::invalid_attribute_error()` when an invalid attribute is detected
+
+### Adding a CLI Option for Global Settings
+
+To expose a global option/limit via command line:
+
+1. **Add to job.yml:**
+   - Add option name to the `global` table in the top half of `job.yml`
+   - Add to both CLI section (`bare` or `required_parameter`) and JSON schema section at bottom
+   - Example: Add `preserve-invalid-attributes` to `bare` list
+
+2. **Regenerate auto-generated files:**
+   - Run `./generate_auto_job --generate` or build with `-DGENERATE_AUTO_JOB=1`
+
+3. **Implement Config method:**
+   - Implement the method in `libqpdf/QPDFJob_config.cc` in the `GlobalConfig` class
+   - Method should call the appropriate `global::Options` or `global::Limits` function
+   - Example:
+     ```cpp
+     QPDFJob::GlobalConfig* QPDFJob::GlobalConfig::preserveInvalidAttributes() {
+         global::Options::preserve_invalid_attributes(true);
+         return this;
+     }
+     ```
+
+4. **Add documentation:**
+   - Add `.. qpdf:option::` directive with help comment in `manual/cli.rst`
+   - Place in the appropriate section (typically "Global Limits" or nearby)
+   - Include both the help text (for `--help` output) and full documentation
+
+5. **Test:**
+   - Verify CLI option works: `qpdf --global --option-name -- input.pdf output.pdf`
+   - Verify help output: `qpdf --help=global`
+   - Add tests in `libtests/objects.cc` for QPDFJob interface and JSON interface
+
+### Example Commits
+
+For a complete example of adding a global option with all these steps, see the commits that added
+`preserve_invalid_attributes`:
+- Commit 1: Add global option (C++ API)
+- Commit 2: Add CLI option
+- Commit 3: Enhance behavior (interaction with inspection_mode)
+- Commit 4: Add error tracking (invalid_attribute_errors counter)
 
 ## RELEASE PREPARATION
 
