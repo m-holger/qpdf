@@ -339,9 +339,9 @@ test_2(QPDF& pdf, char const* arg2)
 
     // Test invalid_attribute_errors counter
     assert(qpdf::global::invalid_attribute_errors() == 0);
-    qpdf::global::Limits::invalid_attribute_error();
+    qpdf::global::State::invalid_attribute_error();
     assert(qpdf::global::invalid_attribute_errors() == 1);
-    qpdf::global::Limits::invalid_attribute_error();
+    qpdf::global::State::invalid_attribute_error();
     assert(qpdf::global::invalid_attribute_errors() == 2);
 }
 

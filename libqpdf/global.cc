@@ -7,6 +7,7 @@ using namespace qpdf::global;
 
 Limits Limits::l;
 Options Options::o;
+State State::s;
 
 void
 Limits::parser_max_container_size(bool damaged, uint32_t value)
@@ -51,7 +52,7 @@ qpdf_global_get_uint32(qpdf_param_e param, uint32_t* value)
         *value = Limits::errors();
         return qpdf_r_ok;
     case qpdf_p_invalid_attribute_errors:
-        *value = Limits::invalid_attribute_errors();
+        *value = State::invalid_attribute_errors();
         return qpdf_r_ok;
     case qpdf_p_parser_max_nesting:
         *value = Limits::parser_max_nesting();

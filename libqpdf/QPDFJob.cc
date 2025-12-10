@@ -492,8 +492,8 @@ QPDFJob::writeQPDF(QPDF& pdf)
                            << ": some configurable limits were exceeded; for more details "
                               "see https://qpdf.readthedocs.io/en/stable/cli.html#global-limits\n";
     }
-    if (!m->d_cfg.suppress_warnings() && global::Limits::invalid_attribute_errors()) {
-        *m->log->getWarn() << m->message_prefix << ": " << global::Limits::invalid_attribute_errors()
+    if (!m->d_cfg.suppress_warnings() && global::State::invalid_attribute_errors()) {
+        *m->log->getWarn() << m->message_prefix << ": " << global::State::invalid_attribute_errors()
                            << " invalid attribute(s) encountered during processing\n";
     }
     if (m->report_mem_usage) {

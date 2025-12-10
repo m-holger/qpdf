@@ -76,21 +76,6 @@ namespace qpdf::global
             return l.errors_;
         }
 
-        /// Record an invalid attribute error.
-        static void
-        invalid_attribute_error()
-        {
-            if (l.invalid_attribute_errors_ < std::numeric_limits<uint32_t>::max()) {
-                ++l.invalid_attribute_errors_;
-            }
-        }
-
-        static uint32_t const&
-        invalid_attribute_errors()
-        {
-            return l.invalid_attribute_errors_;
-        }
-
         static void disable_defaults();
 
       private:
@@ -100,7 +85,6 @@ namespace qpdf::global
         static Limits l;
 
         uint32_t errors_{0};
-        uint32_t invalid_attribute_errors_{0};
 
         uint32_t parser_max_nesting_{499};
         uint32_t parser_max_errors_{15};
@@ -167,6 +151,38 @@ namespace qpdf::global
         bool default_limits_{true};
         bool preserve_invalid_attributes_{false};
         bool preserve_invalid_attributes_set_{false};
+    };
+
+    class State
+    {
+      public:
+        State(State const&) = delete;
+        State(State&&) = delete;
+        State& operator=(State const&) = delete;
+        State& operator=(State&&) = delete;
+
+        /// Record an invalid attribute error.
+        static void
+        invalid_attribute_error()
+        {
+            if (s.invalid_attribute_errors_ < std::numeric_limits<uint32_t>::max()) {
+                ++s.invalid_attribute_errors_;
+            }
+        }
+
+        static uint32_t const&
+        invalid_attribute_errors()
+        {
+            return s.invalid_attribute_errors_;
+        }
+
+      private:
+        State() = default;
+        ~State() = default;
+
+        static State s;
+
+        uint32_t invalid_attribute_errors_{0};
     };
 } // namespace qpdf::global
 
