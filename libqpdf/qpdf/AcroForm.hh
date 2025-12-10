@@ -11,6 +11,8 @@ class QPDFAnnotationObjectHelper;
 
 namespace qpdf::impl
 {
+    class FormNode;
+
     /// @class  AcroForm
     /// @brief  Represents the interactive form dictionary and the interactive form tree within a
     ///         PDF document.
@@ -118,7 +120,7 @@ namespace qpdf::impl
         // but this is not always the case. Note that if you call this method with an annotation
         // that is not a widget annotation, there will not be an associated field, and this method
         // will return a helper associated with a null object (isNull() == true).
-        QPDFFormFieldObjectHelper getFieldForAnnotation(QPDFAnnotationObjectHelper);
+        FormNode field_for_widget(FormNode node);
 
         // Return the current value of /NeedAppearances. If /NeedAppearances is missing, return
         // false as that is how PDF viewers are supposed to interpret it.
@@ -321,7 +323,7 @@ namespace qpdf::impl
             std::map<std::string, std::map<std::string, std::string>> dr_map);
 
         std::map<QPDFObjGen, FieldData> fields_;
-        std::map<QPDFObjGen, QPDFFormFieldObjectHelper> annotation_to_field_;
+        std::map<QPDFObjGen, FormNode> annotation_to_field_;
         std::map<std::string, std::set<QPDFObjGen>> name_to_fields_;
         std::set<QPDFObjGen> bad_fields_;
         bool cache_valid_{false};

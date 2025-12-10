@@ -298,9 +298,9 @@ AcroForm::getFormFieldsForPage(QPDFPageObjectHelper ph)
     QPDFObjGen::set todo;
     std::vector<QPDFFormFieldObjectHelper> result;
     for (auto& annot: getWidgetAnnotationsForPage(ph)) {
-        auto field = getFieldForAnnotation(annot).getTopLevelField();
-        if (todo.add(field) && field.getObjectHandle().isDictionary()) {
-            result.push_back(field);
+        auto field = field_for_widget(annot.getObjectHandle()).root_field();
+        if (todo.add(field) && field) {
+            result.push_back({field});
         }
     }
     return result;
@@ -309,22 +309,21 @@ AcroForm::getFormFieldsForPage(QPDFPageObjectHelper ph)
 QPDFFormFieldObjectHelper
 QPDFAcroFormDocumentHelper::getFieldForAnnotation(QPDFAnnotationObjectHelper h)
 {
-    return m->getFieldForAnnotation(h);
+    return {Null::if_null(m->field_for_widget(h.getObjectHandle()))};
 }
 
-QPDFFormFieldObjectHelper
-AcroForm::getFieldForAnnotation(QPDFAnnotationObjectHelper h)
+FormNode
+AcroForm::field_for_widget(FormNode node)
 {
-    QPDFObjectHandle oh = h.getObjectHandle();
-    if (!oh.isDictionaryOfType("", "/Widget")) {
-        return Null::temp();
+    if (Name(node["/Subtype"]) != "/Widget") {
+        return {};
     }
     analyze();
-    QPDFObjGen og(oh.getObjGen());
+    auto og = node.id_gen();
     if (annotation_to_field_.contains(og)) {
         return annotation_to_field_[og];
     }
-    return Null::temp();
+    return {};
 }
 
 void
@@ -369,7 +368,7 @@ AcroForm::analyze()
                 annot.warn(
                     "this widget annotation is not reachable from /AcroForm in the document "
                     "catalog");
-                annotation_to_field_[og] = QPDFFormFieldObjectHelper(annot);
+                annotation_to_field_[og] = annot;
                 fields_[og].annotations.emplace_back(annot);
             }
         }
@@ -429,7 +428,7 @@ AcroForm::traverseField(QPDFObjectHandle field, QPDFObjectHandle const& parent, 
     if (is_annotation) {
         auto our_field = (is_field ? field : parent);
         fields_[our_field].annotations.emplace_back(field);
-        annotation_to_field_[og] = QPDFFormFieldObjectHelper(our_field);
+        annotation_to_field_[og] = our_field;
     }
 
     if (!is_field) {
@@ -531,14 +530,14 @@ AcroForm::generateAppearancesIfNeeded()
 
     for (auto const& page: QPDFPageDocumentHelper(qpdf).getAllPages()) {
         for (auto& aoh: getWidgetAnnotationsForPage(page)) {
-            QPDFFormFieldObjectHelper ffh = getFieldForAnnotation(aoh);
-            if (ffh.getFieldType() == "/Btn") {
+            auto ffh = field_for_widget(aoh.getObjectHandle());
+            if (ffh.FT() == "/Btn") {
                 // Rather than generating appearances for button fields, rely on what's already
                 // there. Just make sure /AS is consistent with /V, which we can do by resetting the
                 // value of the field back to itself. This code is referenced in a comment in
                 // QPDFFormFieldObjectHelper::generateAppearance.
                 if (ffh.isRadioButton() || ffh.isCheckbox()) {
-                    ffh.setV(ffh.getValue());
+                    ffh.setV(ffh.V());
                 }
             } else {
                 ffh.generateAppearance(aoh);
@@ -1029,8 +1028,8 @@ AcroForm::transformAnnotations(
         // same clone as BA's. Failure to do this will break up things like radio button groups,
         // which all have to kids of the same parent.
 
-        auto ffield = from_afdh->getFieldForAnnotation(annot);
-        auto ffield_oh = ffield.getObjectHandle();
+        auto ffield = from_afdh->field_for_widget(annot);
+        auto ffield_oh = ffield.oh();
         if (ffield.null()) {
             return {{}, false, false};
         }
@@ -1046,7 +1045,7 @@ AcroForm::transformAnnotations(
         // don't want to clone the annotation and field separately in this case.
         // Find the top-level field. It may be the field itself.
         bool have_parent = false;
-        QPDFObjectHandle top_field = ffield.getTopLevelField(&have_parent).getObjectHandle();
+        QPDFObjectHandle top_field = ffield.root_field(&have_parent).oh();
         if (foreign) {
             // copyForeignObject returns the same value if called multiple times with the same
             // field. Create/retrieve the local copy of the original field. This pulls over
