@@ -153,6 +153,51 @@ When modifying `job.yml` or CLI options, regenerate with:
 3. Implement the Config method in `libqpdf/QPDFJob_config.cc`
 4. Build with `-DGENERATE_AUTO_JOB=1` or run `./generate_auto_job --generate`
 
+## Adding Global Options and Limits
+
+Global options and limits are qpdf-wide settings in the `qpdf::global` namespace that affect behavior across all operations. See `README-maintainer.md` section "HOW TO ADD A GLOBAL OPTION OR LIMIT" for complete details.
+
+### Quick Reference for Global Options
+
+Global options are boolean settings (e.g., `inspection_mode`, `preserve_invalid_attributes`):
+
+1. **Add enum**: Add `qpdf_p_option_name` to `qpdf_param_e` enum in `include/qpdf/Constants.h` (use `0x11xxx` range)
+2. **Add members**: Add `bool option_name_{false};` and optionally `bool option_name_set_{false};` to `Options` class in `libqpdf/qpdf/global_private.hh`
+3. **Add methods**: Add static getter/setter to `Options` class in same file
+4. **Add cases**: Add cases to `qpdf_global_get_uint32()` and `qpdf_global_set_uint32()` in `libqpdf/global.cc`
+5. **Add public API**: Add inline getter/setter with Doxygen docs in `include/qpdf/global.hh` under `namespace options`
+6. **Add tests**: Add tests in `libtests/objects.cc`
+7. **CLI integration** (optional): Add to `job.yml` global section, regenerate, implement in `QPDFJob_config.cc`, document in `manual/cli.rst`
+
+### Quick Reference for Global Limits
+
+Global limits are uint32_t values (e.g., `parser_max_nesting`, `parser_max_errors`):
+
+- Similar steps to options, but use `Limits` class instead of `Options` class
+- Place enum in `0x13xxx` (parser) or `0x14xxx` (stream) range
+- Add to `namespace limits` in `global.hh`
+- Consider interaction with `disable_defaults()` and add `_set_` flag if needed
+
+### Quick Reference for Error Tracking
+
+To track error occurrences (e.g., `invalid_attribute_errors`):
+
+1. **Add enum**: Add `qpdf_p_error_type_errors` to enum in Constants.h (use `0x10xxx` range for global state)
+2. **Add counter**: Add `uint32_t error_type_{0};` to `Limits` class in `global_private.hh`
+3. **Add methods**: Add `static void error_type()` (incrementer) and `static uint32_t const& error_type()` (getter)
+4. **Add public API**: Add read-only getter at top level of `qpdf::global` namespace in `global.hh`
+5. **Add case**: Add case to `qpdf_global_get_uint32()` in `global.cc` (read-only, no setter)
+6. **Use in QPDFJob**: Add warning message in `libqpdf/QPDFJob.cc` when error count is non-zero
+7. **Call in code**: Call `global::Limits::error_type()` where errors occur
+
+### Example
+
+The `preserve_invalid_attributes` feature demonstrates all patterns:
+- Commit 1: Global option (C++ API)
+- Commit 2: CLI integration
+- Commit 3: Interaction with `inspection_mode` (auto-set behavior)
+- Commit 4: Error tracking (`invalid_attribute_errors` counter)
+
 ## Validation Checklist
 Before submitting changes:
 - [ ] `cmake --build build` succeeds without warnings (WERROR is ON in maintainer mode)
