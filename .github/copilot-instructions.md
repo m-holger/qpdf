@@ -147,6 +147,18 @@ When modifying `job.yml` or CLI options, regenerate with:
 - Use `// line-break` comment to prevent clang-format from joining lines
 - Use `// clang-format off/on` for blocks that shouldn't be formatted
 
+### New API Development Guidelines
+
+The qpdf API is being actively updated. For new internal APIs:
+
+1. **New APIs are initially private** - New API additions are for internal qpdf use only initially
+2. **Prefer typed handles** - Use `BaseHandle` methods and typed object handles (`Integer`, `Array`, `Dictionary`, `String`) over generic `QPDFObjectHandle`
+3. **Use PIMPL pattern** - Prefer private implementation classes (`Members` classes) for internal use
+4. **Array semantics** - Array methods treat scalars as single-element arrays and null as empty array (per PDF spec)
+5. **Map semantics** - Map methods treat null values as missing entries (per PDF spec)
+6. **Object references** - Methods often return references; avoid unnecessary copying but copy if reference may become stale
+7. **Thread safety** - Object handles cannot be shared across threads
+
 ## Adding Command-Line Arguments
 1. Add option to `job.yml` (top half for CLI, bottom half for JSON schema)
 2. Add documentation in `manual/cli.rst` with `.. qpdf:option::` directive
@@ -200,6 +212,22 @@ The `preserve_invalid_attributes` feature demonstrates all patterns:
 - Commit 4: Error tracking (`invalid_attribute_errors` counter in State class)
 - Commit 7: Create State class to separate state from limits
 - Commit 8: Add version access API (read-only state items)
+
+## Pull Request Review Guidelines
+
+When reviewing pull requests and providing feedback with recommended changes:
+
+1. **Open a new pull request with your comments and recommended changes** - Do not just comment on the existing PR. Create a new PR that:
+   - Forks from the PR branch being reviewed
+   - Includes your recommended changes as commits
+   - Links back to the original PR in the description
+   - Explains each change clearly in commit messages
+
+2. This approach allows:
+   - The original author to review, discuss, and merge your suggestions
+   - Changes to be tested in CI before being accepted
+   - A clear history of who made which changes
+   - Easy cherry-picking of specific suggestions
 
 ## Validation Checklist
 Before submitting changes:

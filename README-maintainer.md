@@ -338,6 +338,36 @@ Building docs from pull requests is also enabled.
 
   * NEVER replace a std::string const& return value with std::string_view in the public API.
 
+### New API Development Guidelines
+
+The qpdf API is being actively updated to improve internal code quality and maintainability. These
+guidelines apply to new internal APIs:
+
+* **New APIs are initially private**: New API additions are initially for internal qpdf use only.
+  They may be made public in future releases after proving their design and stability.
+
+* **Prefer BaseHandle methods and typed object handles**: For internal qpdf use, prefer using
+  `BaseHandle` methods and typed object handles (e.g., `Integer`, `Array`, `Dictionary`, `String`)
+  over generic `QPDFObjectHandle` usage. This provides better type safety and clearer code intent.
+
+* **Use private implementation classes**: For internal qpdf use, prefer the use of private
+  implementation classes (the PIMPL pattern with `Members` classes) to encapsulate implementation
+  details and maintain clean interfaces.
+
+* **Array method semantics**: `BaseHandle` array methods are defined for all object types to
+  reflect how the PDF specification treats a scalar object identically to an array of `size() == 1`
+  containing that scalar. Similarly, an empty array and a null object are treated identically.
+
+* **Map method semantics**: Map methods reflect that the PDF specification treats an entry with a
+  null value identically to a missing entry.
+
+* **Object references and copying**: New methods often return a reference to an object. Do not copy
+  the object unnecessarily, but also make sure that objects are copied if the reference may become
+  stale. Consider object lifetime carefully when returning references.
+
+* **Thread safety**: Note that object handles explicitly do not allow being used by more than a
+  single thread. Do not share object handles across threads.
+
 
 ## ZLIB COMPATIBILITY
 
