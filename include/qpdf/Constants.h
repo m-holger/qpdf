@@ -275,6 +275,7 @@ enum qpdf_result_e {
 enum qpdf_param_e {
     /* global state */
     qpdf_p_limit_errors = 0x10020,
+    qpdf_p_invalid_attribute_errors = 0x10030,
 
     /* global options */
     qpdf_p_inspection_mode = 0x11000,

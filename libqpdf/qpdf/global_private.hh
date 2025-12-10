@@ -76,6 +76,21 @@ namespace qpdf::global
             return l.errors_;
         }
 
+        /// Record an invalid attribute error.
+        static void
+        invalid_attribute_error()
+        {
+            if (l.invalid_attribute_errors_ < std::numeric_limits<uint32_t>::max()) {
+                ++l.invalid_attribute_errors_;
+            }
+        }
+
+        static uint32_t const&
+        invalid_attribute_errors()
+        {
+            return l.invalid_attribute_errors_;
+        }
+
         static void disable_defaults();
 
       private:
@@ -85,6 +100,7 @@ namespace qpdf::global
         static Limits l;
 
         uint32_t errors_{0};
+        uint32_t invalid_attribute_errors_{0};
 
         uint32_t parser_max_nesting_{499};
         uint32_t parser_max_errors_{15};

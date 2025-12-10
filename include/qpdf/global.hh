@@ -66,6 +66,19 @@ namespace qpdf::global
         return get_uint32(qpdf_p_limit_errors);
     }
 
+    /// @brief Retrieves the number of invalid attribute errors.
+    ///
+    /// Returns the number of times an invalid attribute was encountered during processing.
+    /// This item is read only.
+    ///
+    /// @return The number of invalid attribute errors.
+    ///
+    /// @since 12.3
+    uint32_t inline invalid_attribute_errors()
+    {
+        return get_uint32(qpdf_p_invalid_attribute_errors);
+    }
+
     namespace options
     {
         /// @brief  Retrieves whether inspection mode is set.

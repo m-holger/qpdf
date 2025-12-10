@@ -50,6 +50,9 @@ qpdf_global_get_uint32(qpdf_param_e param, uint32_t* value)
     case qpdf_p_limit_errors:
         *value = Limits::errors();
         return qpdf_r_ok;
+    case qpdf_p_invalid_attribute_errors:
+        *value = Limits::invalid_attribute_errors();
+        return qpdf_r_ok;
     case qpdf_p_parser_max_nesting:
         *value = Limits::parser_max_nesting();
         return qpdf_r_ok;
