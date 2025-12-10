@@ -1187,6 +1187,13 @@ QPDFJob::GlobalConfig::noDefaultLimits()
 }
 
 QPDFJob::GlobalConfig*
+QPDFJob::GlobalConfig::preserveInvalidAttributes()
+{
+    global::Options::preserve_invalid_attributes(true);
+    return this;
+}
+
+QPDFJob::GlobalConfig*
 QPDFJob::GlobalConfig::parserMaxContainerSize(const std::string& parameter)
 {
     global::Limits::parser_max_container_size(

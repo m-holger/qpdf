@@ -110,6 +110,9 @@ namespace qpdf::global
         {
             if (value) {
                 o.inspection_mode_ = true;
+                if (!o.preserve_invalid_attributes_set_) {
+                    o.preserve_invalid_attributes_ = true;
+                }
             }
         }
 
@@ -128,11 +131,79 @@ namespace qpdf::global
             }
         }
 
+        static bool
+        preserve_invalid_attributes()
+        {
+            return static_cast<bool>(o.preserve_invalid_attributes_);
+        }
+
+        static void
+        preserve_invalid_attributes(bool value)
+        {
+            o.preserve_invalid_attributes_set_ = true;
+            o.preserve_invalid_attributes_ = value;
+        }
+
       private:
         static Options o;
 
         bool inspection_mode_{false};
         bool default_limits_{true};
+        bool preserve_invalid_attributes_{false};
+        bool preserve_invalid_attributes_set_{false};
+    };
+
+    class State
+    {
+      public:
+        State(State const&) = delete;
+        State(State&&) = delete;
+        State& operator=(State const&) = delete;
+        State& operator=(State&&) = delete;
+
+        /// Record an invalid attribute error.
+        static void
+        invalid_attribute_error()
+        {
+            if (s.invalid_attribute_errors_ < std::numeric_limits<uint32_t>::max()) {
+                ++s.invalid_attribute_errors_;
+            }
+        }
+
+        static uint32_t const&
+        invalid_attribute_errors()
+        {
+            return s.invalid_attribute_errors_;
+        }
+
+        static uint32_t const&
+        version_major()
+        {
+            return s.version_major_;
+        }
+
+        static uint32_t const&
+        version_minor()
+        {
+            return s.version_minor_;
+        }
+
+        static uint32_t const&
+        version_patch()
+        {
+            return s.version_patch_;
+        }
+
+      private:
+        State() = default;
+        ~State() = default;
+
+        static State s;
+
+        uint32_t invalid_attribute_errors_{0};
+        uint32_t version_major_{12};
+        uint32_t version_minor_{3};
+        uint32_t version_patch_{0};
     };
 } // namespace qpdf::global
 

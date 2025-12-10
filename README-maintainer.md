@@ -9,6 +9,7 @@
 * [CODING RULES](#coding-rules)
 * [ZLIB COMPATIBILITY](#zlib-compatibility)
 * [HOW TO ADD A COMMAND-LINE ARGUMENT](#how-to-add-a-command-line-argument)
+* [HOW TO ADD A GLOBAL OPTION OR LIMIT](#how-to-add-a-global-option-or-limit)
 * [RELEASE PREPARATION](#release-preparation)
 * [CREATING A RELEASE](#creating-a-release)
 * [RUNNING pikepdf's TEST SUITE](#running-pikepdfs-test-suite)
@@ -337,6 +338,36 @@ Building docs from pull requests is also enabled.
 
   * NEVER replace a std::string const& return value with std::string_view in the public API.
 
+### New API Development Guidelines
+
+The qpdf API is being actively updated to improve internal code quality and maintainability. These
+guidelines apply to new internal APIs:
+
+* **New APIs are initially private**: New API additions are initially for internal qpdf use only.
+  They may be made public in future releases after proving their design and stability.
+
+* **Prefer BaseHandle methods and typed object handles**: For internal qpdf use, prefer using
+  `BaseHandle` methods and typed object handles (e.g., `Integer`, `Array`, `Dictionary`, `String`)
+  over generic `QPDFObjectHandle` usage. This provides better type safety and clearer code intent.
+
+* **Use private implementation classes**: For internal qpdf use, prefer the use of private
+  implementation classes (the PIMPL pattern with `Members` classes) to encapsulate implementation
+  details and maintain clean interfaces.
+
+* **Array method semantics**: `BaseHandle` array methods are defined for all object types to
+  reflect how the PDF specification treats a scalar object identically to an array of `size() == 1`
+  containing that scalar. Similarly, an empty array and a null object are treated identically.
+
+* **Map method semantics**: Map methods reflect that the PDF specification treats an entry with a
+  null value identically to a missing entry.
+
+* **Object references and copying**: New methods often return a reference to an object. Do not copy
+  the object unnecessarily, but also make sure that objects are copied if the reference may become
+  stale. Consider object lifetime carefully when returning references.
+
+* **Thread safety**: Note that object handles explicitly do not allow being used by more than a
+  single thread. Do not share object handles across threads.
+
 
 ## ZLIB COMPATIBILITY
 
@@ -501,6 +532,167 @@ When done, the following should happen:
   QPDFJob) should exist that corresponds to the command-line flag
 * The job JSON file should have a new key in the schema corresponding
   to the new option
+
+## HOW TO ADD A GLOBAL OPTION OR LIMIT
+
+Global options and limits are qpdf-wide settings that affect behavior across all qpdf operations,
+independent of individual file processing. Follow these steps to add a new global option or limit:
+
+### Adding a Global Option
+
+Global options are boolean settings in the `qpdf::global::options` namespace. Examples include
+`inspection_mode`, `default_limits`, and `preserve_invalid_attributes`.
+
+1. **Add enum value to Constants.h:**
+   - Add a new `qpdf_p_*` enum value to the `qpdf_param_e` enum in `include/qpdf/Constants.h`
+   - Use appropriate hex value based on category (e.g., `0x11xxx` for global options)
+   - Example: `qpdf_p_preserve_invalid_attributes = 0x11200`
+
+2. **Add member variable to Options class:**
+   - In `libqpdf/qpdf/global_private.hh`, add a private member variable to the `Options` class
+   - If tracking explicit setting is needed, add a corresponding `_set_` boolean flag
+   - Example: `bool preserve_invalid_attributes_{false};` and `bool preserve_invalid_attributes_set_{false};`
+
+3. **Add getter and setter methods:**
+   - In `libqpdf/qpdf/global_private.hh`, add static getter and setter methods to the `Options` class
+   - Setter should update the `_set_` flag if tracking explicit setting
+   - Example:
+     ```cpp
+     static bool preserve_invalid_attributes() { return o.preserve_invalid_attributes_; }
+     static void preserve_invalid_attributes(bool value) {
+         o.preserve_invalid_attributes_set_ = true;
+         o.preserve_invalid_attributes_ = value;
+     }
+     ```
+
+4. **Add case handling in global.cc:**
+   - Add cases in both `qpdf_global_get_uint32()` and `qpdf_global_set_uint32()` functions
+   - Example:
+     ```cpp
+     case qpdf_p_preserve_invalid_attributes:
+         *value = Options::preserve_invalid_attributes();
+         return qpdf_r_ok;
+     ```
+
+5. **Add public API in global.hh:**
+   - Add inline getter and setter functions in `include/qpdf/global.hh` under `namespace options`
+   - Include Doxygen documentation with `@brief`, `@param`, `@return`, and `@since` tags
+   - Document any interactions with other options (e.g., inspection_mode setting preserve_invalid_attributes)
+
+6. **Add tests:**
+   - Add test code in `libtests/objects.cc` to verify the option works correctly
+   - Test both getter and setter, and any interactions with other options
+
+### Adding a Global Limit
+
+Global limits are uint32_t values in the `qpdf::global::limits` namespace that control resource usage
+and processing constraints. Examples include `parser_max_nesting` and `parser_max_errors`.
+
+Follow similar steps as for options, but:
+- Place enum value in the appropriate limits section of `qpdf_param_e` (e.g., `0x13xxx` for parser limits)
+- Add member variables to the `Limits` class in `global_private.hh`
+- Consider adding a `_set_` flag if the limit should not be affected by `disable_defaults()`
+- Add getter/setter to `Limits` class instead of `Options` class
+- Update `Limits::disable_defaults()` if the limit should be affected by `--no-default-limits`
+- Add public API under `namespace limits` in `global.hh`
+
+### Adding Global State
+
+Global state items are read-only values in the `qpdf::global::State` class that provide information
+about the library or track error counts. Examples include `version_major`, `version_minor`,
+`version_patch`, and `invalid_attribute_errors`.
+
+1. **Add enum value for the state item:**
+   - Add to the "global state" section of `qpdf_param_e` enum
+   - Use `0x10xxx` range for global state items
+   - Example: `qpdf_p_version_major = 0x10000` or `qpdf_p_invalid_attribute_errors = 0x10030`
+
+2. **Add member variable to State class:**
+   - Add `uint32_t item_name_{initial_value};` member to `State` class in `global_private.hh`
+   - For version information, use values from `DLL.h`
+   - For error counters, initialize to 0
+
+3. **Add getter method (and optional setter for error counters):**
+   - In `global_private.hh`, add static getter method to the `State` class
+   - For error counters, also add a recording method
+   - Example:
+     ```cpp
+     static uint32_t const& version_major() { return s.version_major_; }
+     static void invalid_attribute_error() {
+         if (s.invalid_attribute_errors_ < max) ++s.invalid_attribute_errors_;
+     }
+     static uint32_t const& invalid_attribute_errors() { return s.invalid_attribute_errors_; }
+     ```
+
+4. **Add case handling in global.cc:**
+   - Add case in `qpdf_global_get_uint32()` function (read-only, no setter needed)
+   - Example:
+     ```cpp
+     case qpdf_p_version_major:
+         *value = State::version_major();
+         return qpdf_r_ok;
+     ```
+
+5. **Add public API in global.hh:**
+   - Add inline getter function at top level of `qpdf::global` namespace in `global.hh`
+   - Include Doxygen documentation with `@brief`, `@return`, and `@since` tags
+   - Mark as read-only in documentation
+
+6. **Add tests:**
+   - Add test code in `libtests/objects.cc` to verify the state item returns expected values
+   - For error counters, test both the getter and recording method
+
+7. **For error counters, add usage in QPDFJob:**
+   - In `libqpdf/QPDFJob.cc`, add warning message when error count is non-zero
+   - Follow pattern used for `global::Limits::errors()` around line 490
+
+8. **Call the error recording method (for error counters):**
+   - In relevant code where the error condition occurs, call `global::State::error_type()`
+   - Example: `global::State::invalid_attribute_error()` when an invalid attribute is detected
+
+### Adding a CLI Option for Global Settings
+
+To expose a global option/limit via command line:
+
+1. **Add to job.yml:**
+   - Add option name to the `global` table in the top half of `job.yml`
+   - Add to both CLI section (`bare` or `required_parameter`) and JSON schema section at bottom
+   - Example: Add `preserve-invalid-attributes` to `bare` list
+
+2. **Regenerate auto-generated files:**
+   - Run `./generate_auto_job --generate` or build with `-DGENERATE_AUTO_JOB=1`
+
+3. **Implement Config method:**
+   - Implement the method in `libqpdf/QPDFJob_config.cc` in the `GlobalConfig` class
+   - Method should call the appropriate `global::Options` or `global::Limits` function
+   - Example:
+     ```cpp
+     QPDFJob::GlobalConfig* QPDFJob::GlobalConfig::preserveInvalidAttributes() {
+         global::Options::preserve_invalid_attributes(true);
+         return this;
+     }
+     ```
+
+4. **Add documentation:**
+   - Add `.. qpdf:option::` directive with help comment in `manual/cli.rst`
+   - Place in the appropriate section (typically "Global Limits" or nearby)
+   - Include both the help text (for `--help` output) and full documentation
+
+5. **Test:**
+   - Verify CLI option works: `qpdf --global --option-name -- input.pdf output.pdf`
+   - Verify help output: `qpdf --help=global`
+   - Add tests in `libtests/objects.cc` for QPDFJob interface and JSON interface
+
+### Example Commits
+
+For a complete example of adding a global option with all these steps, see the commits that added
+`preserve_invalid_attributes`:
+- Commit 1: Add global option (C++ API)
+- Commit 2: Add CLI option
+- Commit 3: Enhance behavior (interaction with inspection_mode)
+- Commit 4: Add error tracking (invalid_attribute_errors counter in State class)
+- Commit 7: Refactor to create State class
+- Commit 8: Add version access API (read-only state items)
 
 ## RELEASE PREPARATION
 

@@ -36,6 +36,7 @@ this->ap.addBare("zopfli", b(&ArgParser::argZopfli));
 this->ap.addChoices("json-help", p(&ArgParser::argJsonHelp), false, json_version_choices);
 this->ap.registerOptionTable("global", b(&ArgParser::argEndGlobal));
 this->ap.addBare("no-default-limits", [this](){c_global->noDefaultLimits();});
+this->ap.addBare("preserve-invalid-attributes", [this](){c_global->preserveInvalidAttributes();});
 this->ap.addRequiredParameter("parser-max-container-size", [this](std::string const& x){c_global->parserMaxContainerSize(x);}, "level");
 this->ap.addRequiredParameter("parser-max-container-size-damaged", [this](std::string const& x){c_global->parserMaxContainerSizeDamaged(x);}, "level");
 this->ap.addRequiredParameter("parser-max-errors", [this](std::string const& x){c_global->parserMaxErrors(x);}, "level");

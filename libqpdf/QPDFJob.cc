@@ -492,6 +492,10 @@ QPDFJob::writeQPDF(QPDF& pdf)
                            << ": some configurable limits were exceeded; for more details "
                               "see https://qpdf.readthedocs.io/en/stable/cli.html#global-limits\n";
     }
+    if (!m->d_cfg.suppress_warnings() && global::State::invalid_attribute_errors()) {
+        *m->log->getWarn() << m->message_prefix << ": " << global::State::invalid_attribute_errors()
+                           << " invalid attribute(s) encountered during processing\n";
+    }
     if (m->report_mem_usage) {
         // Call get_max_memory_usage before generating output. When debugging, it's easier if print
         // statements from get_max_memory_usage are not interleaved with the output.

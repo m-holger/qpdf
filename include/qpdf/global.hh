@@ -54,6 +54,42 @@ namespace qpdf::global
         handle_result(qpdf_global_set_uint32(param, value));
     }
 
+    /// @brief Retrieves the qpdf major version number.
+    ///
+    /// Returns the major version component of the qpdf library. This item is read only.
+    ///
+    /// @return The major version number.
+    ///
+    /// @since 12.3
+    uint32_t inline version_major()
+    {
+        return get_uint32(qpdf_p_version_major);
+    }
+
+    /// @brief Retrieves the qpdf minor version number.
+    ///
+    /// Returns the minor version component of the qpdf library. This item is read only.
+    ///
+    /// @return The minor version number.
+    ///
+    /// @since 12.3
+    uint32_t inline version_minor()
+    {
+        return get_uint32(qpdf_p_version_minor);
+    }
+
+    /// @brief Retrieves the qpdf patch version number.
+    ///
+    /// Returns the patch version component of the qpdf library. This item is read only.
+    ///
+    /// @return The patch version number.
+    ///
+    /// @since 12.3
+    uint32_t inline version_patch()
+    {
+        return get_uint32(qpdf_p_version_patch);
+    }
+
     /// @brief Retrieves the number of limit errors.
     ///
     /// Returns the number of times a global limit was exceeded. This item is read only.
@@ -64,6 +100,19 @@ namespace qpdf::global
     uint32_t inline limit_errors()
     {
         return get_uint32(qpdf_p_limit_errors);
+    }
+
+    /// @brief Retrieves the number of invalid attribute errors.
+    ///
+    /// Returns the number of times an invalid attribute was encountered during processing.
+    /// This item is read only.
+    ///
+    /// @return The number of invalid attribute errors.
+    ///
+    /// @since 12.3
+    uint32_t inline invalid_attribute_errors()
+    {
+        return get_uint32(qpdf_p_invalid_attribute_errors);
     }
 
     namespace options
@@ -83,6 +132,9 @@ namespace qpdf::global
         /// This function enables restrictive inspection mode if `true` is passed. Inspection mode
         /// must be enabled before a QPDF object is created. By default inspection mode is off.
         /// Calling `inspection_mode(false)` is not supported and currently is a no-op.
+        ///
+        /// When inspection mode is enabled, `preserve_invalid_attributes` is automatically set to
+        /// `true` unless it has been explicitly set by the user.
         ///
         /// @param value A boolean indicating whether to enable (true) inspection mode.
         ///
@@ -115,6 +167,31 @@ namespace qpdf::global
         void inline default_limits(bool value)
         {
             set_uint32(qpdf_p_default_limits, value ? QPDF_TRUE : QPDF_FALSE);
+        }
+
+        /// @brief  Retrieves whether invalid attributes are preserved.
+        ///
+        /// @return True if invalid attributes are preserved.
+        ///
+        /// @since 12.3
+        bool inline preserve_invalid_attributes()
+        {
+            return get_uint32(qpdf_p_preserve_invalid_attributes) != 0;
+        }
+
+        /// @brief  Set whether to preserve invalid attributes.
+        ///
+        /// This function controls whether invalid attributes are preserved during PDF processing.
+        /// By default invalid attributes are not preserved. When inspection mode is enabled,
+        /// this option is automatically set to `true` unless explicitly set by the user.
+        ///
+        /// @param value A boolean indicating whether to preserve (true) or discard (false) invalid
+        ///              attributes.
+        ///
+        /// @since 12.3
+        void inline preserve_invalid_attributes(bool value)
+        {
+            set_uint32(qpdf_p_preserve_invalid_attributes, value ? QPDF_TRUE : QPDF_FALSE);
         }
 
     } // namespace options

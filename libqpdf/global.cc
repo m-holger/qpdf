@@ -7,6 +7,7 @@ using namespace qpdf::global;
 
 Limits Limits::l;
 Options Options::o;
+State State::s;
 
 void
 Limits::parser_max_container_size(bool damaged, uint32_t value)
@@ -38,14 +39,29 @@ qpdf_global_get_uint32(qpdf_param_e param, uint32_t* value)
 {
     qpdf_expect(value);
     switch (param) {
+    case qpdf_p_version_major:
+        *value = State::version_major();
+        return qpdf_r_ok;
+    case qpdf_p_version_minor:
+        *value = State::version_minor();
+        return qpdf_r_ok;
+    case qpdf_p_version_patch:
+        *value = State::version_patch();
+        return qpdf_r_ok;
     case qpdf_p_inspection_mode:
         *value = Options::inspection_mode();
         return qpdf_r_ok;
     case qpdf_p_default_limits:
         *value = Options::default_limits();
         return qpdf_r_ok;
+    case qpdf_p_preserve_invalid_attributes:
+        *value = Options::preserve_invalid_attributes();
+        return qpdf_r_ok;
     case qpdf_p_limit_errors:
         *value = Limits::errors();
+        return qpdf_r_ok;
+    case qpdf_p_invalid_attribute_errors:
+        *value = State::invalid_attribute_errors();
         return qpdf_r_ok;
     case qpdf_p_parser_max_nesting:
         *value = Limits::parser_max_nesting();
@@ -76,6 +92,9 @@ qpdf_global_set_uint32(qpdf_param_e param, uint32_t value)
         return qpdf_r_ok;
     case qpdf_p_default_limits:
         Options::default_limits(value);
+        return qpdf_r_ok;
+    case qpdf_p_preserve_invalid_attributes:
+        Options::preserve_invalid_attributes(value);
         return qpdf_r_ok;
     case qpdf_p_parser_max_nesting:
         Limits::parser_max_nesting(value);

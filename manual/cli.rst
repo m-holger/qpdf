@@ -3809,6 +3809,16 @@ especially limits designed to prevent stack overflow, cannot be removed with thi
 but can be modified. Where this is the case it is mentioned in the entry for the relevant
 option.
 
+.. qpdf:option:: --preserve-invalid-attributes
+
+   .. help: preserve invalid attributes when processing PDFs
+
+      Enables preservation of invalid attributes when processing PDFs. By default,
+      invalid attributes are not preserved.
+
+Enables preservation of invalid attributes when processing PDFs. By default, invalid
+attributes are not preserved.
+
 Parser Limits
 .............
 

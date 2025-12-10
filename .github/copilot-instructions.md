@@ -147,11 +147,87 @@ When modifying `job.yml` or CLI options, regenerate with:
 - Use `// line-break` comment to prevent clang-format from joining lines
 - Use `// clang-format off/on` for blocks that shouldn't be formatted
 
+### New API Development Guidelines
+
+The qpdf API is being actively updated. For new internal APIs:
+
+1. **New APIs are initially private** - New API additions are for internal qpdf use only initially
+2. **Prefer typed handles** - Use `BaseHandle` methods and typed object handles (`Integer`, `Array`, `Dictionary`, `String`) over generic `QPDFObjectHandle`
+3. **Use PIMPL pattern** - Prefer private implementation classes (`Members` classes) for internal use
+4. **Array semantics** - Array methods treat scalars as single-element arrays and null as empty array (per PDF spec)
+5. **Map semantics** - Map methods treat null values as missing entries (per PDF spec)
+6. **Object references** - Methods often return references; avoid unnecessary copying but copy if reference may become stale
+7. **Thread safety** - Object handles cannot be shared across threads
+
 ## Adding Command-Line Arguments
 1. Add option to `job.yml` (top half for CLI, bottom half for JSON schema)
 2. Add documentation in `manual/cli.rst` with `.. qpdf:option::` directive
 3. Implement the Config method in `libqpdf/QPDFJob_config.cc`
 4. Build with `-DGENERATE_AUTO_JOB=1` or run `./generate_auto_job --generate`
+
+## Adding Global Options and Limits
+
+Global options and limits are qpdf-wide settings in the `qpdf::global` namespace that affect behavior across all operations. See `README-maintainer.md` section "HOW TO ADD A GLOBAL OPTION OR LIMIT" for complete details.
+
+### Quick Reference for Global Options
+
+Global options are boolean settings (e.g., `inspection_mode`, `preserve_invalid_attributes`):
+
+1. **Add enum**: Add `qpdf_p_option_name` to `qpdf_param_e` enum in `include/qpdf/Constants.h` (use `0x11xxx` range)
+2. **Add members**: Add `bool option_name_{false};` and optionally `bool option_name_set_{false};` to `Options` class in `libqpdf/qpdf/global_private.hh`
+3. **Add methods**: Add static getter/setter to `Options` class in same file
+4. **Add cases**: Add cases to `qpdf_global_get_uint32()` and `qpdf_global_set_uint32()` in `libqpdf/global.cc`
+5. **Add public API**: Add inline getter/setter with Doxygen docs in `include/qpdf/global.hh` under `namespace options`
+6. **Add tests**: Add tests in `libtests/objects.cc`
+7. **CLI integration** (optional): Add to `job.yml` global section, regenerate, implement in `QPDFJob_config.cc`, document in `manual/cli.rst`
+
+### Quick Reference for Global Limits
+
+Global limits are uint32_t values (e.g., `parser_max_nesting`, `parser_max_errors`):
+
+- Similar steps to options, but use `Limits` class instead of `Options` class
+- Place enum in `0x13xxx` (parser) or `0x14xxx` (stream) range
+- Add to `namespace limits` in `global.hh`
+- Consider interaction with `disable_defaults()` and add `_set_` flag if needed
+
+### Quick Reference for Global State
+
+Global state items are read-only values (e.g., `version_major`, `invalid_attribute_errors`):
+
+1. **Add enum**: Add `qpdf_p_state_item` to enum in Constants.h (use `0x10xxx` range for global state)
+2. **Add member**: Add `uint32_t state_item_{initial_value};` to `State` class in `global_private.hh`
+3. **Add getter**: Add `static uint32_t const& state_item()` getter in `State` class
+4. **For error counters**: Also add `static void error_type()` incrementer method
+5. **Add public API**: Add read-only getter at top level of `qpdf::global` namespace in `global.hh`
+6. **Add case**: Add case to `qpdf_global_get_uint32()` in `global.cc` (read-only, no setter)
+7. **Add tests**: Add tests in `libtests/objects.cc`
+8. **For error counters**: Add warning in `QPDFJob.cc` and call `global::State::error_type()` where errors occur
+
+### Example
+
+The `preserve_invalid_attributes` feature demonstrates all patterns:
+- Commit 1: Global option (C++ API)
+- Commit 2: CLI integration
+- Commit 3: Interaction with `inspection_mode` (auto-set behavior)
+- Commit 4: Error tracking (`invalid_attribute_errors` counter in State class)
+- Commit 7: Create State class to separate state from limits
+- Commit 8: Add version access API (read-only state items)
+
+## Pull Request Review Guidelines
+
+When reviewing pull requests and providing feedback with recommended changes:
+
+1. **Open a new pull request with your comments and recommended changes** - Do not just comment on the existing PR. Create a new PR that:
+   - Forks from the PR branch being reviewed
+   - Includes your recommended changes as commits
+   - Links back to the original PR in the description
+   - Explains each change clearly in commit messages
+
+2. This approach allows:
+   - The original author to review, discuss, and merge your suggestions
+   - Changes to be tested in CI before being accepted
+   - A clear history of who made which changes
+   - Easy cherry-picking of specific suggestions
 
 ## Validation Checklist
 Before submitting changes:
