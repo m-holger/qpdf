@@ -62,6 +62,12 @@ qpdf_global_get_uint32(qpdf_param_e param, uint32_t* value)
     case qpdf_p_max_stream_filters:
         *value = Limits::max_stream_filters();
         return qpdf_r_ok;
+    case qpdf_p_dct_max_memory:
+        *value = Limits::dct_max_memory();
+        return qpdf_r_ok;
+    case qpdf_p_dct_max_progressive_scans:
+        *value = Limits::dct_max_progressive_scans();
+        return qpdf_r_ok;
     default:
         return qpdf_r_bad_parameter;
     }
@@ -91,6 +97,12 @@ qpdf_global_set_uint32(qpdf_param_e param, uint32_t value)
         return qpdf_r_ok;
     case qpdf_p_max_stream_filters:
         Limits::max_stream_filters(value);
+        return qpdf_r_ok;
+    case qpdf_p_dct_max_memory:
+        Limits::dct_max_memory(value);
+        return qpdf_r_ok;
+    case qpdf_p_dct_max_progressive_scans:
+        Limits::dct_max_progressive_scans(value);
         return qpdf_r_ok;
     default:
         return qpdf_r_bad_parameter;
