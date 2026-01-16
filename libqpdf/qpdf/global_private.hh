@@ -1,9 +1,11 @@
 #ifndef GLOBAL_PRIVATE_HH
 #define GLOBAL_PRIVATE_HH
 
+#include <qpdf/Util.hh>
 #include <qpdf/global.hh>
 
 #include <limits>
+#include <utility>
 
 namespace qpdf::global
 {
@@ -61,6 +63,31 @@ namespace qpdf::global
             l.max_stream_filters_ = value;
         }
 
+        static uint32_t const&
+        dct_max_memory()
+        {
+            return l.dct_max_memory_;
+        }
+
+        static void
+        dct_max_memory(uint32_t value)
+        {
+            l.dct_max_memory_ = value;
+        }
+
+        static uint32_t const&
+        dct_max_progressive_scans()
+        {
+            return l.dct_max_progressive_scans_;
+        }
+
+        static void
+        dct_max_progressive_scans(uint32_t value)
+        {
+            qpdf_expect(std::cmp_less_equal(value, std::numeric_limits<int>::max()));
+            l.dct_max_progressive_scans_ = value;
+        }
+
         /// Record a limit error.
         static void
         error()
@@ -94,6 +121,8 @@ namespace qpdf::global
         bool parser_max_container_size_damaged_set_{false};
         uint32_t max_stream_filters_{25};
         bool max_stream_filters_set_{false};
+        uint32_t dct_max_memory_{0};
+        uint32_t dct_max_progressive_scans_{0};
     };
 
     class Options

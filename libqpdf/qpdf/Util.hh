@@ -3,6 +3,9 @@
 
 #include <qpdf/assert_debug.h>
 
+#include <concepts>
+#include <cstdint>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -46,6 +49,23 @@ namespace qpdf::util
         if (cond) {
             throw std::runtime_error(std::forward<T>(msg));
         }
+    }
+
+    inline uint32_t
+    to_u32(std::integral auto val)
+    {
+        if constexpr (std::is_signed<decltype(val)>()) {
+            if (val < 0) {
+                throw std::range_error("underflow converting to uint32_t");
+            }
+        }
+        if constexpr (
+            std::numeric_limits<decltype(val)>::max() > std::numeric_limits<uint32_t>::max()) {
+            if (val > std::numeric_limits<uint32_t>::max()) {
+                throw std::range_error("overflow converting to uint32_t");
+            }
+        }
+        return static_cast<uint32_t>(val);
     }
 
     inline constexpr char
