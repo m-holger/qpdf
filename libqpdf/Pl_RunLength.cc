@@ -2,13 +2,9 @@
 
 #include <qpdf/QTC.hh>
 #include <qpdf/Util.hh>
+#include <qpdf/global_private.hh>
 
 using namespace qpdf;
-
-namespace
-{
-    unsigned long long memory_limit{0};
-} // namespace
 
 class Pl_RunLength::Members
 {
@@ -37,7 +33,7 @@ Pl_RunLength::Pl_RunLength(char const* identifier, Pipeline* next, action_e acti
 void
 Pl_RunLength::setMemoryLimit(unsigned long long limit)
 {
-    memory_limit = limit;
+    global::Limits::run_length_max_memory(util::to_u32(limit));
 }
 
 Pl_RunLength::~Pl_RunLength() = default;
@@ -87,8 +83,9 @@ Pl_RunLength::encode(unsigned char const* data, size_t len)
 void
 Pl_RunLength::decode(unsigned char const* data, size_t len)
 {
+    uint32_t glimit = global::Limits::run_length_max_memory();
     util::no_ci_rt_error_if(
-        memory_limit && (len + m->out.size()) > memory_limit, "Pl_RunLength memory limit exceeded");
+        glimit && (len + m->out.size()) > glimit, "Pl_RunLength memory limit exceeded");
     m->out.reserve(len);
     for (size_t i = 0; i < len; ++i) {
         unsigned char const& ch = data[i];
@@ -164,7 +161,8 @@ Pl_RunLength::finish()
         unsigned char ch = 128;
         next()->write(&ch, 1);
     } else {
-        if (memory_limit && (m->out.size()) > memory_limit) {
+        uint32_t glimit = global::Limits::run_length_max_memory();
+        if (glimit && m->out.size() > glimit) {
             throw std::runtime_error("Pl_RunLength memory limit exceeded");
         }
         next()->writeString(m->out);

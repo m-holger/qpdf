@@ -24,6 +24,7 @@ Options::fuzz_mode(bool value)
         dct_throw_on_corrupt_data(true);
         Limits::png_max_memory(1'000'000);
         Limits::flate_max_memory(200'000);
+        Limits::run_length_max_memory(1'000'000);
     }
 }
 
@@ -99,6 +100,9 @@ qpdf_global_get_uint32(qpdf_param_e param, uint32_t* value)
     case qpdf_p_png_max_memory:
         *value = Limits::png_max_memory();
         return qpdf_r_ok;
+    case qpdf_p_run_length_max_memory:
+        *value = Limits::run_length_max_memory();
+        return qpdf_r_ok;
     default:
         return qpdf_r_bad_parameter;
     }
@@ -146,6 +150,9 @@ qpdf_global_set_uint32(qpdf_param_e param, uint32_t value)
         return qpdf_r_ok;
     case qpdf_p_png_max_memory:
         Limits::png_max_memory(value);
+        return qpdf_r_ok;
+    case qpdf_p_run_length_max_memory:
+        Limits::run_length_max_memory(value);
         return qpdf_r_ok;
     default:
         return qpdf_r_bad_parameter;
