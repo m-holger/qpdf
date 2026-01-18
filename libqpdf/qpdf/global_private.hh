@@ -89,6 +89,18 @@ namespace qpdf::global
         }
 
         static uint32_t const&
+        flate_max_memory()
+        {
+            return l.flate_max_memory_;
+        }
+
+        static void
+        flate_max_memory(uint32_t value)
+        {
+            l.flate_max_memory_ = value;
+        }
+
+        static uint32_t const&
         png_max_memory()
         {
             return l.png_max_memory_;
@@ -101,15 +113,15 @@ namespace qpdf::global
         }
 
         static uint32_t const&
-        flate_max_memory()
+        run_length_max_memory()
         {
-            return l.flate_max_memory_;
+            return l.run_length_max_memory_;
         }
 
         static void
-        flate_max_memory(uint32_t value)
+        run_length_max_memory(uint32_t value)
         {
-            l.flate_max_memory_ = value;
+            l.run_length_max_memory_ = value;
         }
 
         /// Record a limit error.
@@ -149,6 +161,7 @@ namespace qpdf::global
         uint32_t dct_max_progressive_scans_{0};
         uint32_t flate_max_memory_{0};
         uint32_t png_max_memory_{0};
+        uint32_t run_length_max_memory_{0};
     };
 
     class Options
