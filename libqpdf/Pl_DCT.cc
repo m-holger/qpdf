@@ -43,7 +43,6 @@ namespace
 
     static uint32_t const& memory_limit{qpdf::global::Limits::dct_max_memory()};
     static uint32_t const& scan_limit{qpdf::global::Limits::dct_max_progressive_scans()};
-    bool throw_on_corrupt_data{true};
 } // namespace
 
 static void
@@ -141,7 +140,7 @@ Pl_DCT::setScanLimit(int limit)
 void
 Pl_DCT::setThrowOnCorruptData(bool treat_as_error)
 {
-    throw_on_corrupt_data = treat_as_error;
+    qpdf::global::options::dct_throw_on_corrupt_data(treat_as_error);
 }
 
 Pl_DCT::Pl_DCT(
@@ -186,7 +185,7 @@ Pl_DCT::finish()
     cinfo_compress.err = jpeg_std_error(&(jerr.pub));
     cinfo_decompress.err = jpeg_std_error(&(jerr.pub));
     jerr.pub.error_exit = error_handler;
-    if (m->action == a_decompress && throw_on_corrupt_data) {
+    if (m->action == a_decompress && qpdf::global::options::dct_throw_on_corrupt_data()) {
         jerr.pub.emit_message = emit_message;
     }
 
