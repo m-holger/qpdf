@@ -3,17 +3,13 @@
 #include <qpdf/QTC.hh>
 #include <qpdf/QUtil.hh>
 #include <qpdf/Util.hh>
+#include <qpdf/global_private.hh>
 
 #include <climits>
 #include <cstring>
 #include <stdexcept>
 
 using namespace qpdf;
-
-namespace
-{
-    unsigned long long memory_limit{0};
-} // namespace
 
 static int
 abs_diff(int a, int b)
@@ -43,7 +39,8 @@ Pl_PNGFilter::Pl_PNGFilter(
     util::no_ci_rt_error_if(
         bpr == 0 || bpr > (UINT_MAX - 1), "PNGFilter created with invalid columns value");
     util::no_ci_rt_error_if(
-        memory_limit > 0 && bpr > (memory_limit / 2U), "PNGFilter memory limit exceeded");
+        global::Limits::png_max_memory() > 0 && bpr > (global::Limits::png_max_memory() / 2U),
+        "PNGFilter memory limit exceeded");
     bytes_per_row = bpr & UINT_MAX;
     buf1 = QUtil::make_shared_array<unsigned char>(bytes_per_row + 1);
     buf2 = QUtil::make_shared_array<unsigned char>(bytes_per_row + 1);
@@ -59,7 +56,7 @@ Pl_PNGFilter::Pl_PNGFilter(
 void
 Pl_PNGFilter::setMemoryLimit(unsigned long long limit)
 {
-    memory_limit = limit;
+    global::Limits::png_max_memory(util::to_u32(limit));
 }
 
 void
