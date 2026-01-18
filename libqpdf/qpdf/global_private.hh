@@ -100,6 +100,18 @@ namespace qpdf::global
             l.png_max_memory_ = value;
         }
 
+        static uint32_t const&
+        flate_max_memory()
+        {
+            return l.flate_max_memory_;
+        }
+
+        static void
+        flate_max_memory(uint32_t value)
+        {
+            l.flate_max_memory_ = value;
+        }
+
         /// Record a limit error.
         static void
         error()
@@ -135,6 +147,7 @@ namespace qpdf::global
         bool max_stream_filters_set_{false};
         uint32_t dct_max_memory_{0};
         uint32_t dct_max_progressive_scans_{0};
+        uint32_t flate_max_memory_{0};
         uint32_t png_max_memory_{0};
     };
 
