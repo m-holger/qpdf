@@ -3,6 +3,7 @@
 #include <qpdf/QIntC.hh>
 #include <qpdf/QTC.hh>
 #include <qpdf/Util.hh>
+#include <qpdf/global_private.hh>
 
 #include <csetjmp>
 #include <stdexcept>
@@ -40,9 +41,8 @@ namespace
         std::string msg;
     };
 
-    long memory_limit{0};
-    int scan_limit{0};
-    bool throw_on_corrupt_data{true};
+    static uint32_t const& memory_limit{qpdf::global::Limits::dct_max_memory()};
+    static uint32_t const& scan_limit{qpdf::global::Limits::dct_max_progressive_scans()};
 } // namespace
 
 static void
@@ -69,7 +69,8 @@ static void
 progress_monitor(j_common_ptr cinfo)
 {
     if (cinfo->is_decompressor &&
-        reinterpret_cast<jpeg_decompress_struct*>(cinfo)->input_scan_number > scan_limit) {
+        std::cmp_greater(
+            reinterpret_cast<jpeg_decompress_struct*>(cinfo)->input_scan_number, scan_limit)) {
         auto* jerr = reinterpret_cast<qpdf_jpeg_error_mgr*>(cinfo->err);
         jerr->msg = "Pl_DCT::decompress: JPEG data has too many scans";
         longjmp(jerr->jmpbuf, 1);
@@ -127,19 +128,19 @@ Pl_DCT::Pl_DCT(char const* identifier, Pipeline* next) :
 void
 Pl_DCT::setMemoryLimit(long limit)
 {
-    memory_limit = limit;
+    qpdf::global::Limits::dct_max_memory(util::to_u32(limit));
 }
 
 void
 Pl_DCT::setScanLimit(int limit)
 {
-    scan_limit = limit;
+    qpdf::global::Limits::dct_max_progressive_scans(util::to_u32(limit));
 }
 
 void
 Pl_DCT::setThrowOnCorruptData(bool treat_as_error)
 {
-    throw_on_corrupt_data = treat_as_error;
+    qpdf::global::options::dct_throw_on_corrupt_data(treat_as_error);
 }
 
 Pl_DCT::Pl_DCT(
@@ -184,7 +185,7 @@ Pl_DCT::finish()
     cinfo_compress.err = jpeg_std_error(&(jerr.pub));
     cinfo_decompress.err = jpeg_std_error(&(jerr.pub));
     jerr.pub.error_exit = error_handler;
-    if (m->action == a_decompress && throw_on_corrupt_data) {
+    if (m->action == a_decompress && qpdf::global::options::dct_throw_on_corrupt_data()) {
         jerr.pub.emit_message = emit_message;
     }
 
@@ -383,7 +384,7 @@ Pl_DCT::decompress(void* cinfo_p)
 #endif
 
     if (memory_limit > 0) {
-        cinfo->mem->max_memory_to_use = memory_limit;
+        cinfo->mem->max_memory_to_use = QIntC::to_long(memory_limit);
     }
 
     jpeg_buffer_src(cinfo, m->buf);
@@ -391,8 +392,7 @@ Pl_DCT::decompress(void* cinfo_p)
     (void)jpeg_read_header(cinfo, TRUE);
     jpeg_calc_output_dimensions(cinfo);
     unsigned int width = cinfo->output_width * QIntC::to_uint(cinfo->output_components);
-    if (memory_limit > 0 &&
-        width > (static_cast<unsigned long>(memory_limit) / (20U * cinfo->output_height))) {
+    if (memory_limit > 0 && width > (memory_limit / (20U * cinfo->output_height))) {
         // Even if jpeglib does not run out of memory, qpdf will while buffering the data before
         // writing it. Furthermore, for very large images runtime can be significant before the
         // first warning is encountered causing a timeout in oss-fuzz.
