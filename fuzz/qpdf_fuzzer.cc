@@ -1,16 +1,10 @@
 #include <qpdf/Buffer.hh>
 #include <qpdf/BufferInputSource.hh>
-#include <qpdf/Pl_DCT.hh>
 #include <qpdf/Pl_Discard.hh>
-#include <qpdf/Pl_Flate.hh>
-#include <qpdf/Pl_PNGFilter.hh>
-#include <qpdf/Pl_RunLength.hh>
-#include <qpdf/Pl_TIFFPredictor.hh>
 #include <qpdf/QPDF.hh>
-#include <qpdf/QPDFPageObjectHelper.hh>
 #include <qpdf/QPDFWriter.hh>
 #include <qpdf/QUtil.hh>
-#include <cstdlib>
+#include <qpdf/global.hh>
 
 class FuzzHelper
 {
@@ -41,7 +35,6 @@ FuzzHelper::getQpdf()
     auto is =
         std::shared_ptr<InputSource>(new BufferInputSource("fuzz input", &this->input_buffer));
     auto qpdf = QPDF::create();
-    qpdf->setMaxWarnings(200);
     qpdf->processInputSource(is);
     return qpdf;
 }
@@ -85,24 +78,7 @@ FuzzHelper::testWrite()
 void
 FuzzHelper::doChecks()
 {
-    // Limit the memory used to decompress JPEG files during fuzzing. Excessive memory use during
-    // fuzzing is due to corrupt JPEG data which sometimes cannot be detected before
-    // jpeg_start_decompress is called. During normal use of qpdf very large JPEGs can occasionally
-    // occur legitimately and therefore must be allowed during normal operations.
-    Pl_DCT::setMemoryLimit(100'000'000);
-    Pl_DCT::setScanLimit(50);
-
-    Pl_PNGFilter::setMemoryLimit(1'000'000);
-    Pl_RunLength::setMemoryLimit(1'000'000);
-    Pl_TIFFPredictor::setMemoryLimit(1'000'000);
-    Pl_Flate::memory_limit(200'000);
-
-    // Do not decompress corrupt data. This may cause extended runtime within jpeglib without
-    // exercising additional code paths in qpdf, and potentially causing counterproductive timeouts.
-    Pl_DCT::setThrowOnCorruptData(true);
-
-    // Get as much coverage as possible in parts of the library that
-    // might benefit from fuzzing.
+    qpdf::global::options::fuzz_mode(true);
     std::cerr << "\ninfo: starting testWrite\n";
     testWrite();
 }
