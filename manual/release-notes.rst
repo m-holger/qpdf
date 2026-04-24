@@ -18,6 +18,11 @@ more detail.
 
     - Fix error message when :qpdf:ref:`--check` encounters a file without any pages.
 
+    - In ``QPDFAcroFormDocumentHelper::fixCopiedAnnotations`` remove non-array and empty
+      ``/Annots`` entries from copied pages as well as non-dictionary annotations. Fixes a bug
+      that could cause qpdf to throw a logic error when error when copying pages with damaged
+      annotations.
+
 12.3.2: January 24, 2026
   - Bug fixes
 
