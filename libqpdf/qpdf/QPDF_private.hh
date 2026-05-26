@@ -948,10 +948,11 @@ class QPDF::Doc::Linearization: Common
         // bit); since `is_shared` is used purely as a boolean predicate in the
         // surviving consumer and the "shared" categorisation already triggers on
         // any count >= 2, this collapse is observationally equivalent.
-        bool is_shared() const
+        bool
+        is_shared() const
         {
-            int count = (in_first_page ? 1 : 0) + (is_root ? 1 : 0) + (in_outlines ? 1 : 0)
-                + (in_open_document ? 1 : 0) + (in_others ? 1 : 0);
+            int count = (in_first_page ? 1 : 0) + (is_root ? 1 : 0) + (in_outlines ? 1 : 0) +
+                (in_open_document ? 1 : 0) + (in_others ? 1 : 0);
             if (first_other_pageno != -1) {
                 count += more_than_one_other_page ? 2 : 1;
             }
@@ -964,7 +965,8 @@ class QPDF::Doc::Linearization: Common
         // Record that ou_page with this pageno referenced the object.
         // Page 0 is tracked as its own boolean (the linearization spec singles
         // out the first page).
-        void add_page(int pageno)
+        void
+        add_page(int pageno)
         {
             if (pageno == 0) {
                 in_first_page = true;
@@ -978,7 +980,8 @@ class QPDF::Doc::Linearization: Common
         }
 
         // Same scheme for thumbnail user references.
-        void add_thumb(int pageno)
+        void
+        add_thumb(int pageno)
         {
             if (first_thumb_pageno == -1) {
                 first_thumb_pageno = pageno;
@@ -991,7 +994,8 @@ class QPDF::Doc::Linearization: Common
         // filterCompressedObjects when multiple original objects collapse onto
         // a single containing-object-stream key: their stats have to be merged
         // before the originals are dropped.
-        void merge_from(ObjUserStats const& o)
+        void
+        merge_from(ObjUserStats const& o)
         {
             in_first_page = in_first_page || o.in_first_page;
             in_outlines = in_outlines || o.in_outlines;
