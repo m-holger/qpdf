@@ -671,6 +671,8 @@ class QPDF::Doc::Linearization: Common
         bool top;
     };
 
+    // Place ObjUserStats here with the other private structs
+
     // PDF 1.4: Table F.4
     struct HPageOffsetEntry
     {
@@ -927,6 +929,10 @@ class QPDF::Doc::Linearization: Common
         /// @param ou  The ObjUser indicating the user and context that referenced the object.
         void add(ObjUser const& ou);
 
+        // Given that the struct has non-trivial methods, data members should have a trailing
+        // underscore and be private, and only to the extent that external access is required, have
+        // inlined accessors (eg bool in_first_page() const or void in_first_page(bool) ).
+
         // Set true if ou_page with pageno == 0 ever references the object.
         bool in_first_page{false};
         // Set true if ou_root_key with key == "/Outlines" ever references the object.
@@ -991,6 +997,8 @@ class QPDF::Doc::Linearization: Common
                 more_than_one_other_page = true;
             }
         }
+
+        //  Methods that don't need to be called from outside the struct should be private.
 
         // Same scheme for thumbnail user references.
         void
